@@ -177,14 +177,14 @@ namespace CadFoundation.Angles
 
     public static class extendDoubleForPtsDegree
     {
-        public static DegreeOfCurve AsPtsDegree(this Double val)
+        public static DegreeOfCurve AsDegreeOfCurve(this Double val)
         {
             return new DegreeOfCurve(val);
         }
 
         public static double AsPtsDegreeDouble(this Double val)
         {
-            return AsPtsDegree(val).getAsDouble();
+            return AsDegreeOfCurve(val).getAsDouble();
         }
 
         public static double dblDegreeFromRadius(this Double inRadius)
