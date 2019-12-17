@@ -5,7 +5,9 @@ VisualStudioVersion = 16.0.29519.87
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CadFoundation", "CadFoundation\CadFoundation.csproj", "{22DBBCE3-BFCF-4F2D-9309-E9FCA495A1F7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unit Tests", "Unit Tests\Unit Tests.csproj", "{07102B9A-1272-4AF7-9C03-0B81247A8F2F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Unit Tests", "Unit Tests\Unit Tests.csproj", "{07102B9A-1272-4AF7-9C03-0B81247A8F2F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cogo", "Cogo\Cogo.csproj", "{181CEBA4-EDBA-4D00-A494-54E5DD142B21}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{07102B9A-1272-4AF7-9C03-0B81247A8F2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{07102B9A-1272-4AF7-9C03-0B81247A8F2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{07102B9A-1272-4AF7-9C03-0B81247A8F2F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{181CEBA4-EDBA-4D00-A494-54E5DD142B21}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{181CEBA4-EDBA-4D00-A494-54E5DD142B21}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{181CEBA4-EDBA-4D00-A494-54E5DD142B21}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{181CEBA4-EDBA-4D00-A494-54E5DD142B21}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
