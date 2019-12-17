@@ -9,9 +9,12 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
+using System.Runtime.CompilerServices;
+[assembly: InternalsVisibleTo("Unit Tests")]
+
 namespace Cogo.Horizontal
 {
-    class HorizontalAlignment : HorizontalAlignmentBase
+    public class HorizontalAlignment : HorizontalAlignmentBase
     {
         private List<HorizontalAlignmentBase> allChildSegments { get; set; } = new List<HorizontalAlignmentBase>();
         private List<alignmentDataPacket> alignmentData { get; set; }
@@ -49,7 +52,7 @@ namespace Cogo.Horizontal
 
         public HorizontalAlignment() { }
 
-        public HorizontalAlignment(List<IRM21fundamentalGeometry> fundamentalGeometryList,
+        public HorizontalAlignment(List<IFundamentalGeometry> fundamentalGeometryList,
            String Name, List<Double> stationEquationing)
            : base(stationEquationing)
         {
@@ -261,7 +264,7 @@ namespace Cogo.Horizontal
 
         }
 
-        private void createAllSegments(List<IRM21fundamentalGeometry> fundamentalGeometryList)
+        private void createAllSegments(List<IFundamentalGeometry> fundamentalGeometryList)
         {
             foreach (var fgElement in fundamentalGeometryList)
             {
@@ -280,7 +283,7 @@ namespace Cogo.Horizontal
             }
         }
 
-        private void createAddLineSegment(IRM21fundamentalGeometry fundGeomLineSeg)
+        private void createAddLineSegment(IFundamentalGeometry fundGeomLineSeg)
         {
             ptList = fundGeomLineSeg.getPointList();
             if (2 != ptList.Count)
@@ -293,7 +296,7 @@ namespace Cogo.Horizontal
             allChildSegments_scratchPad.Add(aLineSeg);
         }
 
-        private void createAddArcSegment(IRM21fundamentalGeometry fundGeomArcSeg)
+        private void createAddArcSegment(IFundamentalGeometry fundGeomArcSeg)
         {
             ptList = fundGeomArcSeg.getPointList();
             if (3 != ptList.Count)
@@ -308,7 +311,7 @@ namespace Cogo.Horizontal
         }
 
 
-        private void createAddEulerSpiralSegment(IRM21fundamentalGeometry fundGeomEulerSpiralSeg)
+        private void createAddEulerSpiralSegment(IFundamentalGeometry fundGeomEulerSpiralSeg)
         {
             ptList = fundGeomEulerSpiralSeg.getPointList();
             if (ptList.Count < 4)

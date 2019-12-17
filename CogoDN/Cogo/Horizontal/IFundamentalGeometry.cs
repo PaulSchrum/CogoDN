@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Cogo.Horizontal
 {
-    public interface IRM21fundamentalGeometry
+    public interface IFundamentalGeometry
     {
         List<Point> getPointList();
         Double getBeginningDegreeOfCurve();
