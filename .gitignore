@@ -349,3 +349,8 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
+/CogoDN/Unit Tests/Datasets/Surfaces/Lidar/TilleyCreek.las.7z
+/CogoDN/Unit Tests/Datasets/Surfaces/Lidar/TilleyCreek.las
+/CogoDN/Unit Tests/Datasets/Surfaces/Lidar/Research Farm/20078204.las
+/CogoDN/Unit Tests/Datasets/Surfaces/Lidar/20078204.las
+/CogoDN/Unit Tests/Datasets/Surfaces/Lidar/.prj
