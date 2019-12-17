@@ -87,13 +87,7 @@ namespace Cogo.Utils
         }
     }
 
-    public static class utilityExtensions
-    {
-        public static bool tolerantEquals(this Double first, Double second, Double toleration)
-        {
-            return Math.Abs(first - second) <= toleration;
-        }
-    }
+   
     public class Double_
     {
         public static Double OneTrillion
