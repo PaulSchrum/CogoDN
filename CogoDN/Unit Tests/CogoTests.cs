@@ -1273,7 +1273,6 @@ namespace Unit_Tests
                 actual: aSpiral.BeginDegreeOfCurve.getAsDegreesDouble(),
                 delta: 0.0001);
 
-            double x = 0;
             Assert.AreEqual(expected: -0.3375,
                 actual: aSpiral.Deflection.getAsDegreesDouble(),
                 delta: 0.0001);
@@ -1409,7 +1408,7 @@ namespace Unit_Tests
         public void HorizontalAlignment_GetCoordinatesByStation_multiple()
         {
             var directory = new DirectoryManager();
-            directory.CdUp(2).CdDown("CogoTests").CdDown("R2547");
+            directory.CdUp(2).CdDown("Datasets").CdDown("Cogo").CdDown("R2547");
             string testFile = directory.GetPathAndAppendFilename("Y15A.csv");
 
             HorizontalAlignment Y15A = HorizontalAlignment.createFromCsvFile(testFile);
