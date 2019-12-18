@@ -1,0 +1,17 @@
+StartHA:,,,,
+Northing,Easting,Station,Region,Azimuth
+1296205.453,960387.001,25300,1,344.12846
+,,,,
+Elements:,,,,
+DegreeIn,Length,DegreeOut,TypeTag,
+0,171.4335,0,,
+0,90,-0.75,,
+-0.75,1144.0663,-0.75,,
+,,,,
+Regions:,,,,
+StartStation,RegionNo,EndStation,,
+,,,,
+,,,,
+EndHA:,,,,
+Northing,Easting,Station,Region,Azimuth
+1295733.515,961709.039,27014.0651,1,335.21053
