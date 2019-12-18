@@ -47,13 +47,20 @@ namespace Unit_Tests
     [TestClass]
     public class TinTests
     {
-        string lidarFileName = @"D:\SourceModules\CSharp\CogoDN\ptsDigital" +
-            @"TerrainModel\Testing\NC Lidar\Raleigh WRAL Soccer.las";
+        string lidarFileName;
 
         TINsurface tinFromLidar = null;
 
+        private void setupDatasetFileNames()
+        {
+            var directory = new DirectoryManager();
+            directory.CdUp(2).CdDown("Datasets").CdDown("Surfaces").CdDown("Lidar");
+            this.lidarFileName = directory.GetPathAndAppendFilename("Raleigh WRAL Soccer.las");
+        }
+
         private void Initialize()
         {
+            setupDatasetFileNames();
             if (this.tinFromLidar == null)
                 tinFromLidar = TINsurface.CreateFromLAS(lidarFileName);
         }
@@ -211,6 +218,7 @@ namespace Unit_Tests
         {
             if (null == aTin)
             {
+                setupDatasetFileNames();
                 this.aTin = TINsurface.CreateFromLAS(lidarFileName);
                 this.aTin.pruneTinHull();
             }
