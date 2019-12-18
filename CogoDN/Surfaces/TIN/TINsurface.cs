@@ -15,6 +15,9 @@ using System.Threading.Tasks;
 using System.Xml;
 using CadFound = CadFoundation.Coordinates;
 
+using System.Runtime.CompilerServices;
+[assembly: InternalsVisibleTo("Unit Tests")]
+
 namespace Surfaces.TIN
 {
     [Serializable]
