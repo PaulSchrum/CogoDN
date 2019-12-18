@@ -983,14 +983,14 @@ namespace Unit_Tests
         public void HorizontalAlignment_outputControlPointsToCSV()
         {
             var directory = new DirectoryManager();
-            directory.CdUp(2).CdDown("CogoTests");
+            directory.CdUp(2).CdDown("Datasets").CdDown("Cogo");
             string testFile = directory.GetPathAndAppendFilename("R2100_L1.CogoDN.csv");
 
             HorizontalAlignment AccRev = HorizontalAlignment.createFromCsvFile(testFile);
             Assert.IsNotNull(AccRev);
 
             var outDirectory = new DirectoryManager();
-            outDirectory.CdUp(2).CdDown("CogoTests").CdDown("outputs");
+            outDirectory.CdUp(2).CdDown("Datasets").CdDown("Cogo").CdDown("outputs");
             outDirectory.EnsureExists();
             string outFile = outDirectory.GetPathAndAppendFilename("ACC_REV_events.csv");
 
@@ -1004,14 +1004,14 @@ namespace Unit_Tests
         public void HorizontalAlignment_outputToDxf()
         {
             var directory = new DirectoryManager();
-            directory.CdUp(2).CdDown("CogoTests");
+            directory.CdUp(2).CdDown("Datasets").CdDown("Cogo");
             string testFile = directory.GetPathAndAppendFilename("R2100_L1.CogoDN.csv");
 
             HorizontalAlignment AccRev = HorizontalAlignment.createFromCsvFile(testFile);
             Assert.IsNotNull(AccRev);
 
             var outDirectory = new DirectoryManager();
-            outDirectory.CdUp(2).CdDown("CogoTests").CdDown("outputs");
+            outDirectory.CdUp(2).CdDown("Datasets").CdDown("Cogo").CdDown("outputs");
             outDirectory.EnsureExists();
             string outFile = outDirectory.GetPathAndAppendFilename("R2100b_L1.dxf");
 
@@ -1025,7 +1025,7 @@ namespace Unit_Tests
         public void HorizontalAlignment_instantiates_fromCSV_noSpirals()
         {
             var directory = new DirectoryManager();
-            directory.CdUp(2).CdDown("CogoTests").CdDown("R2547");
+            directory.CdUp(2).CdDown("Datasets").CdDown("Cogo").CdDown("R2547");
             string testFile = directory.GetPathAndAppendFilename("ACC_REV.csv");
 
             HorizontalAlignment AccRev = HorizontalAlignment.createFromCsvFile(testFile);
@@ -1132,7 +1132,7 @@ namespace Unit_Tests
         public void Type2Spiral_instantiatesCorrectly_fromCSV()
         {
             var directory = new DirectoryManager();
-            directory.CdUp(2).CdDown("CogoTests");
+            directory.CdUp(2).CdDown("Datasets").CdDown("Cogo");
             //string testFile = directory.GetPathAndAppendFilename("R2100_L1.CogoDN.csv");
             string testFile = directory.GetPathAndAppendFilename("R2100_L1_workingPart.CogoDN.csv");
 
@@ -1147,7 +1147,7 @@ namespace Unit_Tests
         public void HorizontalAlignment_instantiates_fromCSV_withSpirals()
         {
             var directory = new DirectoryManager();
-            directory.CdUp(2).CdDown("CogoTests");
+            directory.CdUp(2).CdDown("Datasets").CdDown("Cogo");
             //string testFile = directory.GetPathAndAppendFilename("R2100_L1.CogoDN.csv");
             string testFile = directory.GetPathAndAppendFilename("R2100_L1_workingPart.CogoDN.csv");
 
@@ -1334,7 +1334,7 @@ namespace Unit_Tests
         public void HorizontalAlignment_instantiates_fromCSV_withType1SpiralOnly()
         {
             var directory = new DirectoryManager();
-            directory.CdUp(2).CdDown("CogoTests");
+            directory.CdUp(2).CdDown("Datasets").CdDown("Cogo");
             string testFile = directory.GetPathAndAppendFilename("R2100_L1part.CogoDN.csv");
 
             HorizontalAlignment L1 = HorizontalAlignment.createFromCsvFile(testFile);
@@ -1379,7 +1379,7 @@ namespace Unit_Tests
         public void HorizontalAlignment_fromCSV_stationOffsets_mapCorrectly()
         {
             var directory = new DirectoryManager();
-            directory.CdUp(2).CdDown("CogoTests").CdDown("R2547");
+            directory.CdUp(2).CdDown("Datasets").CdDown("Cogo").CdDown("R2547");
             string testFile = directory.GetPathAndAppendFilename("Y15A.csv");
 
             HorizontalAlignment Y15A = HorizontalAlignment.createFromCsvFile(testFile);
@@ -1477,7 +1477,7 @@ namespace Unit_Tests
         public void HorizontalAlignments_fromDXF_LoadCorrectly()
         {
             var directory = new DirectoryManager();
-            directory.CdUp(2).CdDown("CogoTests");
+            directory.CdUp(2).CdDown("Datasets").CdDown("Cogo");
             string testFile = directory.GetPathAndAppendFilename("SmallLidar_StreamAlignment.dxf");
 
             IList<HorizontalAlignment> PerryCreekAlignments =
