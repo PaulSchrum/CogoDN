@@ -301,7 +301,13 @@ namespace Surfaces.TIN
 
         internal string IndicesToWavefrontString()
         {
-            return $"f {this.point1.myIndex + 1} {this.point2.myIndex + 1} {this.point3.myIndex + 1}";
+            int p2Idx, p3Idx;
+            if(this.normalVec.z > 0.0)
+            { p2Idx = this.point2.myIndex + 1; p3Idx = this.point3.myIndex + 1; }
+            else
+            { p2Idx = this.point3.myIndex + 1; p3Idx = this.point2.myIndex + 1; }
+
+                return $"f {this.point1.myIndex + 1} {p2Idx} {p3Idx}";
         }
     }
 
