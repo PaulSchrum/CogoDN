@@ -65,9 +65,11 @@ namespace MIConvexHull
             double PlaneDistanceTolerance)// = Constants.DefaultPlaneDistanceTolerance)
         {
             if(data == null) throw new ArgumentNullException("data");
-            if(data.Count == 0) return new DelaunayTriangulation<TVertex, TCell> { Cells = new TCell[0] };
+            if(data.Count == 0) 
+                return new DelaunayTriangulation<TVertex, TCell> { Cells = new TCell[0] };
 
-            var cells = ConvexHullAlgorithm.GetDelaunayTriangulation<TVertex, TCell>(data, PlaneDistanceTolerance);
+            var cells = ConvexHullAlgorithm.GetDelaunayTriangulation<TVertex, TCell>
+                (data, PlaneDistanceTolerance);
 
             return new DelaunayTriangulation<TVertex, TCell> { Cells = cells };
         }
