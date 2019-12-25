@@ -11,6 +11,7 @@ namespace Surfaces.TIN
     /// <remarks>Class only works with indices. Calling code must have the
     /// point list and the triangle list that are being indexed into.
     /// </remarks>
+    [Serializable]
     public class TINtriangleLine
     {
         public TINpoint firstPoint { get; set; }

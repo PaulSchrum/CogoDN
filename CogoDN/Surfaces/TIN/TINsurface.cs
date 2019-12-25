@@ -29,7 +29,14 @@ namespace Surfaces.TIN
             = new Dictionary<Tuple<int, int>, TINtriangleLine>();
         private List<TINtriangle> allTriangles;
         private BoundingBox myBoundingBox;
-        private LasFile lasFile { get; set; } = null;
+
+        [NonSerialized]
+        private LasFile lasfile_ = null;
+        private LasFile lasFile 
+        { 
+            get { return lasfile_; }
+            set { lasfile_ = value; } 
+        }
         public int TriangleCount
         {
             get { return ValidTriangles.Count(); }
@@ -39,13 +46,13 @@ namespace Surfaces.TIN
             get { return this.allTriangles.Where(t => t.IsValid); }
         }
 
-        private DTMstatistics statistics_ = null;
-        public DTMstatistics Statistics
+        private TINstatistics statistics_ = null;
+        public TINstatistics Statistics
         {
             get
             {
                 if (null == this.statistics_)
-                    this.statistics_ = new DTMstatistics(this);
+                    this.statistics_ = new TINstatistics(this);
                 return this.statistics_;
             }
         }
@@ -172,7 +179,7 @@ namespace Surfaces.TIN
         [NonSerialized]
         static Stopwatch LoadTimeStopwatch = new Stopwatch();
         [NonSerialized]
-        public static readonly String StandardExtension = ".ptsTin";
+        public static readonly String StandardExtension = ".TinDN";
 
         private void LoadTINfromVRML(string fileName)
         {
@@ -798,6 +805,9 @@ namespace Surfaces.TIN
             }
         }
 
+        internal IReadOnlyCollection<TINtriangle> TrianglesReadOnly
+        { get { return (IReadOnlyCollection<TINtriangle>)this.ValidTriangles.ToList(); } }
+
         public void testGetTriangles(TINpoint aPoint)
         {
 
@@ -943,6 +953,8 @@ namespace Surfaces.TIN
                (Double)LoadTimeStopwatch.ElapsedMilliseconds / 1000.0));
             return returnString.ToString();
         }
+
+        
     }
 
     internal static class GridDTMhelper
@@ -1046,10 +1058,11 @@ namespace Surfaces.TIN
         }
     }
 
-    public class DTMstatistics
+    [Serializable]
+    public class TINstatistics
     {
 
-        public DTMstatistics(TINsurface dtm)
+        public TINstatistics(TINsurface dtm)
         {
             PointCount = dtm.allPoints.Count;
 

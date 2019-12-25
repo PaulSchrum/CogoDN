@@ -7,6 +7,7 @@ using Cogo;
 
 namespace Surfaces.TIN
 {
+    [Serializable]
     internal class TINtriangle : IComparable
     {
         // temporary scratch pad members -- do not serialize

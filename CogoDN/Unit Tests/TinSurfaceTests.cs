@@ -248,5 +248,44 @@ namespace Unit_Tests
 
         }
 
+        [TestMethod]
+        public void TinFromLidar_saveRead_hasSameValues()
+        {
+            var subDir = "temp";
+            var outfile = "testTin.TinDN";
+            var directory = new DirectoryManager();
+            directory.CdUp(2).CdDown("Datasets").CdDown("Surfaces").CdDown("Lidar");
+            var fileName = directory.GetPathAndAppendFilename("Raleigh WRAL Soccer.las");
+            var tinFromLidar = TINsurface.CreateFromLAS(fileName);
+            Assert.IsNotNull(tinFromLidar);
+            try
+            {
+                directory.CdDown(subDir, createIfNeeded: true);
+                directory.EnsureExists();
+                outfile = directory.GetPathAndAppendFilename(outfile);
+                tinFromLidar.saveAsBinary(outfile);
+                if (!directory.ConfirmExists(outfile))
+                    throw new IOException("Tin model binary file was not created.");
+
+                var tinFromSavedFile = TINsurface.loadTinFromBinary(outfile);
+                Assert.IsNotNull(tinFromSavedFile);
+
+                Assert.AreEqual(
+                    expected: tinFromLidar.allPoints.Count,
+                    actual: tinFromSavedFile.allPoints.Count);
+                Assert.AreEqual(
+                    expected: tinFromLidar.TrianglesReadOnly.Count,
+                    actual: tinFromSavedFile.TrianglesReadOnly.Count);
+            }
+            catch(Exception e)
+            {
+                throw e;
+            }
+            finally
+            {
+                directory.ForceRemove(subDir);
+            }
+        }
+
     }
 }
