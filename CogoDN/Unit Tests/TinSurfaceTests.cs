@@ -276,6 +276,14 @@ namespace Unit_Tests
                 Assert.AreEqual(
                     expected: tinFromLidar.TrianglesReadOnly.Count,
                     actual: tinFromSavedFile.TrianglesReadOnly.Count);
+
+                var centerPt = tinFromLidar.BoundingBox.Center;
+                var x = centerPt.x + 0.25;
+                var y = centerPt.y - 0.45;
+                var testPointFromLidar = tinFromLidar.getElevationSlopeAzimuth(x, y);
+                var testPointFromSavedFile = tinFromSavedFile.getElevationSlopeAzimuth(x, y);
+
+                Assert.IsTrue(testPointFromLidar.Equals(testPointFromSavedFile));
             }
             catch(Exception e)
             {
