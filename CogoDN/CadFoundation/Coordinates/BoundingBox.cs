@@ -21,6 +21,17 @@ namespace CadFoundation.Coordinates
             upperRightPt = new Point(URx, URy, URz);
         }
 
+        /// <summary>
+        /// Returns a duplicate of the bounding box.
+        /// </summary>
+        /// <returns>BoundingBox</returns>
+        public BoundingBox Duplicate()
+        {
+            var returnVal = new BoundingBox(this.lowerLeftPt.x, this.lowerLeftPt.y, 
+                this.upperRightPt.x, this.upperRightPt.y);
+            return returnVal;
+        }
+
         public BoundingBox(Point aPoint)
         {
             lowerLeftPt = new Point(aPoint);
