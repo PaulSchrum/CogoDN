@@ -524,7 +524,7 @@ namespace Surfaces.TIN
             {
                 String ext = Path.GetExtension(fileName);
                 if (ext.Equals(StandardExtension, StringComparison.OrdinalIgnoreCase))
-                    returnTin = loadTinFromBinary(fileName);
+                    returnTin = LoadFromBinary(fileName);
                 else
                     returnTin.LoadTextFile(fileName);
             }
@@ -699,7 +699,7 @@ namespace Surfaces.TIN
 
 //        }
 
-        public void saveAsBinary(string filenameToSaveTo)
+        public void SaveAsBinary(string filenameToSaveTo)
         {
             if (!Path.GetExtension(filenameToSaveTo).
                Equals(StandardExtension, StringComparison.OrdinalIgnoreCase))
@@ -717,7 +717,7 @@ namespace Surfaces.TIN
             }
         }
 
-        static public TINsurface loadTinFromBinary(string filenameToLoad)
+        static public TINsurface LoadFromBinary(string filenameToLoad)
         {
             BinaryFormatter binFrmtr = new BinaryFormatter();
             using

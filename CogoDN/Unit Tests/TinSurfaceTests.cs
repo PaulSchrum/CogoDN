@@ -262,11 +262,11 @@ namespace Unit_Tests
                 directory.CdDown(subDir, createIfNeeded: true);
                 directory.EnsureExists();
                 outfile = directory.GetPathAndAppendFilename(outfile);
-                tinFromLidar.saveAsBinary(outfile);
+                tinFromLidar.SaveAsBinary(outfile);
                 if (!directory.ConfirmExists(outfile))
                     throw new IOException("Tin model binary file was not created.");
 
-                var tinFromSavedFile = TINsurface.loadTinFromBinary(outfile);
+                var tinFromSavedFile = TINsurface.LoadFromBinary(outfile);
                 Assert.IsNotNull(tinFromSavedFile);
 
                 Assert.AreEqual(
