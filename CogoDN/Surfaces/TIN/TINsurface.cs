@@ -16,6 +16,9 @@ using System.Xml;
 using CadFound = CadFoundation.Coordinates;
 
 using System.Runtime.CompilerServices;
+using Cogo.Utils;
+using CadFoundation;
+
 [assembly: InternalsVisibleTo("Unit Tests")]
 
 namespace Surfaces.TIN
@@ -29,6 +32,10 @@ namespace Surfaces.TIN
             = new Dictionary<Tuple<int, int>, TINtriangleLine>();
         private List<TINtriangle> allTriangles;
         private BoundingBox myBoundingBox;
+        public BoundingBox BoundingBox
+        {
+            get { return myBoundingBox.Duplicate(); }
+        }
 
         [NonSerialized]
         private LasFile lasfile_ = null;
@@ -906,6 +913,11 @@ namespace Surfaces.TIN
 
         }
 
+        public PointSlopeAspect getElevationSlopeAzimuth(double x, double y)
+        {
+            return getElevationSlopeAzimuth(new TINpoint(x, y));
+        }
+
         public PointSlopeAspect getElevationSlopeAzimuth(TINpoint aPoint)
         {
             return new PointSlopeAspect(
@@ -1055,6 +1067,17 @@ namespace Surfaces.TIN
             if (diff > tolerance || diff < ntolerance)
                 throw new Exception("Aspect values differ.");
 
+        }
+
+        public bool Equals(PointSlopeAspect other)
+        {
+            bool status = true;
+            status &= this.Aspect == other.Aspect;
+            status &= this.Slope == other.Slope;
+            status &= this.Point.z.tolerantEquals(other.Point.z, 0.001);
+            status &= this.Point.x.tolerantEquals(other.Point.x, 0.001);
+            status &= this.Point.y.tolerantEquals(other.Point.y, 0.001);
+            return status;
         }
     }
 
