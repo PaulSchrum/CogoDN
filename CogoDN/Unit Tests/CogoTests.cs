@@ -1606,6 +1606,13 @@ namespace Unit_Tests
             }
         }
 
+        public DirectoryManager Clone()
+        {
+            var returnValue = new DirectoryManager();
+            returnValue.path = this.path;
+            return returnValue;
+        }
+
         public DirectoryManager CdUp(int upSteps)
         {
             if (upSteps > this.depth) throw new IOException("Can't cd up that high.");
@@ -1614,17 +1621,39 @@ namespace Unit_Tests
             return this;
         }
 
-        public DirectoryManager CdDown(string directoryName)
+        public DirectoryManager CdDown(string directoryName, bool createIfNeeded=false)
         {
-            if (!this.SubDirectories.Contains(directoryName))
-                throw new DirectoryNotFoundException();
+            bool needToCreate = false;
+            if (!this.ListSubDirectories.Contains(directoryName))
+            {
+                if (!createIfNeeded)
+                    throw new DirectoryNotFoundException();
+                else
+                    needToCreate = true;
+            }
+            if(needToCreate)
+                System.IO.Directory.CreateDirectory(this.path + "\\" + directoryName);
             var tempList = this.pathAsList;
             tempList.Add(directoryName);
             this.setPathFromList(tempList);
             return this;
         }
 
-        public List<string> SubDirectories
+        /// <summary>
+        /// Looks inside current directory and returns true if the item exists.
+        /// False otherwise. It does not alter the directory. It just looks.
+        /// </summary>
+        /// <param name="subElement">Name of subdirectory or file to inquire about</param>
+        /// <returns>True if the subElement exists. False otherwise.</returns>
+        public bool ConfirmExists(string subElement)
+        {
+            var itemName = subElement.Split("\\").LastOrDefault();
+            if (ListFiles().Contains(itemName))
+                return true;
+            return this.ListSubDirectories.Contains(itemName);
+        }
+
+        public IReadOnlyList<string> ListSubDirectories
         {
             get
             {
@@ -1640,10 +1669,39 @@ namespace Unit_Tests
             return this.path;
         }
 
-        internal void EnsureExists()
+        public void EnsureExists()
         {
             if (!Directory.Exists(this.path))
                 Directory.CreateDirectory(this.path);
+        }
+
+        public IReadOnlyList<string> ListFiles()
+        {
+            return (IReadOnlyList<string>)Directory.GetFiles(this.path)
+                .Select(fn => Path.GetFileName(fn))
+                .ToList();
+        }
+
+        /// <summary>
+        /// Warning: This method removes the current directory and everything under it
+        /// without asking. Use with caution.
+        /// </summary>
+        /// <param name="subDir"></param>
+        internal void ForceRemove(string subDir)
+        {
+            //throw new NotImplementedException("Okay, really just not tested. So test it.");
+            var target = this.Clone();
+
+            foreach(var fileName in target.ListFiles())
+            {
+                var fullName = target.GetPathAndAppendFilename(fileName);
+                System.IO.File.Delete(fullName);
+            }
+
+            foreach (var dirName in target.ListSubDirectories)
+                target.ForceRemove(dirName);
+
+            System.IO.Directory.Delete(target.ToString());
         }
     }
 
