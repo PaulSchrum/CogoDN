@@ -220,7 +220,6 @@ namespace Unit_Tests
             {
                 setupDatasetFileNames();
                 this.aTin = TINsurface.CreateFromLAS(lidarFileName);
-                this.aTin.pruneTinHull();
             }
         }
 

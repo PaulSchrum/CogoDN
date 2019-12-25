@@ -157,6 +157,7 @@ namespace Surfaces.TIN
                 returnObject.allTriangles.Add(new TINtriangle(
                     returnObject.allPoints, point1, point2, point3));
             }
+            returnObject.pruneTinHull();
 
             return returnObject;
         }
