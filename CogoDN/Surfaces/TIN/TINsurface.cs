@@ -18,6 +18,7 @@ using CadFound = CadFoundation.Coordinates;
 using System.Runtime.CompilerServices;
 using Cogo.Utils;
 using CadFoundation;
+using System.IO.Compression;
 
 [assembly: InternalsVisibleTo("Unit Tests")]
 
@@ -524,7 +525,7 @@ namespace Surfaces.TIN
             {
                 String ext = Path.GetExtension(fileName);
                 if (ext.Equals(StandardExtension, StringComparison.OrdinalIgnoreCase))
-                    returnTin = LoadFromBinary(fileName);
+                    returnTin = loadFromBinary(fileName);
                 else
                     returnTin.LoadTextFile(fileName);
             }
@@ -699,7 +700,12 @@ namespace Surfaces.TIN
 
 //        }
 
-        public void SaveAsBinary(string filenameToSaveTo)
+        /// <summary>
+        /// Saves a tin model object to a file.
+        /// </summary>
+        /// <param name="filenameToSaveTo">Full path to save the file to. .tinDN extension is required.</param>
+        /// <param name="compress">Defaul true. If true, the file is compressed while saving.</param>
+        public void saveAsBinary(string filenameToSaveTo, bool compress=true)
         {
             if (!Path.GetExtension(filenameToSaveTo).
                Equals(StandardExtension, StringComparison.OrdinalIgnoreCase))
@@ -708,22 +714,65 @@ namespace Surfaces.TIN
                  String.Format("Filename does not have extension: {0}.", StandardExtension));
             }
 
+            var tempFname = filenameToSaveTo + "data";
+            if (!compress)
+                tempFname = filenameToSaveTo;
+
             BinaryFormatter binFrmtr = new BinaryFormatter();
-            using
-            (Stream fstream =
-               new FileStream(filenameToSaveTo, FileMode.Create, FileAccess.Write, FileShare.None))
+            using (Stream fstream =
+               new FileStream(tempFname, FileMode.Create, FileAccess.ReadWrite, FileShare.Read))
             {
                 binFrmtr.Serialize(fstream, this);
+                fstream.Flush();
             }
+            if (!compress)
+                return;
+
+            var zipFile = filenameToSaveTo + ".zip";
+            using (FileStream zipToOpen = new FileStream(zipFile, FileMode.Create))
+            {
+                using (ZipArchive archive = new ZipArchive(zipToOpen, ZipArchiveMode.Create))
+                {
+                    ZipArchiveEntry tinFile = archive.CreateEntryFromFile(tempFname,
+                        System.IO.Path.GetFileName(tempFname));
+                }
+            }
+
+            System.IO.File.Delete(tempFname);
+            System.IO.File.Move(zipFile, filenameToSaveTo);
         }
 
-        static public TINsurface LoadFromBinary(string filenameToLoad)
+        static public TINsurface loadFromBinary(string filenameToLoad)
         {
-            BinaryFormatter binFrmtr = new BinaryFormatter();
-            using
-            (Stream fstream = File.OpenRead(filenameToLoad))
+
+            var fnameToLoad = filenameToLoad;
+            try
             {
-                TINsurface aDTM = new TINsurface();
+                using(ZipArchive arch = ZipFile.OpenRead(filenameToLoad))
+                {
+                    var entry = arch.Entries.FirstOrDefault();
+                    var fname = entry.FullName;
+                    var path = System.IO.Path.GetDirectoryName(filenameToLoad);
+                    if (!path.EndsWith(Path.DirectorySeparatorChar.ToString(), 
+                        StringComparison.Ordinal))
+                        path += Path.DirectorySeparatorChar;
+                    fnameToLoad = path + fname;
+                    entry.ExtractToFile(fnameToLoad);
+                }
+            }
+            catch(Exception e)
+            {
+                if(!(e.Message == "End of Central Directory record could not be found."))
+                    throw e;
+                fnameToLoad = filenameToLoad;
+            }
+
+            BinaryFormatter binFrmtr = new BinaryFormatter();
+            TINsurface aDTM = null;
+            using
+            (Stream fstream = File.OpenRead(fnameToLoad))
+            {
+                aDTM = new TINsurface();
                 LoadTimeStopwatch = new Stopwatch();
                 LoadTimeStopwatch.Start();
                 try
@@ -743,9 +792,12 @@ namespace Surfaces.TIN
                 Parallel.ForEach(aDTM.allTriangles
                    , new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }
                    , tri => tri.computeBoundingBox());
-                return aDTM;
+
             }
-            //return null;
+            if (!(fnameToLoad == filenameToLoad))
+                System.IO.File.Delete(fnameToLoad);
+
+            return aDTM;
         }
 
         private void setupStopWatches()

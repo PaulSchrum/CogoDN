@@ -262,29 +262,26 @@ namespace Unit_Tests
                 directory.CdDown(subDir, createIfNeeded: true);
                 directory.EnsureExists();
                 outfile = directory.GetPathAndAppendFilename(outfile);
-                tinFromLidar.SaveAsBinary(outfile);
+                tinFromLidar.saveAsBinary(outfile, compress: false);
                 if (!directory.ConfirmExists(outfile))
                     throw new IOException("Tin model binary file was not created.");
 
-                var tinFromSavedFile = TINsurface.LoadFromBinary(outfile);
+                var tinFromSavedFile = TINsurface.loadFromBinary(outfile);
                 Assert.IsNotNull(tinFromSavedFile);
+                assessTwoTinsForEquivalence(tinFromLidar, tinFromSavedFile);
+                System.IO.File.Delete(outfile);
 
-                Assert.AreEqual(
-                    expected: tinFromLidar.allPoints.Count,
-                    actual: tinFromSavedFile.allPoints.Count);
-                Assert.AreEqual(
-                    expected: tinFromLidar.TrianglesReadOnly.Count,
-                    actual: tinFromSavedFile.TrianglesReadOnly.Count);
+                tinFromLidar.saveAsBinary(outfile, compress: true);
+                if (!directory.ConfirmExists(outfile))
+                    throw new IOException("Tin model binary file was not created.");
 
-                var centerPt = tinFromLidar.BoundingBox.Center;
-                var x = centerPt.x + 0.25;
-                var y = centerPt.y - 0.45;
-                var testPointFromLidar = tinFromLidar.getElevationSlopeAzimuth(x, y);
-                var testPointFromSavedFile = tinFromSavedFile.getElevationSlopeAzimuth(x, y);
+                tinFromSavedFile = TINsurface.loadFromBinary(outfile);
+                Assert.IsNotNull(tinFromSavedFile);
+                assessTwoTinsForEquivalence(tinFromLidar, tinFromSavedFile);
 
-                Assert.IsTrue(testPointFromLidar.Equals(testPointFromSavedFile));
+
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 throw e;
             }
@@ -292,6 +289,24 @@ namespace Unit_Tests
             {
                 directory.ForceRemove(subDir);
             }
+        }
+
+        private void assessTwoTinsForEquivalence(TINsurface tinFromLidar, TINsurface tinFromSavedFile)
+        {
+            Assert.AreEqual(
+                    expected: tinFromLidar.allPoints.Count,
+                    actual: tinFromSavedFile.allPoints.Count);
+            Assert.AreEqual(
+                expected: tinFromLidar.TrianglesReadOnly.Count,
+                actual: tinFromSavedFile.TrianglesReadOnly.Count);
+
+            var centerPt = tinFromLidar.BoundingBox.Center;
+            var x = centerPt.x + 0.25;
+            var y = centerPt.y - 0.45;
+            var testPointFromLidar = tinFromLidar.getElevationSlopeAzimuth(x, y);
+            var testPointFromSavedFile = tinFromSavedFile.getElevationSlopeAzimuth(x, y);
+
+            Assert.IsTrue(testPointFromLidar.Equals(testPointFromSavedFile));
         }
 
     }
