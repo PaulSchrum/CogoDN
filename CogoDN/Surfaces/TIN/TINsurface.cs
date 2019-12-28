@@ -1169,8 +1169,21 @@ namespace Surfaces.TIN
             sortedInZ = null;
             AverageZ = dtm.allPoints.Average(pt => pt.z);
 
-            var lines = dtm.ValidLines;
-            LineCount = lines.Count;
+            LineCount = dtm.ValidLines.Count;
+            //var lines = dtm.ValidLines.OrderBy(line => line.Length2d).ToList();
+            var lines = dtm.ValidLines.Where(line => line.Length2d > 0.00001 && line.Length2d < 0.99).ToList();
+            ShortestLinePlane = lines.First().Length2d;
+            LongestLinePlane = lines.Last().Length2d;
+            var enumer = lines.GetEnumerator();
+            for (int i = 0; i < LineCount / 2; i++)
+                enumer.MoveNext();
+            MedianLinePlane = enumer.Current.Length2d;
+
+
+            var tris = dtm.ValidTriangles;
+            TriangleCount = tris.Count();
+
+            PlanarArea = dtm.BoundingBox.Area;
 
             // To do: Everything else
 
@@ -1204,6 +1217,7 @@ namespace Surfaces.TIN
         public double LongestLine3d { get; set; }
         public double AverageLine3d { get; set; }
         public double MedianLine3d { get; set; }
+        public int TriangleCount { get; set; }
         public double SmallestTriangleAreaPlane { get; set; }
         public double LargestTriangleAreaPlane { get; set; }
         public double AverageTriangleAreaPlane { get; set; }
@@ -1217,6 +1231,9 @@ namespace Surfaces.TIN
         public double AverageTriangleSlopeWeighted { get; set; }
         public double MedianTriangleSlope { get; set; }
         public Vector AverageTriangleAspectWeighted { get; set; }
+
+        public double PlanarArea { get; set; }
+        public double PointsPerSquareUnit { get { return PointCount / PlanarArea; } }
 
         protected double Median(IEnumerable<double> values)
         {
@@ -1236,7 +1253,24 @@ namespace Surfaces.TIN
         public override string ToString()
         {
             // To Do:
-            return "ToString() not yet implemented.";
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine($"Points: {PointCount}");
+            sb.AppendLine($"Width (in x): {WidthX:F2}    Depth (in y): {WidthY:F2}   EL: {HeightZ:F2}");
+
+            sb.AppendLine();
+            sb.AppendLine($"Lines: {LineCount}");
+            sb.AppendLine($"Planar Lengths: Min: {ShortestLinePlane}  Median: {MedianLinePlane:F2}   Max: {LongestLinePlane:F2}");
+
+            sb.AppendLine();
+            sb.AppendLine($"Triangles: {TriangleCount}");
+            sb.AppendLine($"Planar Areas: Min: ?   Median: ?   Max: ?");
+
+            sb.AppendLine();
+            sb.AppendLine($"Bounding Box: {PlanarArea}");
+            sb.AppendLine($"Points per Square Unit: {PointsPerSquareUnit}");
+            sb.AppendLine($"Square Units per Point: {1.0 / PointsPerSquareUnit}");
+
+            return sb.ToString();
         }
     }
 
