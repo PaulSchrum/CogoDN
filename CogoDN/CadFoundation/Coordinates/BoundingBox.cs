@@ -102,6 +102,10 @@ namespace CadFoundation.Coordinates
             }
         }
 
+        public double Width { get { return this.upperRightPt.x - this.lowerLeftPt.x; } }
+        public double Depth { get { return this.upperRightPt.y - this.lowerLeftPt.y; } }
+        public double Area { get { return this.Width * this.Depth; } }
+
         public bool isPointInsideBB2d(Double x, Double y)
         {
             if (x < lowerLeftPt.x)
