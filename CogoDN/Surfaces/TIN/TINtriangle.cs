@@ -118,7 +118,15 @@ namespace Surfaces.TIN
             normalVec_ = null;
         }
 
-        public TINtriangle(List<TINpoint> pointList, int ptIndex1,
+        public static TINtriangle CreateTriangle(List<TINpoint> pointList, int ptIndex1,
+           int ptIndex2, int ptIndex3)
+        {
+            if (ptIndex1 == ptIndex2 || ptIndex2 == ptIndex3 || ptIndex3 == ptIndex1)
+                return null;
+            return new TINtriangle(pointList, ptIndex1, ptIndex2, ptIndex3);
+        }
+
+        private TINtriangle(List<TINpoint> pointList, int ptIndex1,
            int ptIndex2, int ptIndex3)
         {
             point1 = pointList[ptIndex1];
@@ -330,4 +338,5 @@ namespace Surfaces.TIN
             return norm;
         }
     }
+
 }

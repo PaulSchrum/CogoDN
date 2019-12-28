@@ -256,6 +256,7 @@ namespace Unit_Tests
             directory.CdUp(2).CdDown("Datasets").CdDown("Surfaces").CdDown("Lidar");
             var fileName = directory.GetPathAndAppendFilename("Raleigh WRAL Soccer.las");
             var tinFromLidar = TINsurface.CreateFromLAS(fileName);
+            var stats = tinFromLidar.Statistics;
             Assert.IsNotNull(tinFromLidar);
             try
             {
@@ -278,7 +279,6 @@ namespace Unit_Tests
                 tinFromSavedFile = TINsurface.loadFromBinary(outfile);
                 Assert.IsNotNull(tinFromSavedFile);
                 assessTwoTinsForEquivalence(tinFromLidar, tinFromSavedFile);
-
 
             }
             catch (Exception e)

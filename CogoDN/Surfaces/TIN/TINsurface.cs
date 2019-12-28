@@ -155,8 +155,10 @@ namespace Surfaces.TIN
                 var point1 = gridIndexer[vTriangle.Vertices[0].GridCoordinates];
                 var point2 = gridIndexer[vTriangle.Vertices[1].GridCoordinates];
                 var point3 = gridIndexer[vTriangle.Vertices[2].GridCoordinates];
-                returnObject.allTriangles.Add(new TINtriangle(
-                    returnObject.allPoints, point1, point2, point3));
+                var newTriangle = TINtriangle.CreateTriangle(
+                    returnObject.allPoints, point1, point2, point3);
+                if(!(newTriangle is null))
+                    returnObject.allTriangles.Add(newTriangle);
             }
             returnObject.pruneTinHull();
 
@@ -484,7 +486,7 @@ namespace Surfaces.TIN
             ptIndex1 = Convert.ToInt32(parsed[0 + correction]);
             ptIndex2 = Convert.ToInt32(parsed[1 + correction]);
             ptIndex3 = Convert.ToInt32(parsed[2 + correction]);
-            TINtriangle triangle = new TINtriangle(allPoints, ptIndex1, ptIndex2, ptIndex3);
+            TINtriangle triangle = TINtriangle.CreateTriangle(allPoints, ptIndex1, ptIndex2, ptIndex3);
             return triangle;
         }
 
@@ -1171,13 +1173,11 @@ namespace Surfaces.TIN
 
             LineCount = dtm.ValidLines.Count;
             //var lines = dtm.ValidLines.OrderBy(line => line.Length2d).ToList();
-            var lines = dtm.ValidLines.Where(line => line.Length2d > 0.00001 && line.Length2d < 0.99).ToList();
+            var lines = dtm.ValidLines.OrderBy(line => line.Length2d).ToList();
             ShortestLinePlane = lines.First().Length2d;
             LongestLinePlane = lines.Last().Length2d;
-            var enumer = lines.GetEnumerator();
-            for (int i = 0; i < LineCount / 2; i++)
-                enumer.MoveNext();
-            MedianLinePlane = enumer.Current.Length2d;
+            MedianLinePlane = lines[LineCount / 2].Length2d;
+            var zeroLines = lines.Where(line => line.Length2d == 0.0);
 
 
             var tris = dtm.ValidTriangles;
