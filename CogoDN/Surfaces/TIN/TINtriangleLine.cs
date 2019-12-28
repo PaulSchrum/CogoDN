@@ -105,6 +105,14 @@ namespace Surfaces.TIN
             }
         }
 
+        public double Length2d
+        {
+            get 
+            {
+                return (BoundingBox.upperRightPt - BoundingBox.lowerLeftPt).flattenZnew().Length; 
+            }
+        }
+
         internal static triangleLineComparer compr = new triangleLineComparer();
     }
 
