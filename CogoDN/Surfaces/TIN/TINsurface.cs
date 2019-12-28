@@ -1177,7 +1177,7 @@ namespace Surfaces.TIN
             ShortestLinePlane = lines.First().Length2d;
             LongestLinePlane = lines.Last().Length2d;
             MedianLinePlane = lines[LineCount / 2].Length2d;
-            var zeroLines = lines.Where(line => line.Length2d == 0.0);
+            lines = null;
 
 
             var tris = dtm.ValidTriangles;
