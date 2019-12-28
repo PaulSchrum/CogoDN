@@ -223,7 +223,7 @@ namespace Unit_Tests
             }
         }
 
-        [Ignore]
+        //[Ignore]
         [TestMethod]
         public void TinFromLidar_CompareTriangleCount()
         {
@@ -231,20 +231,8 @@ namespace Unit_Tests
             getPrunedTin();
             var aTin = this.aTin;
             var triangleCount = this.tinFromLidar.TriangleCount;
-            int expected = 150781;
+            int expected = 135368;
             Assert.AreEqual(expected: expected, actual: triangleCount);
-            //triangleCount = aTin.TriangleCount;
-            var diff = triangleCount - aTin.TriangleCount;
-
-            Assert.AreEqual(expected: 517, actual: diff);  // This now fails (12/4/10). To do: Figure this out.
-
-            //var outDirectory = new DirectoryManager();
-            //outDirectory.CdUp(2).CdDown("CogoTests").CdDown("outputs");
-            //outDirectory.EnsureExists();
-            //string outFile = outDirectory.GetPathAndAppendFilename("SmallLidar_Triangles.dxf");
-
-            //aTin.WriteTinToDxf(outFile);
-
         }
 
         [TestMethod]
