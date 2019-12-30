@@ -35,7 +35,7 @@ namespace TinConsole
 
             var tinModel = TINsurface.CreateFromLAS(args[0],
                 skipPoints: 8,
-                classificationFilter: new List<int> { 2, 13 });  // Add 6 to get roofs.
+                classificationFilter: new List<int> { 2, 6, 13 });  // Add 6 to get roofs.
             var pointCount = tinModel.allPoints.Count;
             var triangleCount = tinModel.TriangleCount;
             Console.Write($"Successfully loaded tin Model: {pointCount} points and ");
@@ -61,11 +61,8 @@ namespace TinConsole
         private static List<string> parseLine(string str)
         {
             List<string> s = new List<string>();
-            var parse1 = str.Split("\"");
-            foreach(var x in parse1)
-            {
-                s.Add(x);
-            }
+            foreach (var item in str.Split(" "))
+                s.Add(item);
             return s;
         }
 
@@ -77,6 +74,7 @@ namespace TinConsole
                 ["quit"] = ls => System.Environment.Exit(0),
                 ["load"] = ls => surface = TINsurface.CreateFromLAS(ls[1]),
                 ["summarize"] = ls => summarize(ls),
+                ["reload"] = ls => reload(ls),
             };
 
             Action<List<String>> command = null;
@@ -90,6 +88,7 @@ namespace TinConsole
                 }
                 catch(KeyNotFoundException knfe)
                 {
+                    System.Console.WriteLine("command not found");
                     continue;
                 }
                 command(commandLine);
@@ -105,6 +104,16 @@ namespace TinConsole
             }
             System.Console.WriteLine("Summarizing ...");
             System.Console.Write(surface.Statistics.ToString());
+        }
+
+        private static void reload(List<string> commandItems)
+        {
+            surface = null;
+            GC.Collect();
+            var skipPoints = 0;
+            if (commandItems.Count > 1)
+                skipPoints = Convert.ToInt32(commandItems[1]);
+            surface = TINsurface.CreateFromLAS(hcSource, skipPoints: skipPoints);
         }
 
     }
