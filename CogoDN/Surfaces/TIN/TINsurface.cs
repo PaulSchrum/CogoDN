@@ -1172,7 +1172,6 @@ namespace Surfaces.TIN
             AverageZ = dtm.allPoints.Average(pt => pt.z);
 
             LineCount = dtm.ValidLines.Count;
-            //var lines = dtm.ValidLines.OrderBy(line => line.Length2d).ToList();
             var lines = dtm.ValidLines.OrderBy(line => line.Length2d).ToList();
             ShortestLinePlane = lines.First().Length2d;
             LongestLinePlane = lines.Last().Length2d;
