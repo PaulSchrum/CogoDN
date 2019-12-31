@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Surfaces.TIN;
 
@@ -16,10 +17,10 @@ namespace TinConsole
             System.Console.WriteLine($"Source: {args[0]}");
             System.Console.WriteLine($"Source: {args[1]}");
             System.Console.WriteLine($"Source: {args[2]}");
-            bool useHardCodes = true;
+            bool useHardCodes = false;
             
 
-            if ((args.Length == 2 && args[0].ToLower() == "repl") || useHardCodes)
+            if ((args.Length > 1 && args[1].ToLower() == "repl") || useHardCodes)
             {
                 if (useHardCodes)
                 {
@@ -36,7 +37,7 @@ namespace TinConsole
             var tinModel = TINsurface.CreateFromLAS(args[0],
                 skipPoints: 8,
                 classificationFilter: new List<int> { 2, 6, 13 });  // Add 6 to get roofs.
-            var pointCount = tinModel.allPoints.Count;
+            var pointCount = tinModel.allUsedPoints.Count;
             var triangleCount = tinModel.TriangleCount;
             Console.Write($"Successfully loaded tin Model: {pointCount} points and ");
             Console.WriteLine($"{triangleCount} triangles.");
@@ -75,6 +76,7 @@ namespace TinConsole
                 ["load"] = ls => surface = TINsurface.CreateFromLAS(ls[1]),
                 ["summarize"] = ls => summarize(ls),
                 ["reload"] = ls => reload(ls),
+                ["decimate_multiple"] = ls => decimate_multiple(),
             };
 
             Action<List<String>> command = null;
@@ -88,8 +90,10 @@ namespace TinConsole
                 }
                 catch(KeyNotFoundException knfe)
                 {
-                    System.Console.WriteLine("command not found");
-                    continue;
+                    //System.Console.WriteLine("command not found");
+                    //continue;
+                    commandLine = new List<string>(){ "decimate_multiple" };
+                    command = commands[commandLine[0]];
                 }
                 command(commandLine);
             }
@@ -116,5 +120,30 @@ namespace TinConsole
             surface = TINsurface.CreateFromLAS(hcSource, skipPoints: skipPoints);
         }
 
+        static string researchOutpath = @"D:\Research\Datasets\Lidar\Tilley Creek\decimation research\simpleResults\";
+        static string summaryFile = "summary.csv";
+        public static void decimate_multiple(int start=1, int count=21, int step=1)
+        {
+
+            //foreach (var pointsToSkip in Enumerable.Range(start, count))
+            foreach (var pointsToSkip in new List<int>() { 25, 50, 75, 100, 200, 300, 400, 500, 1000})
+            {
+                if (!((pointsToSkip % step) == 0))
+                    continue;
+                decimate_single(pointsToSkip, "TestTin");
+            }
+        }
+
+        private static void decimate_single(int skipPoints, string outputBaseName)
+        {
+            string outname = outputBaseName + $"{skipPoints:D2}";
+            Console.Write($"Processing {outname}   ");
+            surface = TINsurface.CreateFromLAS(hcSource, skipPoints: skipPoints);
+            Console.Write("Created.   ");
+            surface.saveAsBinary(researchOutpath + outname + ".TinDN");
+            Console.Write("Saved.   ");
+            surface.ComputeErrorStatistics(researchOutpath + summaryFile);
+            Console.WriteLine("Stats computed, written.");
+        }
     }
 }
