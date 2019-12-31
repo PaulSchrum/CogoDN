@@ -125,8 +125,9 @@ namespace TinConsole
         public static void decimate_multiple(int start=1, int count=21, int step=1)
         {
 
+            foreach (var pointsToSkip in Enumerable.Range(1, 1))
             //foreach (var pointsToSkip in Enumerable.Range(start, count))
-            foreach (var pointsToSkip in new List<int>() { 25, 50, 75, 100, 200, 300, 400, 500, 1000})
+            //foreach (var pointsToSkip in new List<int>() { 25, 50, 75, 100, 200, 300, 400, 500, 1000})
             {
                 if (!((pointsToSkip % step) == 0))
                     continue;

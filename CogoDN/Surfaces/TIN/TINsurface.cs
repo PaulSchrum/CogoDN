@@ -185,25 +185,38 @@ namespace Surfaces.TIN
             if(!File.Exists(v))
                 System.IO.File.WriteAllText(v, "PointsSkipped,PointCount,RMSE,RMaxSE,FileSize\r\n");
 
-            randomIndices rdmIdc = new randomIndices(allUnusedPoints.Count, 10000);
+            randomIndices rdmIdc = new randomIndices(allUnusedPoints.Count, 1000);
             var squaredErrors = new ConcurrentBag<double?>();
-            Parallel.ForEach(rdmIdc.indices, idx =>
+
+
+            Console.WriteLine();
+            Console.WriteLine("Starting Elevation Sweep");
+            var sw = Stopwatch.StartNew();
+            foreach(var idx in rdmIdc.indices)
+            //Parallel.ForEach(rdmIdc.indices, idx =>
                     {
                         var pt = allUnusedPoints[idx];
                         var error = pt.z - getElevation(pt);
                         squaredErrors.Add(error * error);
-                    });
+                    }   //);
             //allUnusedPoints.Select(p => p.z - getElevation(p)).ToList();
             //var squaredErrors = allUnusedPoints.Select(p => p.z - getElevation(p)).Select(e => e * e).ToList();
             var stats = new DescriptiveStatistics(squaredErrors);
             var rootMaxSquared = Math.Sqrt(stats.Maximum);
             var rootMeanSquared = Math.Sqrt(stats.Mean);
+            sw.Stop();
+            Console.Write(sw.Elapsed);
+            var msPerQuery = (double) sw.ElapsedMilliseconds / rdmIdc.SampleCount;
+            Console.WriteLine($"   {msPerQuery} milliseconds per query.");
 
-            String outRow = $"{skippedPoints},{this.allUsedPoints.Count},{rootMeanSquared:F3},{rootMaxSquared:F2}";
-            using(StreamWriter csvFile = new StreamWriter(v, true))
-            {
-                csvFile.WriteLine(outRow);
-            }
+
+
+
+            //String outRow = $"{skippedPoints},{this.allUsedPoints.Count},{rootMeanSquared:F3},{rootMaxSquared:F2}";
+            //using(StreamWriter csvFile = new StreamWriter(v, true))
+            //{
+            //    csvFile.WriteLine(outRow);
+            //}
 
             return;
         }
@@ -1085,6 +1098,8 @@ namespace Surfaces.TIN
         public HashSet<int> indices = new HashSet<int>();
         internal randomIndices(int populationCount, int sampleCount)
         {
+            PopulationCount = populationCount;
+            SampleCount = sampleCount;
             var samples = 0;
             var rnd = new Random();
             while (true)
