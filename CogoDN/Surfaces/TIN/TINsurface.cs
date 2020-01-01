@@ -28,7 +28,7 @@ namespace Surfaces.TIN
     public class TINsurface
     {
         // Substantive members - Do serialize
-        public List<TINpoint> allPoints { get; private set; }
+        public List<TINpoint> allUsedPoints { get; private set; }
         private Dictionary<Tuple<int, int>, TINtriangleLine> allLines { get; set; }
             = new Dictionary<Tuple<int, int>, TINtriangleLine>();
         private List<TINtriangle> allTriangles;
@@ -45,6 +45,9 @@ namespace Surfaces.TIN
             get { return lasfile_; }
             set { lasfile_ = value; } 
         }
+
+        public string SourceData { get; private set; } = null;
+
         public int TriangleCount
         {
             get { return ValidTriangles.Count(); }
@@ -79,7 +82,7 @@ namespace Surfaces.TIN
 
         private static void setBoundingBox(TINsurface tin)
         {
-            var points = tin.allPoints;
+            var points = tin.allUsedPoints;
             var minX = points.Select(p => p.x).Min();
             var maxX = points.Select(p => p.x).Max();
             var minY = points.Select(p => p.y).Min();
@@ -108,6 +111,7 @@ namespace Surfaces.TIN
                 skipPoints: skipPoints,
                 classificationFilter: classificationFilter);
             TINsurface returnObject = new TINsurface();
+            returnObject.SourceData = lidarFileName;
             int pointCounter = -1;
             int runningPointCount = -1;
             int indexCount = 0;
@@ -125,11 +129,11 @@ namespace Surfaces.TIN
                         continue;
                 }
 
-                if (returnObject.allPoints == null)
+                if (returnObject.allUsedPoints == null)
                 {
                     returnObject.createAllpointsCollection();
                 }
-                returnObject.allPoints.Add(point);
+                returnObject.allUsedPoints.Add(point);
                 // Note this approach will occasionally skip over points that 
                 // are double-stamps. I am fine with that for now.
                 gridIndexer[point.GridCoordinates] = indexCount;
@@ -139,24 +143,24 @@ namespace Surfaces.TIN
             setBoundingBox(returnObject);
             lasFile.ClearAllPoints();  // Because I have them now.
 
-            for (indexCount = 0; indexCount < returnObject.allPoints.Count; indexCount++)
+            for (indexCount = 0; indexCount < returnObject.allUsedPoints.Count; indexCount++)
             {
-                var aPoint = returnObject.allPoints[indexCount];
+                var aPoint = returnObject.allUsedPoints[indexCount];
                 aPoint.myIndex = indexCount;
-                returnObject.allPoints[indexCount] = aPoint;
+                returnObject.allUsedPoints[indexCount] = aPoint;
             }
 
             var VoronoiMesh = MIConvexHull.VoronoiMesh
-                .Create<TINpoint, ConvexFaceTriangle>(returnObject.allPoints);
+                .Create<TINpoint, ConvexFaceTriangle>(returnObject.allUsedPoints);
 
-            returnObject.allTriangles = new List<TINtriangle>(2 * returnObject.allPoints.Count);
+            returnObject.allTriangles = new List<TINtriangle>(2 * returnObject.allUsedPoints.Count);
             foreach (var vTriangle in VoronoiMesh.Triangles)
             {
                 var point1 = gridIndexer[vTriangle.Vertices[0].GridCoordinates];
                 var point2 = gridIndexer[vTriangle.Vertices[1].GridCoordinates];
                 var point3 = gridIndexer[vTriangle.Vertices[2].GridCoordinates];
                 var newTriangle = TINtriangle.CreateTriangle(
-                    returnObject.allPoints, point1, point2, point3);
+                    returnObject.allUsedPoints, point1, point2, point3);
                 if(!(newTriangle is null))
                     returnObject.allTriangles.Add(newTriangle);
             }
@@ -237,12 +241,12 @@ namespace Surfaces.TIN
                     if (line.Equals("]"))
                         break;
                     scratchPoint = convertLineOfDataToPoint(line);
-                    if (allPoints == null)
+                    if (allUsedPoints == null)
                     {
                         createAllpointsCollection();
                         myBoundingBox = new BoundingBox(scratchPoint.x, scratchPoint.y, scratchPoint.x, scratchPoint.y);
                     }
-                    allPoints.Add(scratchPoint);
+                    allUsedPoints.Add(scratchPoint);
                     ptIndex++;
                     myBoundingBox.expandByPoint(scratchPoint.x, scratchPoint.y, scratchPoint.z);
                 }
@@ -409,7 +413,7 @@ namespace Surfaces.TIN
             var dxf = new DxfDocument();
             dxf.DrawingVariables.AcadVer = netDxf.Header.DxfVersion.AutoCad2013;
 
-            foreach (var item in this.allPoints)
+            foreach (var item in this.allUsedPoints)
             {
                 item.AddToDxf(dxf);
             }
@@ -470,7 +474,7 @@ namespace Surfaces.TIN
             {
                 file.WriteLine("# Created by CogoDN: Tin Mesh");
                 file.WriteLine(aString.ToString());
-                foreach (var aPt in this.allPoints)
+                foreach (var aPt in this.allUsedPoints)
                     file.WriteLine("v " + aPt.ToString(affineXform));
 
                 foreach (var aTriangle in this.allTriangles)
@@ -486,7 +490,7 @@ namespace Surfaces.TIN
             ptIndex1 = Convert.ToInt32(parsed[0 + correction]);
             ptIndex2 = Convert.ToInt32(parsed[1 + correction]);
             ptIndex3 = Convert.ToInt32(parsed[2 + correction]);
-            TINtriangle triangle = TINtriangle.CreateTriangle(allPoints, ptIndex1, ptIndex2, ptIndex3);
+            TINtriangle triangle = TINtriangle.CreateTriangle(allUsedPoints, ptIndex1, ptIndex2, ptIndex3);
             return triangle;
         }
 
@@ -597,12 +601,12 @@ namespace Surfaces.TIN
                         if (reader.NodeType.Equals(XmlNodeType.Text))
                         {
                             scratchPoint = new TINpoint(reader.Value, id);
-                            if (allPoints == null)
+                            if (allUsedPoints == null)
                             {
                                 createAllpointsCollection();
                                 myBoundingBox = new BoundingBox(scratchPoint.x, scratchPoint.y, scratchPoint.x, scratchPoint.y);
                             }
-                            allPoints.Add(scratchPoint);
+                            allUsedPoints.Add(scratchPoint);
                             myBoundingBox.expandByPoint(scratchPoint.x, scratchPoint.y, scratchPoint.z);
                         }
                     }
@@ -611,7 +615,7 @@ namespace Surfaces.TIN
 
                 // Read Triangles, but only as strings
                 stopwatch.Stop(); consoleOutStopwatch(stopwatch);
-                System.Console.WriteLine(allPoints.Count.ToString() + " Points Total.");
+                System.Console.WriteLine(allUsedPoints.Count.ToString() + " Points Total.");
 
                 System.Console.WriteLine("Loading Triangle Reference Strings took:");
                 stopwatch.Reset(); stopwatch.Start();
@@ -642,7 +646,7 @@ namespace Surfaces.TIN
             allTrianglesBag = new ConcurrentBag<TINtriangle>();
             Parallel.ForEach(trianglesAsStrings, refString =>
             {
-                allTrianglesBag.Add(new TINtriangle(allPoints, refString));
+                allTrianglesBag.Add(new TINtriangle(allUsedPoints, refString));
             }
                );
             allTriangles = allTrianglesBag.OrderBy(triangle => triangle.point1.x).ToList();
@@ -840,7 +844,7 @@ namespace Surfaces.TIN
             if (triangleLines == null)
             {
                 triangleLines = new Dictionary<IntPair, TINtriangleLine>();
-                scratchTriangleLine = new TINtriangleLine(allPoints[ndx1], allPoints[ndx2], aTriangle);
+                scratchTriangleLine = new TINtriangleLine(allUsedPoints[ndx1], allUsedPoints[ndx2], aTriangle);
                 triangleLines.Add(scratchUIntPair, scratchTriangleLine);
 
                 return true;
@@ -849,7 +853,7 @@ namespace Surfaces.TIN
             bool tryGetSucces = triangleLines.TryGetValue(scratchUIntPair, out scratchTriangleLine);
             if (tryGetSucces == false)  // we must add this line to the collection
             {
-                scratchTriangleLine = new TINtriangleLine(allPoints[ndx1], allPoints[ndx2], aTriangle);
+                scratchTriangleLine = new TINtriangleLine(allUsedPoints[ndx1], allUsedPoints[ndx2], aTriangle);
                 triangleLines.Add(scratchUIntPair, scratchTriangleLine);
                 return true;
             }
@@ -1002,20 +1006,20 @@ namespace Surfaces.TIN
 
         private void createAllpointsCollection()
         {
-            allPoints = new List<TINpoint>();
+            allUsedPoints = new List<TINpoint>();
         }
 
         public String GenerateSizeSummaryString()
         {
             StringBuilder returnString = new StringBuilder();
             returnString.AppendLine(String.Format(
-               "Points: {0:n0} ", allPoints.Count));
+               "Points: {0:n0} ", allUsedPoints.Count));
             returnString.AppendLine(String.Format("Triangles: {0:n0}", this.allTriangles.Count));
             returnString.AppendLine(String.Format("Total Memory Used: Approx. {0:n0} MBytes",
                memoryUsed / (1028 * 1028)));
             returnString.AppendLine(String.Format(
                "{0:f4} Average Points per Triangle.",
-               (Double)((Double)allPoints.Count / (Double)allTriangles.Count)));
+               (Double)((Double)allUsedPoints.Count / (Double)allTriangles.Count)));
             returnString.AppendLine(String.Format("Total Load Time: {0:f4} seconds",
                (Double)LoadTimeStopwatch.ElapsedMilliseconds / 1000.0));
             return returnString.ToString();
@@ -1142,34 +1146,34 @@ namespace Surfaces.TIN
 
         public TINstatistics(TINsurface dtm)
         {
-            PointCount = dtm.allPoints.Count;
+            PointCount = dtm.allUsedPoints.Count;
 
-            var sortedInX = dtm.allPoints.OrderBy(pt => pt.x);
+            var sortedInX = dtm.allUsedPoints.OrderBy(pt => pt.x);
             MinX = sortedInX.First().x;
             MaxX = sortedInX.Last().x;
             WidthX = MaxX - MinX;
             CenterX = MinX + WidthX / 2.0;
             MedianX = Median(sortedInX.Select(pt => pt.x));
             sortedInX = null;
-            AverageX = dtm.allPoints.Average(pt => pt.x);
+            AverageX = dtm.allUsedPoints.Average(pt => pt.x);
 
-            var sortedInY = dtm.allPoints.OrderBy(pt => pt.y);
+            var sortedInY = dtm.allUsedPoints.OrderBy(pt => pt.y);
             MinY = sortedInY.First().y;
             MaxY = sortedInY.Last().y;
             WidthY = MaxY - MinY;
             CenterY = MinY + WidthY / 2.0;
             MedianY = Median(sortedInY.Select(pt => pt.y));
             sortedInY = null;
-            AverageY = dtm.allPoints.Average(pt => pt.y);
+            AverageY = dtm.allUsedPoints.Average(pt => pt.y);
 
-            var sortedInZ = dtm.allPoints.OrderBy(pt => pt.y);
+            var sortedInZ = dtm.allUsedPoints.OrderBy(pt => pt.y);
             MinZ = sortedInZ.First().x;
             MaxZ = sortedInZ.Last().x;
             HeightZ = MaxZ - MinZ;
             CenterZ = MinZ + HeightZ / 2.0;
             MedianZ = Median(sortedInZ.Select(pt => pt.z));
             sortedInZ = null;
-            AverageZ = dtm.allPoints.Average(pt => pt.z);
+            AverageZ = dtm.allUsedPoints.Average(pt => pt.z);
 
             LineCount = dtm.ValidLines.Count;
             var lines = dtm.ValidLines.OrderBy(line => line.Length2d).ToList();

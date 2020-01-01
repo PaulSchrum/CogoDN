@@ -104,7 +104,7 @@ namespace Unit_Tests
             Assert.IsNotNull(stats);
 
             var pointCount = stats.PointCount;
-            var expected = this.aTin.allPoints.Count();
+            var expected = this.aTin.allUsedPoints.Count();
             Assert.AreEqual(expected: expected, actual: pointCount);
 
         }
@@ -282,8 +282,8 @@ namespace Unit_Tests
         private void assessTwoTinsForEquivalence(TINsurface tinFromLidar, TINsurface tinFromSavedFile)
         {
             Assert.AreEqual(
-                    expected: tinFromLidar.allPoints.Count,
-                    actual: tinFromSavedFile.allPoints.Count);
+                    expected: tinFromLidar.allUsedPoints.Count,
+                    actual: tinFromSavedFile.allUsedPoints.Count);
             Assert.AreEqual(
                 expected: tinFromLidar.TrianglesReadOnly.Count,
                 actual: tinFromSavedFile.TrianglesReadOnly.Count);
