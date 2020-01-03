@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Text;
 using CadFoundation.Angles;
 using CadFoundation.Coordinates;
+using CadFoundation.Coordinates.Indexing;
 using Cogo;
 
 namespace Surfaces.TIN
 {
     [Serializable]
-    internal class TINtriangle : IComparable
+    internal class TINtriangle : IComparable, IBoxBounded
     {
         // temporary scratch pad members -- do not serialize
         [NonSerialized]
@@ -101,6 +102,7 @@ namespace Surfaces.TIN
         // non-substantive fields
         [NonSerialized]
         private BoundingBox myBoundingBox_;
+        public BoundingBox BoundingBox { get { return myBoundingBox_; } }
 
         public TINtriangle(List<TINpoint> pointList, string pointRefs)
         {

@@ -19,13 +19,14 @@ using System.Runtime.CompilerServices;
 using Cogo.Utils;
 using CadFoundation;
 using System.IO.Compression;
+using CadFoundation.Coordinates.Indexing;
 
 [assembly: InternalsVisibleTo("Unit Tests")]
 
 namespace Surfaces.TIN
 {
     [Serializable]
-    public class TINsurface
+    public class TINsurface : IBoxBounded
     {
         // Substantive members - Do serialize
         public List<TINpoint> allUsedPoints { get; private set; }
@@ -167,6 +168,17 @@ namespace Surfaces.TIN
             returnObject.pruneTinHull();
 
             return returnObject;
+        }
+
+        internal GridIndexer validTrianglesIndexed { get; private set; } = null;
+        public void IndexTriangles()
+        {
+            if(null == validTrianglesIndexed)
+            {
+                var validTris = ValidTriangles.ToList();
+                validTrianglesIndexed = new GridIndexer(validTris.Count, this);
+                validTrianglesIndexed.AssignObjectsToCells(validTris);
+            }
         }
 
         // temp scratch pad members -- do not serialize
@@ -907,20 +919,21 @@ namespace Surfaces.TIN
         private List<TINtriangle> localGroupTriangles;
         internal TINtriangle getTriangleContaining(TINpoint aPoint)
         {
-            if (null == localGroupTriangles)
-                localGroupTriangles = getTrianglesForPointInBB(aPoint).AsParallel().ToList();
+            //if (null == localGroupTriangles)
+            //    localGroupTriangles = getTrianglesForPointInBB(aPoint).AsParallel().ToList();
 
-            TINtriangle theTriangle =
-               localGroupTriangles.FirstOrDefault(aTrngl => aTrngl.contains(aPoint));
+            //TINtriangle theTriangle =
+            //   localGroupTriangles.FirstOrDefault(aTrngl => aTrngl.contains(aPoint));
+            var candidateTriangles = validTrianglesIndexed.FindObjectsAt(aPoint.x, aPoint.y).Cast<TINtriangle>();
 
-            if (null == theTriangle)
-            {
-                localGroupTriangles = getTrianglesForPointInBB(aPoint).AsParallel().ToList();
-                theTriangle =
-                   localGroupTriangles.FirstOrDefault(aTrngl => aTrngl.contains(aPoint));
-            }
+            //if (null == theTriangle)
+            //{
+            //    localGroupTriangles = getTrianglesForPointInBB(aPoint).AsParallel().ToList();
+            //    theTriangle =
+            //       localGroupTriangles.FirstOrDefault(aTrngl => aTrngl.contains(aPoint));
+            //}
 
-            return theTriangle;
+            return candidateTriangles.Where(tri => tri.contains(aPoint)).FirstOrDefault();
         }
 
         public double? getElevation(double x, double y)
