@@ -1,6 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using CadFoundation.Coordinates;
 using Surfaces.TIN;
 
 namespace TinConsole
@@ -36,7 +40,7 @@ namespace TinConsole
             var tinModel = TINsurface.CreateFromLAS(args[0],
                 skipPoints: 8,
                 classificationFilter: new List<int> { 2, 6, 13 });  // Add 6 to get roofs.
-            var pointCount = tinModel.allPoints.Count;
+            var pointCount = tinModel.allUsedPoints.Count;
             var triangleCount = tinModel.TriangleCount;
             Console.Write($"Successfully loaded tin Model: {pointCount} points and ");
             Console.WriteLine($"{triangleCount} triangles.");
@@ -75,6 +79,7 @@ namespace TinConsole
                 ["load"] = ls => surface = TINsurface.CreateFromLAS(ls[1]),
                 ["summarize"] = ls => summarize(ls),
                 ["reload"] = ls => reload(ls),
+                ["performance_test"] = ls => performance_test(ls),
             };
 
             Action<List<String>> command = null;
@@ -116,5 +121,62 @@ namespace TinConsole
             surface = TINsurface.CreateFromLAS(hcSource, skipPoints: skipPoints);
         }
 
+        private static void performance_test(List<string> commandItems)
+        {
+            if (surface is null)
+            {
+                System.Console.WriteLine("No file has been loaded. Nothing to summarize.");
+                return;
+            }
+            //GC.Collect();
+            var skipPoints = 1;
+            if (commandItems.Count > 1)
+                skipPoints = Convert.ToInt32(commandItems[1]);
+
+            if(surface != null && hcSource != surface.SourceData)
+                surface = TINsurface.CreateFromLAS(hcSource, skipPoints: skipPoints);
+
+            surface.IndexTriangles();
+            var bb = surface.BoundingBox;
+            var rnd = new Random(12345);
+            var samples = 10_000_000;
+            var testCount = samples;
+            Console.Write("Initiating run:   ");
+            Stopwatch sw = Stopwatch.StartNew();
+            //foreach(var i in Enumerable.Range(0,samples))
+            Parallel.For(0, testCount, num =>
+            {
+                var el = surface.getElevation(rnd.NextPoint(bb));
+            }
+            );
+
+            sw.Stop();
+            
+            double cps = (double)sw.ElapsedMilliseconds / testCount;
+            double spc = testCount / sw.Elapsed.TotalSeconds;
+            Console.WriteLine($"{testCount} points in {sw.Elapsed.TotalSeconds:F1} Seconds.   "
+                + $"{cps:F1} milliseconds per call.     {spc:F2} calls per second");
+        }
+
+    }
+
+    public static class RandomExtensions
+    {
+        public static double NextDouble(
+            this Random random,
+            double minValue,
+            double maxValue)
+        {
+            return random.NextDouble() * (maxValue - minValue) + minValue;
+        }
+        
+        public static TINpoint NextPoint(
+            this Random random,
+            BoundingBox bb)
+        {
+            double x = random.NextDouble(bb.lowerLeftPt.x, bb.upperRightPt.x);
+            double y = random.NextDouble(bb.lowerLeftPt.y, bb.upperRightPt.y);
+            return new Surfaces.TIN.TINpoint(x, y);
+        }
     }
 }
