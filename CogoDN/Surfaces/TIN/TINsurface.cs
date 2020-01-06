@@ -182,7 +182,12 @@ namespace Surfaces.TIN
             return returnObject;
         }
 
-        internal GridIndexer validTrianglesIndexed { get; private set; } = null;
+        [NonSerialized]
+        private GridIndexer validTrianglesIndexed_ = null;
+        internal GridIndexer validTrianglesIndexed 
+        {
+            get { return validTrianglesIndexed_; } private set { validTrianglesIndexed_ = value; } 
+        }
         public void IndexTriangles()
         {
             if (null == validTrianglesIndexed)
@@ -208,13 +213,14 @@ namespace Surfaces.TIN
             Console.WriteLine();
             Console.WriteLine("Starting Elevation Sweep");
             var sw = Stopwatch.StartNew();
-            foreach(var idx in rdmIdc.indices)
+            //foreach(var idx in rdmIdc.indices)
             //Parallel.ForEach(rdmIdc.indices, idx =>
-                    {
-                        var pt = allUnusedPoints[idx];
+            Parallel.ForEach(allUnusedPoints.Select(p => p.myIndex), idx =>
+            {
+                var pt = allUnusedPoints[idx];
                         var error = pt.z - getElevation(pt);
                         squaredErrors.Add(error * error);
-                    }   //);
+                    }   );
             //allUnusedPoints.Select(p => p.z - getElevation(p)).ToList();
             //var squaredErrors = allUnusedPoints.Select(p => p.z - getElevation(p)).Select(e => e * e).ToList();
             var stats = new DescriptiveStatistics(squaredErrors);
@@ -222,17 +228,15 @@ namespace Surfaces.TIN
             var rootMeanSquared = Math.Sqrt(stats.Mean);
             sw.Stop();
             Console.Write(sw.Elapsed);
-            var msPerQuery = (double) sw.ElapsedMilliseconds / rdmIdc.SampleCount;
+            //var msPerQuery = (double)sw.ElapsedMilliseconds / rdmIdc.SampleCount;
+            var msPerQuery = (double)sw.ElapsedMilliseconds / allUnusedPoints.Count;
             Console.WriteLine($"   {msPerQuery} milliseconds per query.");
 
-
-
-
-            //String outRow = $"{skippedPoints},{this.allUsedPoints.Count},{rootMeanSquared:F3},{rootMaxSquared:F2}";
-            //using(StreamWriter csvFile = new StreamWriter(v, true))
-            //{
-            //    csvFile.WriteLine(outRow);
-            //}
+            String outRow = $"{skippedPoints},{this.allUsedPoints.Count},{rootMeanSquared:F3},{rootMaxSquared:F2}";
+            using (StreamWriter csvFile = new StreamWriter(v, true))
+            {
+                csvFile.WriteLine(outRow);
+            }
 
             return;
         }
