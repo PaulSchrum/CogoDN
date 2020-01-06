@@ -165,10 +165,15 @@ namespace Surfaces.TIN
                 if(!(newTriangle is null))
                     returnObject.allTriangles.Add(newTriangle);
             }
-            returnObject.pruneTinHull();
-            returnObject.IndexTriangles();
+            returnObject.finalProcessing();
 
             return returnObject;
+        }
+
+        protected void finalProcessing()
+        {
+            this.pruneTinHull();
+            this.IndexTriangles();
         }
 
         [NonSerialized]
