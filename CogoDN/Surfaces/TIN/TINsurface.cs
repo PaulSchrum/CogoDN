@@ -166,11 +166,18 @@ namespace Surfaces.TIN
                     returnObject.allTriangles.Add(newTriangle);
             }
             returnObject.pruneTinHull();
+            returnObject.IndexTriangles();
 
             return returnObject;
         }
 
-        internal GridIndexer validTrianglesIndexed { get; private set; } = null;
+        [NonSerialized]
+        private GridIndexer validTrianglesIndexed_ = null;
+        internal GridIndexer validTrianglesIndexed
+        {
+            get { return validTrianglesIndexed_; }
+            private set { validTrianglesIndexed_ = value; }
+        }
         public void IndexTriangles()
         {
             if(null == validTrianglesIndexed)
@@ -811,6 +818,7 @@ namespace Surfaces.TIN
                    , new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }
                    , tri => tri.computeBoundingBox());
 
+                aDTM.IndexTriangles();
             }
             if (!(fnameToLoad == filenameToLoad))
                 System.IO.File.Delete(fnameToLoad);
