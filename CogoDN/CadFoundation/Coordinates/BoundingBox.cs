@@ -10,7 +10,7 @@ namespace CadFoundation.Coordinates
         public Point lowerLeftPt { get; set; }
         public Point upperRightPt { get; set; }
 
-        private BoundingBox() { }
+        protected BoundingBox() { }
 
         public BoundingBox(
              Double LLx, Double LLy,

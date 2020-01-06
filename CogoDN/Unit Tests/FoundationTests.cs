@@ -3,6 +3,8 @@ using System;
 using CadFoundation;
 using CadFoundation.Angles;
 using CadFoundation.Coordinates;
+using CadFoundation.Coordinates.Indexing;
+using System.Collections.Generic;
 
 namespace Unit_Tests
 {
@@ -366,5 +368,47 @@ namespace Unit_Tests
 
         }
 
+
+        [TestMethod]
+        public void GridIndexer_worksRight()
+        {
+            var bb = new BoundingBox(0.0, 0.0, 1000000.0, 1000000.0);
+            var testInstance = new testBB();
+            testInstance.BoundingBox = bb;
+            var indexingGrid = new GridIndexer(1000000, testInstance);
+            Assert.IsNotNull(indexingGrid);
+
+            var aCell = indexingGrid.AllCells[2][2];
+            Assert.AreEqual(actual: aCell.lowerLeftPt.x, expected: 31250.0*2.0);
+            Assert.AreEqual(actual: aCell.lowerLeftPt.y, expected: 31250.0*2.0);
+            Assert.AreEqual(actual: aCell.upperRightPt.x, expected: 31250.0*3.0);
+            Assert.AreEqual(actual: aCell.upperRightPt.y, expected: 31250.0*3.0);
+
+            var smallBB1 = new BoundingBox(113670.0, 54170.0, 114610.0, 54960.0);
+            var smallBB2 = new BoundingBox(115670.0, 60770.0, 119990.0, 63320.0);
+            var smallBB3 = new BoundingBox(123240.0, 61430.0, 125910.0, 63360.0);
+            var smallBB4 = new BoundingBox(123690.0, 55170.0, 126820.0, 56120.0);
+            var small1 = new testBB(); small1.BoundingBox = smallBB1;
+            var small2 = new testBB(); small2.BoundingBox = smallBB2;
+            var small3 = new testBB(); small3.BoundingBox = smallBB3;
+            var small4 = new testBB(); small4.BoundingBox = smallBB4;
+
+            indexingGrid.AssignObjectsToCells(new List<testBB>() { small1, small2, small3, small4 });
+
+            var objects = indexingGrid.FindObjectsAt(119330.0, 58190.0);
+            Assert.AreEqual(actual: objects.Count, expected: 0);
+
+            objects = indexingGrid.FindObjectsAt(114170.0, 54690.0);
+            objects = indexingGrid.FindObjectsAt(117870.0, 62690.0);
+            objects = indexingGrid.FindObjectsAt(125560.0, 62940.0);
+            objects = indexingGrid.FindObjectsAt(125930.0, 55880.0);
+            Assert.AreEqual(actual: objects.Count, expected: 1);
+
+        }
+    }
+
+    internal class testBB : IBoxBounded
+    {
+        public BoundingBox BoundingBox { get; set; }
     }
 }

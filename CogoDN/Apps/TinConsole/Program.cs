@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using CadFoundation.Coordinates;
 using Surfaces.TIN;
 
 namespace TinConsole
@@ -118,6 +121,55 @@ namespace TinConsole
             if (commandItems.Count > 1)
                 skipPoints = Convert.ToInt32(commandItems[1]);
             surface = TINsurface.CreateFromLAS(hcSource, skipPoints: skipPoints);
+        }
+
+        private static void performance_test(List<string> commandItems)
+        {
+            if (surface is null)
+            {
+                System.Console.WriteLine("No file has been loaded. Nothing to summarize.");
+                return;
+            }
+            //GC.Collect();
+            var skipPoints = 1;
+            if (commandItems.Count > 1)
+                skipPoints = Convert.ToInt32(commandItems[1]);
+
+            if(surface != null && hcSource != surface.SourceData)
+                surface = TINsurface.CreateFromLAS(hcSource, skipPoints: skipPoints);
+
+            surface.IndexTriangles();
+            var bb = surface.BoundingBox;
+            var rnd = new Random(12345);
+            var samples = 10_000_000;
+            var testCount = samples;
+            Console.Write("Initiating run:   ");
+            Stopwatch sw = Stopwatch.StartNew();
+            //foreach(var i in Enumerable.Range(0,samples))
+            Parallel.For(0, testCount, num =>
+            {
+                var el = surface.getElevation(rnd.NextPoint(bb));
+            }
+            );
+
+            sw.Stop();
+            
+            double cps = (double)sw.ElapsedMilliseconds / testCount;
+            double spc = testCount / sw.Elapsed.TotalSeconds;
+            Console.WriteLine($"{testCount} points in {sw.Elapsed.TotalSeconds:F1} Seconds.   "
+                + $"{cps:F1} milliseconds per call.     {spc:F2} calls per second");
+        }
+
+    }
+
+    public static class RandomExtensions
+    {
+        public static double NextDouble(
+            this Random random,
+            double minValue,
+            double maxValue)
+        {
+            return random.NextDouble() * (maxValue - minValue) + minValue;
         }
 
         static string researchOutpath = @"D:\Research\Datasets\Lidar\Tilley Creek\decimation research\simpleResults\";
