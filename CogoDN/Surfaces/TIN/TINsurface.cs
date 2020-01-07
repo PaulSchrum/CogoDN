@@ -174,6 +174,7 @@ namespace Surfaces.TIN
         {
             this.pruneTinHull();
             this.IndexTriangles();
+            this.DetermineEdgePoints();
         }
 
         [NonSerialized]
@@ -190,6 +191,27 @@ namespace Surfaces.TIN
                 var validTris = ValidTriangles.ToList();
                 validTrianglesIndexed = new GridIndexer(validTris.Count, this);
                 validTrianglesIndexed.AssignObjectsToCells(validTris);
+            }
+        }
+
+        [NonSerialized]
+        private IEnumerable<TINtriangleLine> outerEdgeLines_ = null;
+        public IEnumerable<TINtriangleLine> OuterEdgeLines
+        {
+            get
+            {
+                if (null == outerEdgeLines_)
+                    DetermineEdgePoints();
+                return outerEdgeLines_;
+            }
+        }
+
+        protected void DetermineEdgePoints()
+        {
+            this.outerEdgeLines_ = this.ValidLines.Where(L => L.IsOnHull);
+            foreach (var line in this.OuterEdgeLines)
+            {
+                line.firstPoint.isOnHull = line.secondPoint.isOnHull = true;
             }
         }
 
@@ -298,6 +320,7 @@ namespace Surfaces.TIN
                 }
 
                 allTriangles.Sort();
+                this.IndexTriangles();
             }
             finally
             {
@@ -637,6 +660,7 @@ namespace Surfaces.TIN
                     reader.Read();
                 }
 
+
                 // Read Triangles, but only as strings
                 stopwatch.Stop(); consoleOutStopwatch(stopwatch);
                 System.Console.WriteLine(allUsedPoints.Count.ToString() + " Points Total.");
@@ -658,6 +682,7 @@ namespace Surfaces.TIN
                     reader.Read();
                 }
                 reader.Close();
+                this.IndexTriangles();
                 stopwatch.Stop(); consoleOutStopwatch(stopwatch);
 
                 System.Console.WriteLine("Generating Triangle Collection took:");

@@ -116,7 +116,6 @@ namespace Unit_Tests
             var undecimatedStats = this.aTin.Statistics;
 
             var decimatedTin = TINsurface.CreateFromLAS(lidarFileName, skipPoints: 1);
-            decimatedTin.pruneTinHull();
             var decimatedSt = decimatedTin.Statistics;
 
             var halfUndicimated = undecimatedStats.PointCount / 2;
@@ -137,6 +136,16 @@ namespace Unit_Tests
             ElSlopeAspect = this.tinFromLidar
                 .getElevationSlopeAzimuth(new TINpoint(2133987.65, 775577.91));
             ElSlopeAspect.AssertDerivedValuesAreEqual(190.0, 41.3, 137.291);
+        }
+
+        [TestMethod]
+        public void TinFromLidar_GettingEdgePoint_Correct()
+        {
+            this.Initialize();
+            var edgeLines = this.tinFromLidar.OuterEdgeLines.ToList();
+            Assert.AreEqual(expected: 3899, actual: edgeLines.Count);
+            var perimeter = edgeLines.Select(L => L.Length2d).Sum();
+            Assert.IsTrue(perimeter > 10263.6 && perimeter < 10263.7);
         }
 
         [Ignore]
