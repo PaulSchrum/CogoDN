@@ -18,6 +18,22 @@ namespace Surfaces.TIN
         public TINpoint secondPoint { get; set; }
         internal TINtriangle oneTriangle { get; set; }
         internal TINtriangle theOtherTriangle { get; set; }
+        public bool IsOnHull
+        {
+            get
+            {
+                return TriangleCount == 1 ? true : false;
+            }
+        }
+
+        public void SetMyPointsOnHull()
+        {
+            if(this.IsOnHull)
+            {
+                this.firstPoint.isOnHull = true;
+                this.secondPoint.isOnHull = true;
+            }
+        }
 
         internal TINtriangleLine(TINpoint pt1, TINpoint pt2, TINtriangle tngle)
         {

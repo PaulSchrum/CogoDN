@@ -19,6 +19,9 @@ namespace Surfaces.TIN
         public bool hasBeenSkipped = false;
         public int lidarClassification { get; set; }
         public int myIndex { get; internal set; }
+        public bool isOnHull { get; internal set; } = false;
+
+
         public double[] Position
         {
             get { return new double[] { x, y }; }

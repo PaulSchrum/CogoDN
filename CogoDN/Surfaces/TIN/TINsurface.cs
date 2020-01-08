@@ -176,17 +176,24 @@ namespace Surfaces.TIN
                 if(!(newTriangle is null))
                     returnObject.allTriangles.Add(newTriangle);
             }
-            returnObject.pruneTinHull();
-            returnObject.skippedPoints = skipPoints;
+            returnObject.finalProcessing();
 
             return returnObject;
         }
 
+        protected void finalProcessing()
+        {
+            this.pruneTinHull();
+            this.IndexTriangles();
+            this.DetermineEdgePoints();
+        }
+
         [NonSerialized]
         private GridIndexer validTrianglesIndexed_ = null;
-        internal GridIndexer validTrianglesIndexed 
+        internal GridIndexer validTrianglesIndexed
         {
-            get { return validTrianglesIndexed_; } private set { validTrianglesIndexed_ = value; } 
+            get { return validTrianglesIndexed_; }
+            private set { validTrianglesIndexed_ = value; }
         }
         public void IndexTriangles()
         {
@@ -239,6 +246,27 @@ namespace Surfaces.TIN
             }
 
             return;
+        }
+
+        [NonSerialized]
+        private IEnumerable<TINtriangleLine> outerEdgeLines_ = null;
+        public IEnumerable<TINtriangleLine> OuterEdgeLines
+        {
+            get
+            {
+                if (null == outerEdgeLines_)
+                    DetermineEdgePoints();
+                return outerEdgeLines_;
+            }
+        }
+
+        protected void DetermineEdgePoints()
+        {
+            this.outerEdgeLines_ = this.ValidLines.Where(L => L.IsOnHull);
+            foreach (var line in this.OuterEdgeLines)
+            {
+                line.firstPoint.isOnHull = line.secondPoint.isOnHull = true;
+            }
         }
 
         // temp scratch pad members -- do not serialize
@@ -346,6 +374,7 @@ namespace Surfaces.TIN
                 }
 
                 allTriangles.Sort();
+                this.IndexTriangles();
             }
             finally
             {
@@ -685,6 +714,7 @@ namespace Surfaces.TIN
                     reader.Read();
                 }
 
+
                 // Read Triangles, but only as strings
                 stopwatch.Stop(); consoleOutStopwatch(stopwatch);
                 System.Console.WriteLine(allUsedPoints.Count.ToString() + " Points Total.");
@@ -706,6 +736,7 @@ namespace Surfaces.TIN
                     reader.Read();
                 }
                 reader.Close();
+                this.IndexTriangles();
                 stopwatch.Stop(); consoleOutStopwatch(stopwatch);
 
                 System.Console.WriteLine("Generating Triangle Collection took:");
@@ -882,6 +913,7 @@ namespace Surfaces.TIN
                    , new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }
                    , tri => tri.computeBoundingBox());
 
+                aDTM.IndexTriangles();
             }
             if (!(fnameToLoad == filenameToLoad))
                 System.IO.File.Delete(fnameToLoad);
