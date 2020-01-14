@@ -178,6 +178,104 @@ namespace Surfaces.TIN
             }
             returnObject.finalProcessing();
 
+            if (skipPoints == 0) 
+                return returnObject;
+            
+            var baseTin = returnObject;
+            returnObject = null;
+
+            var tempAllPoints = (baseTin.allUsedPoints.Concat(baseTin.allUnusedPoints)).ToList();
+            foreach (var pt in tempAllPoints)
+            {
+                if (pt.isOnHull)
+                    pt.hasBeenSkipped = false;
+                else
+                    pt.hasBeenSkipped = true;
+            }
+                
+
+            returnObject = new TINsurface();
+            returnObject.SourceData = lidarFileName;
+            pointCounter = -1;
+            runningPointCount = -1;
+            gridIndexer = new Dictionary<Tuple<int, int>, int>();
+            returnObject.createAllpointsCollection();
+
+            var hullIndices = tempAllPoints.Where(p => p.isOnHull).Select(p => p.myIndex).ToList();
+            var nonHullIndices = tempAllPoints.Where(p => !p.isOnHull).Select(p => p.myIndex).ToList();
+            var targetNonHullCount = (int)(nonHullIndices.Count / (skipPoints + 1));
+
+            Random rdm = new Random();
+            var pointsToIncludeByIndex = new HashSet<int>();
+            for(int i=0; i<=targetNonHullCount; i++)
+            {
+                var proceed = false;
+                while(!proceed)
+                {
+                    var nextIndex = rdm.Next(0, nonHullIndices.Count);
+                    proceed = pointsToIncludeByIndex.Add(nextIndex);
+                }
+            }
+
+            var pointsToUseIndexes = new List<int>(pointsToIncludeByIndex.Count);
+            foreach(var idx in pointsToIncludeByIndex)
+            {
+                pointsToUseIndexes.Add(idx);
+            }
+            pointsToUseIndexes.AddRange(hullIndices);
+            hullIndices = null;
+            pointsToIncludeByIndex = null;
+
+
+            foreach (var idx in pointsToUseIndexes)
+            {
+                var point = tempAllPoints[idx];
+                pointCounter++;
+                runningPointCount++;
+
+                point.hasBeenSkipped = false;
+                returnObject.allUsedPoints.Add(point);
+                // Note this approach will occasionally skip over points that 
+                // are double-stamps. I am fine with that for now.
+                gridIndexer[point.GridCoordinates] = indexCount;
+
+                indexCount++;
+            }
+
+            foreach (var pt in tempAllPoints.Where(pt => pt.hasBeenSkipped))
+            {
+                returnObject.allUnusedPoints.Add(pt);
+                pt.myIndex = -1;
+            }
+
+            var usedCount = tempAllPoints.Where(p => !p.hasBeenSkipped).Count();
+            var notUsedCount = tempAllPoints.Where(p => p.hasBeenSkipped).Count();
+            setBoundingBox(returnObject);
+
+            for (indexCount = 0; indexCount < returnObject.allUsedPoints.Count; indexCount++)
+            {
+                var aPoint = returnObject.allUsedPoints[indexCount];
+                aPoint.myIndex = indexCount;
+                gridIndexer[aPoint.GridCoordinates] = indexCount;
+            }
+
+            VoronoiMesh = MIConvexHull.VoronoiMesh
+                .Create<TINpoint, ConvexFaceTriangle>(returnObject.allUsedPoints);
+
+            returnObject.allTriangles = new List<TINtriangle>(2 * returnObject.allUsedPoints.Count);
+            foreach (var vTriangle in VoronoiMesh.Triangles)
+            {
+                var point1 = gridIndexer[vTriangle.Vertices[0].GridCoordinates];
+                var point2 = gridIndexer[vTriangle.Vertices[1].GridCoordinates];
+                var point3 = gridIndexer[vTriangle.Vertices[2].GridCoordinates];
+                var newTriangle = TINtriangle.CreateTriangle(
+                    returnObject.allUsedPoints, point1, point2, point3);
+                if (!(newTriangle is null))
+                    returnObject.allTriangles.Add(newTriangle);
+            }
+            returnObject.skippedPoints = skipPoints;
+            returnObject.finalProcessing();
+
             return returnObject;
         }
 
@@ -211,10 +309,10 @@ namespace Surfaces.TIN
                 return;
 
             if(!File.Exists(v))
-                System.IO.File.WriteAllText(v, "PointsSkipped,PointCount,RMSE,RMaxSE,FileSize\r\n");
+                System.IO.File.WriteAllText(v, "PointsSkipped,PointCount,RMSE,RMaxSE,Rp95SE,FileSize\r\n");
 
             randomIndices rdmIdc = new randomIndices(allUnusedPoints.Count, 1000);
-            var squaredErrors = new ConcurrentBag<double?>();
+            var squaredErrorsBag = new ConcurrentBag<double?>();
 
 
             Console.WriteLine();
@@ -222,24 +320,31 @@ namespace Surfaces.TIN
             var sw = Stopwatch.StartNew();
             //foreach(var idx in rdmIdc.indices)
             //Parallel.ForEach(rdmIdc.indices, idx =>
-            Parallel.ForEach(allUnusedPoints.Select(p => p.myIndex), idx =>
+            Parallel.ForEach(allUnusedPoints, pt =>
             {
-                var pt = allUnusedPoints[idx];
-                        var error = pt.z - getElevation(pt);
-                        squaredErrors.Add(error * error);
-                    }   );
+                //var pt = allUnusedPoints[idx];
+                 var error = pt.z - getElevation(pt);
+                 squaredErrorsBag.Add(error * error);
+            }   );
             //allUnusedPoints.Select(p => p.z - getElevation(p)).ToList();
             //var squaredErrors = allUnusedPoints.Select(p => p.z - getElevation(p)).Select(e => e * e).ToList();
+            List<double?> squaredErrors = new List<double?>(squaredErrorsBag);
+            squaredErrors.Sort();
+            squaredErrorsBag.Clear();
+            squaredErrorsBag = null;
             var stats = new DescriptiveStatistics(squaredErrors);
             var rootMaxSquared = Math.Sqrt(stats.Maximum);
             var rootMeanSquared = Math.Sqrt(stats.Mean);
+            var rootVarianceSquared = Math.Sqrt(stats.Variance);
+            int idxP95 = (int)(0.95*(double)squaredErrors.Count);
+            var rootP95Squared = Math.Sqrt((double)squaredErrors[idxP95]);
             sw.Stop();
             Console.Write(sw.Elapsed);
             //var msPerQuery = (double)sw.ElapsedMilliseconds / rdmIdc.SampleCount;
             var msPerQuery = (double)sw.ElapsedMilliseconds / allUnusedPoints.Count;
             Console.WriteLine($"   {msPerQuery} milliseconds per query.");
 
-            String outRow = $"{skippedPoints},{this.allUsedPoints.Count},{rootMeanSquared:F3},{rootMaxSquared:F2}";
+            String outRow = $"{skippedPoints},{this.allUsedPoints.Count},{rootMeanSquared:F5},{rootMaxSquared:F5},{rootP95Squared:F5},{rootVarianceSquared:F5}";
             using (StreamWriter csvFile = new StreamWriter(v, true))
             {
                 csvFile.WriteLine(outRow);
