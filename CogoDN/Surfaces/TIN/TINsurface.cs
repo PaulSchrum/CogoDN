@@ -353,6 +353,35 @@ namespace Surfaces.TIN
             return;
         }
 
+        public void ComputeLineStatistics()
+        {
+            var binnedCounts = new Dictionary<Tuple<double, double>, int>();
+            var LineCrossSlopes = this.allLines.Values
+                .Select(L => (L.DeltaCrossSlopeAsAngleRad))
+                .Where(slope => slope != null).Cast<double>()
+                .ToArray();
+            Array.Sort(LineCrossSlopes);
+
+            double min = LineCrossSlopes[0];
+            double max = LineCrossSlopes[^1];
+
+
+            double binCount = 10.0;
+            double binWidth = LineCrossSlopes.Count() / binCount;
+            List<int> counts = new List<int>();
+            int idx = 0;
+            for(int i=0; i<(int)binCount; i++)
+            {
+                counts.Add(0);
+                double cap = (max - min) * (double)(i + 1) / (double)binCount + min;
+                while(LineCrossSlopes[idx] < cap)
+                {
+                    counts[i]++;
+                    idx++;
+                }
+            }
+        }
+
         [NonSerialized]
         private IEnumerable<TINtriangleLine> outerEdgeLines_ = null;
         public IEnumerable<TINtriangleLine> OuterEdgeLines

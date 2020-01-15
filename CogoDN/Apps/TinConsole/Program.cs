@@ -80,6 +80,7 @@ namespace TinConsole
                 ["summarize"] = ls => summarize(ls),
                 ["reload"] = ls => reload(ls),
                 ["decimate_multiple"] = ls => decimate_multiple(),
+                ["decimate_single"] = ls => decimate_single(skipPoints: 0, outputBaseName: ""),
                 ["performance_test"] = ls => performance_test(ls),
             };
 
@@ -96,7 +97,7 @@ namespace TinConsole
                 {
                     //System.Console.WriteLine("command not found");
                     //continue;
-                    commandLine = new List<string>() { "decimate_multiple" };
+                    commandLine = new List<string>() { "decimate_single" };
                     command = commands[commandLine[0]];
                 }
                 command(commandLine);
@@ -161,18 +162,25 @@ namespace TinConsole
                 + $"{cps:F1} milliseconds per call.     {spc:F2} calls per second");
         }
 
+        //static List<int> nonHullPoints = null;
         static string researchOutpath = @"D:\Research\Datasets\Lidar\Tilley Creek\decimation research\simpleResults\";
         static string summaryFile = "summary.csv";
         public static void decimate_multiple(int start = 1, int count = 21, int step = 1)
         {
+            //nonHullPoints = surface.allUsedPoints.Where(p => !p.isOnHull).Select(p => p.myIndex).ToList();
             Stopwatch sw = Stopwatch.StartNew();
             var counts = Enumerable.Range(start, count).ToList();
             counts.AddRange(new List<int>() { 25, 50, 75, 100, 200, 300, 400, 500, 1000 });
+            int samplesToGenerate = 30;
             foreach (var pointsToSkip in counts)
             {
-                if (!((pointsToSkip % step) == 0))
-                    continue;
-                decimate_single(pointsToSkip, "TestTin");
+                //if (!((pointsToSkip % step) == 0))
+                //    continue;
+                for(int i=0; i<samplesToGenerate; i++)
+                {
+                    Console.Write($"Run {i+1} of decimate {pointsToSkip} ");
+                    decimate_single(pointsToSkip, "TestTin");
+                }
             }
             sw.Stop();
             System.Console.WriteLine("Done. " + sw.Elapsed.TotalSeconds + " seconds.");
@@ -180,14 +188,15 @@ namespace TinConsole
 
         private static void decimate_single(int skipPoints, string outputBaseName)
         {
+            //foreach(var idx in nonHullPoints) surface.A
+
             string outname = outputBaseName + $"{skipPoints:D2}";
             Console.Write($"Processing {outname}   ");
             surface = TINsurface.CreateFromLAS(hcSource, skipPoints: skipPoints);
-            surface.IndexTriangles();
             Console.Write("Created.   ");
-            surface.saveAsBinary(researchOutpath + outname + ".TinDN");
-            Console.Write("Saved.   ");
-            surface.ComputeErrorStatistics(researchOutpath + summaryFile);
+            //surface.saveAsBinary(researchOutpath + outname + ".TinDN");
+            //Console.Write("Saved.   ");
+            surface.ComputeLineStatistics(); // researchOutpath + summaryFile);
             Console.WriteLine("Stats computed, written.");
         }
     }
