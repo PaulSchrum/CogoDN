@@ -284,6 +284,13 @@ namespace Surfaces.TIN
             this.pruneTinHull();
             this.IndexTriangles();
             this.DetermineEdgePoints();
+            var upsideDownTriangles = this.allTriangles.Where(t => t.normalVec.z < 0.0).ToList();
+            foreach(var tri in upsideDownTriangles)
+            {
+                tri.SwapPoint1And2();
+            }
+            upsideDownTriangles = null;
+            GC.Collect();
         }
 
         [NonSerialized]

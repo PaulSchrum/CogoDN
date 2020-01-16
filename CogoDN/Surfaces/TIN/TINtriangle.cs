@@ -320,6 +320,15 @@ namespace Surfaces.TIN
 
                 return $"f {this.point1.myIndex + 1} {p2Idx} {p3Idx}";
         }
+
+        internal void SwapPoint1And2()
+        {
+            var holdMypoint = point2;
+            point2 = point1;
+            point1 = holdMypoint;
+
+            normalVec_ = (point2 - point1).crossProduct(point3 - point1);
+        }
     }
 
     internal class ConvexFaceTriangle : MIConvexHull.TriangulationCell<TINpoint, ConvexFaceTriangle>
