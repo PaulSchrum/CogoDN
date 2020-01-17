@@ -279,18 +279,24 @@ namespace Surfaces.TIN
             return returnObject;
         }
 
-        protected void finalProcessing()
+        protected void correctUpsidedownTriangles()
         {
-            this.pruneTinHull();
-            this.IndexTriangles();
-            this.DetermineEdgePoints();
             var upsideDownTriangles = this.allTriangles.Where(t => t.normalVec.z < 0.0).ToList();
-            foreach(var tri in upsideDownTriangles)
+            foreach (var tri in upsideDownTriangles)
             {
                 tri.SwapPoint1And2();
             }
             upsideDownTriangles = null;
             GC.Collect();
+        }
+
+
+        protected void finalProcessing()
+        {
+            this.pruneTinHull();
+            this.IndexTriangles();
+            this.DetermineEdgePoints();
+            this.correctUpsidedownTriangles();
         }
 
         [NonSerialized]
@@ -362,6 +368,8 @@ namespace Surfaces.TIN
 
         public void ComputeLineStatistics()
         {
+            var upd = this.allTriangles.Where(t => t.normalVec.z < 0.0).ToList();
+
             var binnedCounts = new Dictionary<Tuple<double, double>, int>();
             var LineCrossSlopes = this.allLines.Values
                 .Select(L => (L.DeltaCrossSlopeAsAngleRad))

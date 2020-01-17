@@ -131,11 +131,11 @@ namespace Unit_Tests
             TinFromLidar_isNotNull();
             var ElSlopeAspect = this.tinFromLidar
                 .getElevationSlopeAzimuth(new TINpoint(2133952.01, 775539.31));
-            ElSlopeAspect.AssertDerivedValuesAreEqual(190.0, 41.3, 137.291);
+            ElSlopeAspect.AssertDerivedValuesAreEqual(190.0, 41.3, 317.2913);
 
             ElSlopeAspect = this.tinFromLidar
                 .getElevationSlopeAzimuth(new TINpoint(2133987.65, 775577.91));
-            ElSlopeAspect.AssertDerivedValuesAreEqual(190.0, 41.3, 137.291);
+            ElSlopeAspect.AssertDerivedValuesAreEqual(190.0, 41.3, 317.291);
         }
 
         [TestMethod]
