@@ -22,7 +22,15 @@ namespace Surfaces.TIN
 
         [NonSerialized]
         private Vector normalVec_;
-        public Vector normalVec { get { return normalVec_; } }
+        public Vector normalVec
+        {
+            get
+            {
+                if (null == normalVec_)
+                    setupNormalVec();
+                return normalVec_;
+            }
+        }
 
         public bool IsValid { get; set; } = true;
 
