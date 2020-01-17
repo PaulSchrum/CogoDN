@@ -170,11 +170,22 @@ namespace Surfaces.TIN
             return returnObject;
         }
 
+        protected void correctUpsidedownTriangles()
+        {
+            List<TINtriangle> upsideDownTriangles = this.allTriangles.Where(t => t.normalVec.z < 0.0).ToList();            
+            foreach (var tri in upsideDownTriangles)
+                tri.SwapPoint1And2();
+            
+            upsideDownTriangles = null;
+            GC.Collect();
+        }
+
         protected void finalProcessing()
         {
             this.pruneTinHull();
             this.IndexTriangles();
             this.DetermineEdgePoints();
+            this.correctUpsidedownTriangles();
         }
 
         [NonSerialized]
@@ -833,6 +844,7 @@ namespace Surfaces.TIN
                 try
                 {
                     aDTM = (TINsurface)binFrmtr.Deserialize(fstream);
+                    aDTM.correctUpsidedownTriangles();
                     LoadTimeStopwatch.Stop();
                 }
 #pragma warning disable 0168

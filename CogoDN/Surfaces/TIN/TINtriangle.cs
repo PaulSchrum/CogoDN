@@ -22,7 +22,15 @@ namespace Surfaces.TIN
 
         [NonSerialized]
         private Vector normalVec_;
-        public Vector normalVec { get { return normalVec_; } }
+        public Vector normalVec 
+        { 
+            get 
+            {
+                if (null == normalVec_)
+                    setupNormalVec();
+                return normalVec_; 
+            } 
+        }
 
         public bool IsValid { get; set; } = true;
 
@@ -319,6 +327,15 @@ namespace Surfaces.TIN
             { p2Idx = this.point3.myIndex + 1; p3Idx = this.point2.myIndex + 1; }
 
                 return $"f {this.point1.myIndex + 1} {p2Idx} {p3Idx}";
+        }
+
+        internal void SwapPoint1And2()
+        {
+            var holdMypoint = point2;
+            point2 = point1;
+            point1 = holdMypoint;
+
+            normalVec_ = (point2 - point1).crossProduct(point3 - point1);
         }
     }
 
