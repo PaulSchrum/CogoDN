@@ -1,4 +1,4 @@
-# CogoDNcore
+# CogoDN
 CogoDN is an Coordinate Geometry framework for Civil Engineers (Roadway and Railway) in Dot Net. 
 
 Though the focus of CogoDN is alignment geometry this repository also includes a Triangulated Irregular Network (Tin model) for surface modelling. The Tin model may be instantiated from some types of Lidar, including the Lidar .las files available from the North Carolina Department of Public Safety. https://sdd.nc.gov/
