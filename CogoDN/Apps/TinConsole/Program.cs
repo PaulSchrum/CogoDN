@@ -80,6 +80,7 @@ namespace TinConsole
                 ["summarize"] = ls => summarize(ls),
                 ["reload"] = ls => reload(ls),
                 ["performance_test"] = ls => performance_test(ls),
+                ["output_lines"] = ls => output_lines(ls),
             };
 
             Action<List<String>> command = null;
@@ -111,6 +112,12 @@ namespace TinConsole
             System.Console.Write(surface.Statistics.ToString());
         }
 
+        private static void output_lines(List<string> commandItems)
+        {
+            var outfile = @"D:\Research\Datasets\Lidar\Tilley Creek\decimation research\smartDecResults\linesOnly.dxf";
+            surface.writeLinesToDxf(outfile, (Line => Line.DeltaCrossSlopeAsAngleRad > 3.05));
+        }
+
         private static void reload(List<string> commandItems)
         {
             surface = null;
@@ -128,7 +135,7 @@ namespace TinConsole
                 System.Console.WriteLine("No file has been loaded. Nothing to summarize.");
                 return;
             }
-            //GC.Collect();
+            
             var skipPoints = 1;
             if (commandItems.Count > 1)
                 skipPoints = Convert.ToInt32(commandItems[1]);
@@ -136,7 +143,6 @@ namespace TinConsole
             if(surface != null && hcSource != surface.SourceData)
                 surface = TINsurface.CreateFromLAS(hcSource, skipPoints: skipPoints);
 
-            surface.IndexTriangles();
             var bb = surface.BoundingBox;
             var rnd = new Random(12345);
             var samples = 10_000_000;
