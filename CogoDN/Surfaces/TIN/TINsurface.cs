@@ -421,7 +421,7 @@ namespace Surfaces.TIN
         /// <param name="maxInternalAngle"></param>
         /// <param name="maxSlopeDegrees"></param>
         internal void pruneTinHull(double maxInternalAngle = 157.0,
-            double maxSlopeDegrees = 79.5)
+            double maxSlopeDegrees = 79.5, double maxLineCrossSlopeChange=175.0)
         {
             var exteriorTriangles = this.getExteriorTriangles();
             var markNotValid = exteriorTriangles
@@ -462,8 +462,32 @@ namespace Surfaces.TIN
                 if (triangle.IsValid)
                     dxf.AddEntity(aFace);
             }
-
             dxf.Save(outFile);
+        }
+
+        public void writeLinesToDxf(string outFile, Func<TINtriangleLine, bool> filter=null)
+        {
+            var dxf = new DxfDocument();
+            dxf.DrawingVariables.AcadVer = netDxf.Header.DxfVersion.AutoCad2013;
+            int counter = 0;
+
+            foreach(var aLine in this.allLines.Values.Where(L => filter(L)))
+            {
+                var pt1 = aLine.firstPoint;
+                var startVec = new netDxf.Vector3(pt1.x, pt1.y, pt1.z);
+                var pt2 = aLine.secondPoint;
+                var endVec = new netDxf.Vector3(pt2.x, pt2.y, pt2.z);
+                Line dxfLine = new Line(startVec, endVec);
+                dxf.AddEntity(dxfLine);
+                counter++;
+            }
+
+
+            if (counter > 0)
+                dxf.Save(outFile);
+            else
+                throw new Exception("Empty dxf file not created.");
+
         }
 
         public void WritePointsToDxf(string outFile)

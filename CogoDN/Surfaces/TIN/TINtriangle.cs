@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using CadFoundation.Angles;
 using CadFoundation.Coordinates;
@@ -278,6 +279,10 @@ namespace Surfaces.TIN
                 return true;
             var slopeAsDeg90Complement = Math.Abs(90.0 - slopeAsDeg);
             if (slopeAsDeg90Complement < 90.0 - slopeThreshold)
+                return true;
+
+            var maxXslope = lines.Select(Line => Line.DeltaCrossSlopeAsAngleRad).OrderBy(x => x).Last();
+            if (maxXslope > 3.0)
                 return true;
 
             return false;
