@@ -129,6 +129,24 @@ namespace Surfaces.TIN
             }
         }
 
+        public double? DeltaCrossSlopeAsAngleRad
+        {
+            get
+            {
+                if (this.oneTriangle == null || this.theOtherTriangle == null)
+                    return null;
+
+                var triangle1Normal = this.oneTriangle.normalVec;
+                var triangle2Normal = this.theOtherTriangle.normalVec;
+                var result = Math.Acos(triangle1Normal.dotProduct(triangle2Normal)
+                    / (triangle1Normal.Length * triangle2Normal.Length)
+                    );
+                if (Double.IsNaN(result))
+                    return 0.0;
+                return result;
+            }
+        }
+
         internal static triangleLineComparer compr = new triangleLineComparer();
     }
 
