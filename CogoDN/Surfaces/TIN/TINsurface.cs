@@ -309,7 +309,7 @@ namespace Surfaces.TIN
                 return;
 
             if(!File.Exists(v))
-                System.IO.File.WriteAllText(v, "PointsSkipped,PointCount,RMSE,RMaxSE,Rp95SE,FileSize\r\n");
+                System.IO.File.WriteAllText(v, "PointsSkipped,PointCount,RMSE,RMaxSE,Rp95SE,rootVarianceSquared\r\n");
 
             randomIndices rdmIdc = new randomIndices(allUnusedPoints.Count, 1000);
             var squaredErrorsBag = new ConcurrentBag<double?>();
@@ -317,15 +317,17 @@ namespace Surfaces.TIN
 
             Console.WriteLine();
             Console.WriteLine("Starting Elevation Sweep");
+            
             var sw = Stopwatch.StartNew();
             //foreach(var idx in rdmIdc.indices)
-            //Parallel.ForEach(rdmIdc.indices, idx =>
             Parallel.ForEach(allUnusedPoints, pt =>
             {
-                //var pt = allUnusedPoints[idx];
                  var error = pt.z - getElevation(pt);
                  squaredErrorsBag.Add(error * error);
-            }   );
+            }
+            );
+            //;
+
             //allUnusedPoints.Select(p => p.z - getElevation(p)).ToList();
             //var squaredErrors = allUnusedPoints.Select(p => p.z - getElevation(p)).Select(e => e * e).ToList();
             List<double?> squaredErrors = new List<double?>(squaredErrorsBag);
@@ -344,7 +346,8 @@ namespace Surfaces.TIN
             var msPerQuery = (double)sw.ElapsedMilliseconds / allUnusedPoints.Count;
             Console.WriteLine($"   {msPerQuery} milliseconds per query.");
 
-            String outRow = $"{skippedPoints},{this.allUsedPoints.Count},{rootMeanSquared:F5},{rootMaxSquared:F5},{rootP95Squared:F5},{rootVarianceSquared:F5}";
+            String outRow = $"{skippedPoints},{this.allUsedPoints.Count},{rootMeanSquared:F5}," +
+                $"{rootMaxSquared:F5},{rootP95Squared:F5},{rootVarianceSquared:F5}";
             using (StreamWriter csvFile = new StreamWriter(v, true))
             {
                 csvFile.WriteLine(outRow);
