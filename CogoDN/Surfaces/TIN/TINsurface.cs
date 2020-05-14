@@ -15,6 +15,8 @@ using System.Threading.Tasks;
 using System.Xml;
 using CadFound = CadFoundation.Coordinates;
 
+using MathNet.Numerics.Statistics;
+
 using System.Runtime.CompilerServices;
 using Cogo.Utils;
 using CadFoundation;
@@ -30,6 +32,13 @@ namespace Surfaces.TIN
     {
         // Substantive members - Do serialize
         public List<TINpoint> allUsedPoints { get; private set; }
+
+        [NonSerialized]
+        private List<TINpoint> unused_points = new List<TINpoint>();
+        public List<TINpoint> allUnusedPoints { get { return unused_points; } }
+        private int skippedPoints = 0;
+        
+        
         private Dictionary<Tuple<int, int>, TINtriangleLine> allLines { get; set; }
             = new Dictionary<Tuple<int, int>, TINtriangleLine>();
         private List<TINtriangle> allTriangles;
@@ -109,7 +118,6 @@ namespace Surfaces.TIN
             List<int> classificationFilter = null)
         {
             LasFile lasFile = new LasFile(lidarFileName,
-                skipPoints: skipPoints,
                 classificationFilter: classificationFilter);
             TINsurface returnObject = new TINsurface();
             returnObject.SourceData = lidarFileName;
@@ -117,6 +125,8 @@ namespace Surfaces.TIN
             int runningPointCount = -1;
             int indexCount = 0;
             var gridIndexer = new Dictionary<Tuple<int, int>, int>();
+            returnObject.createAllpointsCollection();
+            
             foreach (var point in lasFile.AllPoints)
             {
                 if (null != trimBB && !trimBB.isPointInsideBB2d(point))
@@ -124,20 +134,21 @@ namespace Surfaces.TIN
 
                 pointCounter++;
                 runningPointCount++;
-                if (skipPoints > 0)
+                
+                if (runningPointCount % (skipPoints + 1) == 0)
                 {
-                    if (runningPointCount % skipPoints != 0)
-                        continue;
+                    returnObject.allUsedPoints.Add(point);
+                    // Note this approach will occasionally skip over points that 
+                    // are double-stamps. I am fine with that for now.
+                    gridIndexer[point.GridCoordinates] = indexCount;
+                }
+                else
+                {
+                    point.hasBeenSkipped = true;
+                    returnObject.allUnusedPoints.Add(point);
+                    continue;
                 }
 
-                if (returnObject.allUsedPoints == null)
-                {
-                    returnObject.createAllpointsCollection();
-                }
-                returnObject.allUsedPoints.Add(point);
-                // Note this approach will occasionally skip over points that 
-                // are double-stamps. I am fine with that for now.
-                gridIndexer[point.GridCoordinates] = indexCount;
                 indexCount++;
             }
 
@@ -165,6 +176,104 @@ namespace Surfaces.TIN
                 if(!(newTriangle is null))
                     returnObject.allTriangles.Add(newTriangle);
             }
+            returnObject.finalProcessing();
+
+            if (skipPoints == 0) 
+                return returnObject;
+            
+            var baseTin = returnObject;
+            returnObject = null;
+
+            var tempAllPoints = (baseTin.allUsedPoints.Concat(baseTin.allUnusedPoints)).ToList();
+            foreach (var pt in tempAllPoints)
+            {
+                if (pt.isOnHull)
+                    pt.hasBeenSkipped = false;
+                else
+                    pt.hasBeenSkipped = true;
+            }
+                
+
+            returnObject = new TINsurface();
+            returnObject.SourceData = lidarFileName;
+            pointCounter = -1;
+            runningPointCount = -1;
+            gridIndexer = new Dictionary<Tuple<int, int>, int>();
+            returnObject.createAllpointsCollection();
+
+            var hullIndices = tempAllPoints.Where(p => p.isOnHull).Select(p => p.myIndex).ToList();
+            var nonHullIndices = tempAllPoints.Where(p => !p.isOnHull).Select(p => p.myIndex).ToList();
+            var targetNonHullCount = (int)(nonHullIndices.Count / (skipPoints + 1));
+
+            Random rdm = new Random();
+            var pointsToIncludeByIndex = new HashSet<int>();
+            for(int i=0; i<=targetNonHullCount; i++)
+            {
+                var proceed = false;
+                while(!proceed)
+                {
+                    var nextIndex = rdm.Next(0, nonHullIndices.Count);
+                    proceed = pointsToIncludeByIndex.Add(nextIndex);
+                }
+            }
+
+            var pointsToUseIndexes = new List<int>(pointsToIncludeByIndex.Count);
+            foreach(var idx in pointsToIncludeByIndex)
+            {
+                pointsToUseIndexes.Add(idx);
+            }
+            pointsToUseIndexes.AddRange(hullIndices);
+            hullIndices = null;
+            pointsToIncludeByIndex = null;
+
+
+            foreach (var idx in pointsToUseIndexes)
+            {
+                var point = tempAllPoints[idx];
+                pointCounter++;
+                runningPointCount++;
+
+                point.hasBeenSkipped = false;
+                returnObject.allUsedPoints.Add(point);
+                // Note this approach will occasionally skip over points that 
+                // are double-stamps. I am fine with that for now.
+                gridIndexer[point.GridCoordinates] = indexCount;
+
+                indexCount++;
+            }
+
+            foreach (var pt in tempAllPoints.Where(pt => pt.hasBeenSkipped))
+            {
+                returnObject.allUnusedPoints.Add(pt);
+                pt.myIndex = -1;
+            }
+
+            var usedCount = tempAllPoints.Where(p => !p.hasBeenSkipped).Count();
+            var notUsedCount = tempAllPoints.Where(p => p.hasBeenSkipped).Count();
+            setBoundingBox(returnObject);
+
+            for (indexCount = 0; indexCount < returnObject.allUsedPoints.Count; indexCount++)
+            {
+                var aPoint = returnObject.allUsedPoints[indexCount];
+                aPoint.myIndex = indexCount;
+                gridIndexer[aPoint.GridCoordinates] = indexCount;
+            }
+
+            VoronoiMesh = MIConvexHull.VoronoiMesh
+                .Create<TINpoint, ConvexFaceTriangle>(returnObject.allUsedPoints);
+
+            returnObject.allTriangles = new List<TINtriangle>(2 * returnObject.allUsedPoints.Count);
+            foreach (var vTriangle in VoronoiMesh.Triangles)
+            {
+                var point1 = gridIndexer[vTriangle.Vertices[0].GridCoordinates];
+                var point2 = gridIndexer[vTriangle.Vertices[1].GridCoordinates];
+                var point3 = gridIndexer[vTriangle.Vertices[2].GridCoordinates];
+                var newTriangle = TINtriangle.CreateTriangle(
+                    returnObject.allUsedPoints, point1, point2, point3);
+                if (!(newTriangle is null))
+                    returnObject.allTriangles.Add(newTriangle);
+            }
+            returnObject.skippedPoints = skipPoints;
             returnObject.finalProcessing();
 
             return returnObject;
@@ -197,12 +306,65 @@ namespace Surfaces.TIN
         }
         public void IndexTriangles()
         {
-            if(null == validTrianglesIndexed)
+            if (null == validTrianglesIndexed)
             {
                 var validTris = ValidTriangles.ToList();
                 validTrianglesIndexed = new GridIndexer(validTris.Count, this);
                 validTrianglesIndexed.AssignObjectsToCells(validTris);
             }
+        }
+
+        public void ComputeErrorStatistics(string v)
+        {
+            if (allUnusedPoints.Count == 0)
+                return;
+
+            if(!File.Exists(v))
+                System.IO.File.WriteAllText(v, "PointsSkipped,PointCount,RMSE,RMaxSE,Rp95SE,rootVarianceSquared\r\n");
+
+            randomIndices rdmIdc = new randomIndices(allUnusedPoints.Count, 1000);
+            var squaredErrorsBag = new ConcurrentBag<double?>();
+
+
+            Console.WriteLine();
+            Console.WriteLine("Starting Elevation Sweep");
+            
+            var sw = Stopwatch.StartNew();
+            //foreach(var idx in rdmIdc.indices)
+            Parallel.ForEach(allUnusedPoints, pt =>
+            {
+                 var error = pt.z - getElevation(pt);
+                 squaredErrorsBag.Add(error * error);
+            }
+            );
+            //;
+
+            //allUnusedPoints.Select(p => p.z - getElevation(p)).ToList();
+            //var squaredErrors = allUnusedPoints.Select(p => p.z - getElevation(p)).Select(e => e * e).ToList();
+            List<double?> squaredErrors = new List<double?>(squaredErrorsBag);
+            squaredErrors.Sort();
+            squaredErrorsBag.Clear();
+            squaredErrorsBag = null;
+            var stats = new DescriptiveStatistics(squaredErrors);
+            var rootMaxSquared = Math.Sqrt(stats.Maximum);
+            var rootMeanSquared = Math.Sqrt(stats.Mean);
+            var rootVarianceSquared = Math.Sqrt(stats.Variance);
+            int idxP95 = (int)(0.95*(double)squaredErrors.Count);
+            var rootP95Squared = Math.Sqrt((double)squaredErrors[idxP95]);
+            sw.Stop();
+            Console.Write(sw.Elapsed);
+            //var msPerQuery = (double)sw.ElapsedMilliseconds / rdmIdc.SampleCount;
+            var msPerQuery = (double)sw.ElapsedMilliseconds / allUnusedPoints.Count;
+            Console.WriteLine($"   {msPerQuery} milliseconds per query.");
+
+            String outRow = $"{skippedPoints},{this.allUsedPoints.Count},{rootMeanSquared:F5}," +
+                $"{rootMaxSquared:F5},{rootP95Squared:F5},{rootVarianceSquared:F5}";
+            using (StreamWriter csvFile = new StreamWriter(v, true))
+            {
+                csvFile.WriteLine(outRow);
+            }
+
+            return;
         }
 
         [NonSerialized]
@@ -795,7 +957,7 @@ namespace Surfaces.TIN
         /// </summary>
         /// <param name="filenameToSaveTo">Full path to save the file to. .tinDN extension is required.</param>
         /// <param name="compress">Defaul true. If true, the file is compressed while saving.</param>
-        public void saveAsBinary(string filenameToSaveTo, bool compress=true)
+        public void saveAsBinary(string filenameToSaveTo, bool compress=true, bool overwrite=true)
         {
             if (!Path.GetExtension(filenameToSaveTo).
                Equals(StandardExtension, StringComparison.OrdinalIgnoreCase))
@@ -829,6 +991,17 @@ namespace Surfaces.TIN
             }
 
             System.IO.File.Delete(tempFname);
+            if (System.IO.File.Exists(filenameToSaveTo))
+            {
+                if(overwrite)
+                {
+                    System.IO.File.Delete(filenameToSaveTo);
+                }
+                else
+                {
+                    throw new IOException($"Can not overwrite {filenameToSaveTo}. Save operation failed.");
+                }
+            }
             System.IO.File.Move(zipFile, filenameToSaveTo);
         }
 
@@ -1115,7 +1288,33 @@ namespace Surfaces.TIN
         
     }
 
-    internal static class GridDTMhelper
+    internal class randomIndices
+    {
+        public int PopulationCount { get; private set; }
+        public int SampleCount { get; private set; }
+        public HashSet<int> indices = new HashSet<int>();
+        internal randomIndices(int populationCount, int sampleCount)
+        {
+            PopulationCount = populationCount;
+            SampleCount = sampleCount;
+            var samples = 0;
+            var rnd = new Random();
+            while (true)
+            {
+                bool wasAdded = false;
+                while (!wasAdded)
+                {
+                    wasAdded = indices.Add(rnd.Next(0, populationCount));
+                }
+                if (indices.Count >= sampleCount)
+                    break;
+            }
+        }
+    }
+
+
+
+        internal static class GridDTMhelper
     {
         private const long GridSize = 500;
         public static Dictionary<XYtuple, List<TINpoint>> grid = new Dictionary<XYtuple, List<TINpoint>>();
@@ -1364,7 +1563,8 @@ namespace Surfaces.TIN
         }
     }
 
-    public static class TupleExtensionMethods
+
+        public static class TupleExtensionMethods
     {
         public static bool Contains(this Tuple<int, int> tpl, int first, int second)
         {

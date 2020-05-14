@@ -37,10 +37,8 @@ namespace Surfaces.TIN
         public int NumberOfPointRecords { get; private set; } = 0;
 
         public LasFile(string LasFilename,
-            int skipPoints = 0,
             List<int> classificationFilter = null)
         {
-            this.skipPoints = skipPoints;
             this.classificationFilter = new List<int> { 2, 13 };
             if (null != classificationFilter)
                 this.classificationFilter = classificationFilter;

@@ -16,6 +16,7 @@ namespace Surfaces.TIN
         public Double y { get; set; }
         public Double z { get; set; }
 
+        public bool hasBeenSkipped = false;
         public int lidarClassification { get; set; }
         public int myIndex { get; internal set; }
         public bool isOnHull { get; internal set; } = false;
@@ -59,14 +60,14 @@ namespace Surfaces.TIN
                );
         }
 
-        private static double gridFactor = 1.0;
+        private static double gridFactor = 1.0 / 0.1;
         public Tuple<int, int> GridCoordinates
         {
             get
             {
                 return new Tuple<int, int>(
-              Convert.ToInt32(this.x * gridFactor),
-              Convert.ToInt32(this.y * gridFactor));
+                    Convert.ToInt32(this.x * gridFactor),
+                    Convert.ToInt32(this.y * gridFactor));
             }
         }
 
