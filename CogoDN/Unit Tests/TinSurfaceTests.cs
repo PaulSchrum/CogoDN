@@ -8,6 +8,7 @@ using Surfaces;
 using System.IO;
 using Cogo.Horizontal;
 using Surfaces.TIN;
+using CadFoundation;
 
 namespace Unit_Tests
 {
