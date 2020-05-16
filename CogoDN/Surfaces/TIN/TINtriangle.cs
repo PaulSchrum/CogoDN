@@ -254,7 +254,7 @@ namespace Surfaces.TIN
             if (normalVec_ == null)
             {
                 normalVec_ = (point2 - point1).crossProduct(point3 - point1);
-                if ((normalVec_.x * normalVec_.y * normalVec_.z) < 0.0)
+                if (normalVec_.z < 0.0)
                 {
                     var tmp = this.point2;
                     this.point2 = this.point1;
