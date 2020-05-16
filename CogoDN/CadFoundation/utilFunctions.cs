@@ -176,5 +176,16 @@ namespace CadFoundation
         {
             return Math.Abs(first - second) <= toleration;
         }
+
+        public static T RetrieveByIndex<T>(this IList<T> theList, int index)
+        {
+            if (null == theList)
+                return default;
+
+            if (index >= theList.Count)
+                return default;
+            
+            return theList[index];
+        }
     }
 }
