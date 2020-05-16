@@ -5,21 +5,42 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using CadFoundation.Coordinates;
+using CadFoundation;
 using Surfaces.TIN;
+using System.IO;
 
 namespace TinConsole
 {
     class Program
     {
+        static DirectoryManager pwd = DirectoryManager.FromPwd();
+        static string commandFileName = "TinConsoleCommands.txt";
+        static Queue<string> commandList = null;
         static string hcSource =
             @"D:\Research\Datasets\Lidar\Tilley Creek\decimation research\Tilley Creek Small.las";
         static TINsurface surface = null;
 
         static void Main(string[] args)
         {
-            System.Console.WriteLine($"Source: {args[0]}");
-            System.Console.WriteLine($"Source: {args[1]}");
-            System.Console.WriteLine($"Source: {args[2]}");
+            if (args.Length == 0)
+            {
+                if(pwd.ConfirmExists(commandFileName))
+                {
+                    var fileToRead = pwd.GetPathAndAppendFilename(commandFileName);
+                    commandList = new Queue<string>(File.ReadAllLines(fileToRead));
+                }
+                repl();
+            }
+
+            if(args.Length == 1 && args[0].ToLower() == "pwd")
+            {
+                System.Console.WriteLine("Pwd is " + pwd);
+                Environment.Exit(0);
+            }
+
+            System.Console.WriteLine($"Source: ", args);
+            //System.Console.WriteLine($"Source: {args[1]}");
+            //System.Console.WriteLine($"Source: {args[2]}");
             bool useHardCodes = false;
 
 
@@ -76,6 +97,7 @@ namespace TinConsole
             {
                 ["exit"] = ls => System.Environment.Exit(0),
                 ["quit"] = ls => System.Environment.Exit(0),
+                ["log"] = ls => SetupLogging(ls),
                 ["load"] = ls => surface = TINsurface.CreateFromLAS(ls[1]),
                 ["summarize"] = ls => summarize(ls),
                 ["reload"] = ls => reload(ls),
@@ -102,6 +124,11 @@ namespace TinConsole
                 }
                 command(commandLine);
             }
+        }
+
+        private static void SetupLogging(List<string> commandItems)
+        {
+
         }
 
         private static void summarize(List<string> commandItems)
