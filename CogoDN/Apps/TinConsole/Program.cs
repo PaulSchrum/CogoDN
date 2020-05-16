@@ -16,12 +16,17 @@ namespace TinConsole
         static DirectoryManager pwd = DirectoryManager.FromPwd();
         static string commandFileName = "TinConsoleCommands.txt";
         static Queue<string> commandList = null;
+        static string logFileName = "TinDN Processing Log.log";
+        static StreamWriter logFile = null;
         static string hcSource =
             @"D:\Research\Datasets\Lidar\Tilley Creek\decimation research\Tilley Creek Small.las";
         static TINsurface surface = null;
 
         static void Main(string[] args)
         {
+            AppDomain.CurrentDomain.UnhandledException += 
+                new UnhandledExceptionEventHandler(OnUnhandledException);
+            AppDomain.CurrentDomain.ProcessExit += new EventHandler(OnAppExit);
             if (args.Length == 0)
             {
                 if(pwd.ConfirmExists(commandFileName))
@@ -83,6 +88,21 @@ namespace TinConsole
             }
         }
 
+        static void OnAppExit(object sender, EventArgs e)
+        {
+            mirrorLogPrint("Application exiting.");
+            logFile?.Dispose();
+        }
+
+        static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            var stackTrace = e.ExceptionObject.ToString();
+            mirrorLogPrint(stackTrace);
+            Console.WriteLine();
+            Console.WriteLine("Press a key to exit");
+            Environment.Exit(-1);
+        }
+
         private static List<string> parseLine(string str)
         {
             List<string> s = new List<string>();
@@ -128,7 +148,69 @@ namespace TinConsole
 
         private static void SetupLogging(List<string> commandItems)
         {
+            string localLogFName = logFileName;
+            Func<string, StreamWriter> openMethod = s => File.AppendText(s);
+            string somevar = null; 
+            var txt = commandItems.RetrieveByIndex(1);
+            switch (txt)
+            {
+                case "reset":
+                    {
+                        openMethod = s => new StreamWriter(s);
+                        localLogFName = commandItems.RetrieveByIndex(2) ?? logFileName;
+                        break;
+                    }
+                case string s when s.Contains("."):
+                    {
+                        localLogFName = s;
+                        break;
+                    }
+                default: break;
+            }
 
+            localLogFName = pwd.GetPathAndAppendFilename(localLogFName);
+            try
+            {
+                logFile = openMethod(localLogFName);
+                mirrorLogPrint("Log file opened.");
+            }
+            catch (IOException ioe)
+            {
+                if (ioe.Message.Contains("it is being used"))
+                    mirrorLogPrint("Log open attempt failed because it is already open.");
+                else
+                    throw;
+            }
+            logFile?.Flush();
+        }
+
+        static bool logMessageGiven = false;
+        static bool priorWasNewline = true;
+        static void mirrorLogPrint(string message, bool newline=true)
+        {
+            String msg;
+            if (priorWasNewline)
+                msg = DateTime.Now.ToString("dddd, d MMM yyyy 'at' HH:mm:ss.fff: ") + message;
+            else
+                msg = message;
+
+            if(null == logFile && !logMessageGiven)
+            {
+                System.Console.WriteLine("Logging requested but could not be started.");
+                logMessageGiven = true;
+            }
+            if (newline)
+            {
+                logFile?.WriteLine(msg);
+                System.Console.WriteLine(message);
+            }
+            else
+            {
+                logFile?.Write(msg);
+                System.Console.WriteLine(message);
+            }
+
+            priorWasNewline = newline;
         }
 
         private static void summarize(List<string> commandItems)
