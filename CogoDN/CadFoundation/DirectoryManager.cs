@@ -141,5 +141,10 @@ namespace CadFoundation
 
             System.IO.Directory.Delete(target.ToString());
         }
+
+        public static DirectoryManager FromPwd()
+        {
+            return new DirectoryManager();
+        }
     }
 }
