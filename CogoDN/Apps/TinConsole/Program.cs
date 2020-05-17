@@ -8,6 +8,7 @@ using CadFoundation.Coordinates;
 using CadFoundation;
 using Surfaces.TIN;
 using System.IO;
+using System.Text;
 
 namespace TinConsole
 {
@@ -21,6 +22,9 @@ namespace TinConsole
         static string hcSource =
             @"D:\Research\Datasets\Lidar\Tilley Creek\decimation research\Tilley Creek Small.las";
         static TINsurface surface = null;
+
+        static StringWriter intercept = new StringWriter();
+        static TextWriter stdOut = Console.Out;
 
         static void Main(string[] args)
         {
@@ -105,9 +109,30 @@ namespace TinConsole
 
         private static List<string> parseLine(string str)
         {
+            StringBuilder insideQuote = null;
             List<string> s = new List<string>();
             foreach (var item in str.Split(" "))
-                s.Add(item);
+            {
+                if (item[0] == '\"')
+                {
+                    insideQuote = new StringBuilder(item);
+                    continue;
+                }
+                if (item[^1] == '\"')
+                {
+                    insideQuote.Append(" ").Append(item);
+                    s.Add(insideQuote.ToString());
+                    insideQuote = null;
+                    continue;
+                }
+
+                if (insideQuote != null)
+                {
+                    insideQuote.Append(" ").Append(item);
+                }
+                else
+                    s.Add(item);
+            }
             return s;
         }
 
@@ -118,7 +143,7 @@ namespace TinConsole
                 ["exit"] = ls => System.Environment.Exit(0),
                 ["quit"] = ls => System.Environment.Exit(0),
                 ["log"] = ls => SetupLogging(ls),
-                ["load"] = ls => surface = TINsurface.CreateFromLAS(ls[1]),
+                ["load"] = ls => Load(ls),
                 ["summarize"] = ls => summarize(ls),
                 ["reload"] = ls => reload(ls),
                 ["decimate_multiple"] = ls => decimate_multiple(),
@@ -146,6 +171,12 @@ namespace TinConsole
             }
         }
 
+        private static void Load(List<string> commandItems)
+        {
+            var openFileStr = pwd.GetPathAndAppendFilename(commandItems[1]);
+            surface = TINsurface.CreateFromLAS(openFileStr);
+        }
+
         private static void SetupLogging(List<string> commandItems)
         {
             string localLogFName = logFileName;
@@ -165,6 +196,14 @@ namespace TinConsole
                         localLogFName = s;
                         break;
                     }
+                case "stop":
+                    {
+                        mirrorLogPrint("Stopping log file without exiting.");
+                        logFile?.Flush();
+                        logFile?.Dispose();
+                        //Console.setOut(stdOut);
+                        break;
+                    }
                 default: break;
             }
 
@@ -173,6 +212,7 @@ namespace TinConsole
             {
                 logFile = openMethod(localLogFName);
                 mirrorLogPrint("Log file opened.");
+                //Console.setOut(intercept);
             }
             catch (IOException ioe)
             {
@@ -202,12 +242,16 @@ namespace TinConsole
             if (newline)
             {
                 logFile?.WriteLine(msg);
+                //Console.setOut(stdOut);
                 System.Console.WriteLine(message);
+                //Console.setOut(intercept);
             }
             else
             {
                 logFile?.Write(msg);
+                //Console.setOut(stdOut);
                 System.Console.WriteLine(message);
+                //Console.setOut(intercept);
             }
 
             priorWasNewline = newline;
@@ -237,7 +281,9 @@ namespace TinConsole
             var skipPoints = 0;
             if (commandItems.Count > 1)
                 skipPoints = Convert.ToInt32(commandItems[1]);
+            mirrorLogPrint("Reloading primary tin model.");
             surface = TINsurface.CreateFromLAS(hcSource, skipPoints: skipPoints);
+            mirrorLogPrint("Primary tin model reloaded.");
         }
 
         private static void performance_test(List<string> commandItems)
