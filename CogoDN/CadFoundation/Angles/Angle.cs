@@ -268,4 +268,12 @@ namespace CadFoundation.Angles
             return areEqual;
         }
     }
+
+    public static class angleExtensions
+    {
+        public static Angle DegreesToAngle(this Double degrees)
+        {
+            return Angle.DEGREE * degrees;
+        }
+    }
 }
