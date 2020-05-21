@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using CadFoundation.Angles;
@@ -10,7 +11,7 @@ using Cogo;
 namespace Surfaces.TIN
 {
     [Serializable]
-    internal class TINtriangle : IComparable, IBoxBounded
+    public class TINtriangle : IComparable, IBoxBounded
     {
         // temporary scratch pad members -- do not serialize
         [NonSerialized]
@@ -31,6 +32,30 @@ namespace Surfaces.TIN
                     setupNormalVec();
                 return normalVec_; 
             } 
+        }
+
+        public double SlopeDouble
+        {
+            get
+            {
+                return 1.0 / Math.Tan(normalVec.Theta.getAsRadians());
+            }
+        }
+
+        [NonSerialized]
+        private TINpoint centroid_ = null;
+        public TINpoint Centroid
+        {
+            get
+            {
+                if (null == centroid_)
+                    centroid_ = new TINpoint(
+                        (point1.x + point2.x + point3.x) / 3.0,
+                        (point1.y + point2.y + point3.y) / 3.0,
+                        (point1.z + point2.z + point3.z) / 3.0
+                        );
+                return centroid_;
+            }
         }
 
         public bool IsValid { get; set; } = true;
@@ -158,6 +183,21 @@ namespace Surfaces.TIN
         public bool isPointInBoundingBox(TINpoint aPoint)
         {
             return myBoundingBox_.isPointInsideBB2d(aPoint.x, aPoint.y);
+        }
+
+        public IEnumerable<TINpoint> myPoints
+        {
+            get
+            {
+                yield return point1;
+                yield return point2;
+                yield return point3;
+            }
+        }
+
+        public bool IsPointAVertex(TINpoint aPoint)
+        {
+            return this.myPoints.Where(p => p.myIndex == aPoint.myIndex).Any();
         }
 
         #region IComparable Members
@@ -305,9 +345,13 @@ namespace Surfaces.TIN
             return false;
         }
 
+        public static long callDepth = 0;
         internal void walkNetwork()
         {
             if (this.HasBeenVisited) return;
+            callDepth++;
+            if(callDepth > 4000)
+                Trace.Write($"{callDepth}\n");
             this.HasBeenVisited = true;
             foreach (var aLine in this.lines)
             {
@@ -321,6 +365,14 @@ namespace Surfaces.TIN
                     }
                 }
             }
+            callDepth--;
+        }
+
+        public override string ToString()
+        {
+            StringBuilder retString = new StringBuilder($"{(int)(Centroid.x)}, ");
+            retString.Append($"{(int)(Centroid.y)}");
+            return retString.ToString();
         }
 
         internal string IndicesToWavefrontString()

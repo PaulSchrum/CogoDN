@@ -56,6 +56,10 @@ namespace CadFoundation.Coordinates
             return new Point(aPoint.x + this.x, aPoint.y + this.y, aPoint.z + this.z);
         }
 
+        /// <summary>
+        /// In polar coordinates, phi, with due north = 0, rotating
+        /// clockwise, so due east is 90 degrees.
+        /// </summary>
         public Azimuth Azimuth
         {
             get
@@ -71,10 +75,23 @@ namespace CadFoundation.Coordinates
             private set { }
         }
 
+        /// <summary>
+        /// Same thing as Azimuth. In polar coordinates, phi.
+        /// </summary>
         public Azimuth DirectionHorizontal
         {
             get { return new Azimuth(Math.Atan2(y, x)); }
             private set { }
+        }
+
+        private double? baseLength_ = null;
+        public double BaseLength
+        {
+            get
+            {
+                baseLength_ ??= Math.Sqrt(x * x + y * y);
+                return (double) baseLength_;
+            }
         }
 
         /// <summary>
@@ -84,8 +101,20 @@ namespace CadFoundation.Coordinates
         {
             get
             {
-                var baseLength = Math.Sqrt(x * x + y * y);
-                return new Slope(baseLength, z);
+                return new Slope(z, BaseLength);
+            }
+        }
+
+        /// <summary>
+        /// Theta in polar notation. 0 is straight up. pi/2 is horizontal.
+        /// pi is straight down.
+        /// </summary>
+        public Angle Theta
+        {
+            get
+            {
+                var val = Math.Atan2(BaseLength, z);
+                return new Angle(Math.Atan2(BaseLength, z));
             }
         }
 
