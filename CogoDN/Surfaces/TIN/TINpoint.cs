@@ -6,6 +6,7 @@ using MIConvexHull;
 using netDxf;
 using MathNet.Numerics.LinearAlgebra;
 using CadFoundation.Coordinates;
+using Surfaces.TIN;
 
 namespace Surfaces.TIN
 {
@@ -21,6 +22,10 @@ namespace Surfaces.TIN
         public int myIndex { get; internal set; }
         public bool isOnHull { get; internal set; } = false;
 
+        public override string ToString()
+        {
+            return $"{x:f2}, {y:f2} {z:f2}";
+        }
 
         public double[] Position
         {
