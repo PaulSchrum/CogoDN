@@ -38,7 +38,8 @@ namespace Surfaces.TIN
         {
             get
             {
-                return 1.0 / Math.Tan(normalVec.Theta.getAsRadians());
+                return 1 / 
+                    Math.Tan((Math.PI / 2.0) - normalVec.Theta.getAsRadians());
             }
         }
 
@@ -310,15 +311,13 @@ namespace Surfaces.TIN
         internal static double slopeThreshold = 79.5; // degrees.
         internal bool shouldRemove()
         {
-            var slope = this.normalVec.NormalSlope;
-            var slopeAsDeg = slope.getAsDegreesDouble();
+            var normalTheta = this.normalVec.Theta.getAsDegreesDouble();
+            if (normalTheta > slopeThreshold)
+                return true;
             // if max interior angle > threshold, true
             var maxInteriorAngle =
                 Math.Max(this.angle1, Math.Max(this.angle2, this.angle3));
             if (maxInteriorAngle > triangleInternalAngleThreshold)
-                return true;
-            var slopeAsDeg90Complement = Math.Abs(90.0 - slopeAsDeg);
-            if (slopeAsDeg90Complement < 90.0 - slopeThreshold)
                 return true;
 
             var maxXslope = lines.Select(Line => Line.DeltaCrossSlopeAsAngleRad).OrderBy(x => x).Last();
