@@ -165,9 +165,8 @@ namespace CadFoundation.Coordinates
 
         public override String ToString()
         {
-            var retStr = new StringBuilder(String.Format("L: {0:#.0000}, Az: ", this.Length));
-            retStr.Append(this.Azimuth.ToString());
-            return retStr.ToString();
+            return 
+                $"L: {Length:#.0000}, Az: {Azimuth:0.00}°, θ: {Theta.getAsDegreesDouble():0.00}°";
         }
 
 
