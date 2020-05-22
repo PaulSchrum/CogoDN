@@ -405,6 +405,16 @@ namespace Unit_Tests
             Assert.AreEqual(actual: objects.Count, expected: 1);
 
         }
+
+        [TestMethod]
+        public void Vector_Theta_isCorrect()
+        {
+            Vector v = new Vector(-20, -20, 100);
+            double expected = 12.9043826484;    // FIX THIS MESS!!!!
+            var theta = v.Theta;
+            double actual = v.Theta.getAsDegreesDouble();
+            Assert.AreEqual(expected: expected, actual: actual, delta: 0.00001);
+        }
     }
 
     internal class testBB : IBoxBounded
