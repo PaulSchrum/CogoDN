@@ -410,7 +410,7 @@ namespace Unit_Tests
         public void Vector_Theta_isCorrect()
         {
             Vector v = new Vector(-20, -20, 100);
-            double expected = 12.9043826484;    // FIX THIS MESS!!!!
+            double expected = 15.7931690483;
             var theta = v.Theta;
             double actual = v.Theta.getAsDegreesDouble();
             Assert.AreEqual(expected: expected, actual: actual, delta: 0.00001);
