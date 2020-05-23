@@ -162,10 +162,10 @@ namespace TinConsole
                 }
                 catch (KeyNotFoundException knfe)
                 {
-                    //System.Console.WriteLine("command not found");
-                    //continue;
-                    commandLine = new List<string>() { "decimate_multiple" };
-                    command = commands[commandLine[0]];
+                    System.Console.WriteLine("command not found");
+                    continue;
+                    //commandLine = new List<string>() { "decimate_multiple" };
+                    //command = commands[commandLine[0]];
                 }
                 command(commandLine);
             }

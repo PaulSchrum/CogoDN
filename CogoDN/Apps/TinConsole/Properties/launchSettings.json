@@ -2,7 +2,7 @@
   "profiles": {
     "TinConsole": {
       "commandName": "Project",
-      "commandLineArgs": "\"D:\\SourceModules\\CSharp\\CogoDNcore\\CogoDN\\Unit Tests\\Datasets\\Surfaces\\Lidar\\Raleigh WRAL Soccer.las\" to_obj \"D:\\SourceModules\\CSharp\\CogoDNcore\\CogoDN\\Unit Tests\\Datasets\\Outputs\\Surfaces\\WRAL Soccer.obj\""
+      "workingDirectory": "D:\\Research\\Datasets\\Lidar\\Tilley Creek"
     }
   }
 }

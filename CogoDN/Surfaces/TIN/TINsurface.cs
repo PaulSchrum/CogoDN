@@ -585,15 +585,45 @@ namespace Surfaces.TIN
         internal void pruneTinHull(double maxInternalAngle = 157.0,
             double maxSlopeDegrees = 79.5, double maxLineCrossSlopeChange=175.0)
         {
-            var exteriorTriangles = this.getExteriorTriangles();
-            var markNotValid = exteriorTriangles
+            var markNotValided = this.getExteriorTriangles()
                 .Where(tr => tr.shouldRemove()).ToList();
 
-            foreach (var triangle in markNotValid)
+            var activeLevel = new List<TINtriangle>();
+            var nextLevel = new List<TINtriangle>();
+            var visitedList = new HashSet<TINtriangle>();
+
+            foreach (var tri in markNotValided)
             {
-                triangle.IsValid = false;
-                triangle.walkNetwork();
+                tri.IsValid = false;
+                activeLevel.Add(tri);
             }
+
+            while(activeLevel.Count > 0)
+            {
+                foreach(var aTri in activeLevel)
+                {
+                    visitedList.Add(aTri);
+                    if (aTri.HasBeenVisited) continue;
+                    aTri.HasBeenVisited = true;
+                    if(aTri.shouldRemove())
+                    {
+                        aTri.IsValid = false;
+                        var nextTriangles = aTri.myLines
+                            .Where(Line => Line.GetOtherTriangle(aTri) != null)
+                            .Select(Line => Line.GetOtherTriangle(aTri))
+                            .Where(t => !t.HasBeenVisited);
+                        foreach (var nextTri in nextTriangles)
+                            nextLevel.Add(nextTri);
+                    }
+                }
+
+                activeLevel.Clear();
+                activeLevel.AddRange(nextLevel);
+                nextLevel.Clear();
+            }
+
+            foreach (var triangle in visitedList)
+                triangle.HasBeenVisited = false;
 
         }
 
