@@ -751,7 +751,7 @@ namespace Surfaces.TIN
                 foreach (var aPt in this.allUsedPoints)
                     file.WriteLine("v " + aPt.ToString(affineXform));
 
-                foreach (var aTriangle in this.allTriangles)
+                foreach (var aTriangle in this.ValidTriangles)
                     file.WriteLine(aTriangle.IndicesToWavefrontString());
             }
         }
