@@ -196,6 +196,16 @@ namespace Surfaces.TIN
             }
         }
 
+        public IEnumerable<TINtriangleLine> myLines
+        {
+            get
+            {
+                yield return myLine1;
+                yield return myLine2;
+                yield return myLine3;
+            }
+        }
+
         public bool IsPointAVertex(TINpoint aPoint)
         {
             return this.myPoints.Where(p => p.myIndex == aPoint.myIndex).Any();
@@ -345,25 +355,37 @@ namespace Surfaces.TIN
         }
 
         public static long callDepth = 0;
+
+        /// <summary>
+        /// Performs a depth-first search, but limited to 200 calls deep to avoid stack overflows.
+        /// </summary>
+        [Obsolete]
         internal void walkNetwork()
         {
             if (this.HasBeenVisited) return;
             callDepth++;
-            if(callDepth > 4000)
-                Trace.Write($"{callDepth}\n");
-            this.HasBeenVisited = true;
-            foreach (var aLine in this.lines)
+            if(callDepth > 200)
             {
-                var neighborTri = aLine.GetOtherTriangle(this);
+                callDepth--;
+                return;
+            }
+            this.HasBeenVisited = true;
+            var trianglesToRemove = new List<TINtriangle>();
+            var neighborTriangles = this.lines.Select(line => line.GetOtherTriangle(this));
+            foreach (var neighborTri in neighborTriangles)
+            {
                 if (!(neighborTri is null))
                 {
                     if (neighborTri.shouldRemove())
                     {
                         neighborTri.IsValid = false;
-                        neighborTri.walkNetwork();
+                        trianglesToRemove.Add(neighborTri);
                     }
                 }
             }
+            foreach(var neighborTri in trianglesToRemove)
+                neighborTri.walkNetwork();
+            
             callDepth--;
         }
 
