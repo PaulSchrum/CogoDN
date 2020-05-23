@@ -9,6 +9,7 @@ using System.IO;
 using Cogo.Horizontal;
 using Surfaces.TIN;
 using CadFoundation;
+using System.Diagnostics;
 
 namespace Unit_Tests
 {
@@ -157,29 +158,30 @@ namespace Unit_Tests
             TinFromLidar_isNotNull();
 
             var outDirectory = new DirectoryManager();
-            outDirectory.CdUp(2).CdDown("CogoTests").CdDown("outputs");
+            outDirectory.CdUp(2).CdDown("CogoTests", true).CdDown("outputs", true);
             outDirectory.EnsureExists();
-            string outFile = outDirectory.GetPathAndAppendFilename("SmallLidar_Points.obj");
+            string outFile = outDirectory.GetPathAndAppendFilename("SmallLidar_Points.dxf");
 
-            this.tinFromLidar.WriteToWaveFront(outFile);
+            this.tinFromLidar.WritePointsToDxf(outFile);
 
             bool fileExists = File.Exists(outFile);
             Assert.IsTrue(fileExists);
         }
 
-        [Ignore]
+        //[Ignore]
         [TestMethod]
         public void TinFromLidar_SaveAsWavefrontObj()
         {
+            Trace.Write("Testing.\n");
             this.Initialize();
             TinFromLidar_isNotNull();
 
             var outDirectory = new DirectoryManager();
             outDirectory.CdUp(2).CdDown("CogoTests").CdDown("outputs");
             outDirectory.EnsureExists();
-            string outFile = outDirectory.GetPathAndAppendFilename("SmallLidar_Points.obj");
+            string outFile = outDirectory.GetPathAndAppendFilename("SmallLidar_wfront.obj");
 
-            this.tinFromLidar.WriteToWaveFront(outFile);
+            this.tinFromLidar.WriteToWaveFront(outFile, translateTo0: false);
 
             bool fileExists = File.Exists(outFile);
             Assert.IsTrue(fileExists);
@@ -305,6 +307,29 @@ namespace Unit_Tests
             var testPointFromSavedFile = tinFromSavedFile.getElevationSlopeAzimuth(x, y);
 
             Assert.IsTrue(testPointFromLidar.Equals(testPointFromSavedFile));
+        }
+
+        [TestMethod]
+        public void TINtriangle_hasCorrect_NormalVector()
+        {
+            TINtriangle testTriangle = new TINtriangle(new List<TINpoint>
+                { new TINpoint(0, 0, 0), 
+                    new TINpoint(20, 30, 40), 
+                    new TINpoint(45, 70, 80) },
+                "1 2 3"
+            );
+            var normalVec = testTriangle.normalVec;
+            Assert.AreEqual(expected: -400.0, actual: normalVec.x, delta: 0.0001);
+            Assert.AreEqual(expected: 200.0, actual: normalVec.y, delta: 0.0001);
+            Assert.AreEqual(expected: 50.0, actual: normalVec.z, delta: 0.0001);
+
+            var theta = normalVec.Theta.getAsDegreesDouble();
+            Assert.AreEqual(expected: 83.6206297916, actual: theta, delta: 0.00001);
+
+            var triangleSlopePercent = testTriangle.SlopeDouble;
+            Assert.AreEqual(expected: 0.111803399, actual: triangleSlopePercent,
+                delta: 0.00001);
+
         }
 
     }
