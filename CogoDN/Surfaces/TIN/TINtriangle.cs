@@ -38,7 +38,7 @@ namespace Surfaces.TIN
         {
             get
             {
-                return 1 / 
+                return
                     Math.Tan((Math.PI / 2.0) - normalVec.Theta.getAsRadians());
             }
         }
