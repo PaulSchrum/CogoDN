@@ -125,6 +125,7 @@ namespace Surfaces.TIN
             BoundingBox trimBB = null,
             List<int> classificationFilter = null)
         {
+            messagePump.BroadcastMessage("Creating Tin from .LAS.");
             LasFile lasFile = new LasFile(lidarFileName,
                 classificationFilter: classificationFilter);
             TINsurface returnObject = new TINsurface();
@@ -162,6 +163,7 @@ namespace Surfaces.TIN
 
             setBoundingBox(returnObject);
             lasFile.ClearAllPoints();  // Because I have them now.
+            messagePump.BroadcastMessage("LAS points loaded.");
 
             for (indexCount = 0; indexCount < returnObject.allUsedPoints.Count; indexCount++)
             {
@@ -184,8 +186,11 @@ namespace Surfaces.TIN
                 if(!(newTriangle is null))
                     returnObject.allTriangles.Add(newTriangle);
             }
+            messagePump.BroadcastMessage("Tin created. Final processing ...");
             returnObject.finalProcessing();
+            messagePump.BroadcastMessage("Final processing complete.");
 
+            
             if (skipPoints == 0) 
                 return returnObject;
             
@@ -283,6 +288,8 @@ namespace Surfaces.TIN
             }
             returnObject.skippedPoints = skipPoints;
             returnObject.finalProcessing();
+            messagePump.BroadcastMessage("Created Tin from .LAS, complete.");
+            messagePump.BroadcastMessage($"File: {lidarFileName}");
 
             return returnObject;
         }
