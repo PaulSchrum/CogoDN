@@ -9,7 +9,9 @@ namespace CadFoundation
         private HashSet<IObserver<string>> observers = new HashSet<IObserver<string>>();
 
         public void Register(IObserver<string> observer, String initMessage = null)
-        { 
+        {
+            if (null == observer) return;
+
             observers.Add(observer);
             if(null != initMessage)
                 observer.OnNext(initMessage);
