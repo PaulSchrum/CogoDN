@@ -48,13 +48,13 @@ namespace TinConsole
 
             if(args.Length == 1 && args[0].ToLower() == "pwd")
             {
-                System.Console.WriteLine("Pwd is " + pwd);
+                mirrorLogPrint("Pwd is " + pwd);
                 Environment.Exit(0);
             }
 
-            System.Console.WriteLine($"Source: ", args);
-            //System.Console.WriteLine($"Source: {args[1]}");
-            //System.Console.WriteLine($"Source: {args[2]}");
+            mirrorLogPrint($"Source: {args}");
+            //mirrorLogPrint($"Source: {args[1]}");
+            //mirrorLogPrint($"Source: {args[2]}");
             bool useHardCodes = false;
 
 
@@ -62,9 +62,9 @@ namespace TinConsole
             {
                 if (useHardCodes)
                 {
-                    System.Console.WriteLine("Loading.");
+                    mirrorLogPrint("Loading.");
                     surface = TINsurface.CreateFromLAS(hcSource);
-                    System.Console.WriteLine("Loaded. Ready.");
+                    mirrorLogPrint("Loaded. Ready.");
                 }
 
                 repl();
@@ -249,21 +249,21 @@ namespace TinConsole
 
             if(null == logFile && !logMessageGiven)
             {
-                System.Console.WriteLine("Logging requested but could not be started.");
+                Console.WriteLine("Logging requested but could not be started.");
                 logMessageGiven = true;
             }
             if (newline)
             {
                 logFile?.WriteLine(msg);
                 //Console.setOut(stdOut);
-                System.Console.WriteLine(message);
+                Console.WriteLine(message);
                 //Console.setOut(intercept);
             }
             else
             {
                 logFile?.Write(msg);
                 //Console.setOut(stdOut);
-                System.Console.WriteLine(message);
+                Console.Write(message);
                 //Console.setOut(intercept);
             }
 
@@ -274,11 +274,11 @@ namespace TinConsole
         {
             if (surface is null)
             {
-                System.Console.WriteLine("No file has been loaded. Nothing to summarize.");
+                mirrorLogPrint("No file has been loaded. Nothing to summarize.");
                 return;
             }
-            System.Console.WriteLine("Summarizing ...");
-            System.Console.Write(surface.Statistics.ToString());
+            mirrorLogPrint("Summarizing ...");
+            mirrorLogPrint(surface.Statistics.ToString());
         }
 
         private static void output_lines(List<string> commandItems)
@@ -303,7 +303,7 @@ namespace TinConsole
         {
             if (surface is null)
             {
-                System.Console.WriteLine("No file has been loaded. Nothing to summarize.");
+                mirrorLogPrint("No file has been loaded. Nothing to summarize.");
                 return;
             }
             
@@ -349,7 +349,7 @@ namespace TinConsole
                 decimate_single(pointsToSkip, "TestTin");
             }
             sw.Stop();
-            System.Console.WriteLine("Done. " + sw.Elapsed.TotalSeconds + " seconds.");
+            mirrorLogPrint("Done. " + sw.Elapsed.TotalSeconds + " seconds.");
         }
 
         private static void decimate_single(int skipPoints, string outputBaseName)
