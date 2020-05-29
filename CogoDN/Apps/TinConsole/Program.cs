@@ -93,6 +93,7 @@ namespace TinConsole
 
         private static List<string> parseLine(string str)
         {
+            str = str.Split("#").FirstOrDefault().Trim();
             StringBuilder insideQuote = null;
             List<string> s = new List<string>();
             foreach (var item in str.Split(" "))
@@ -157,6 +158,8 @@ namespace TinConsole
                 if(commandList.Count >= 1)
                 {
                     commandLine = parseLine(commandList.Dequeue());
+                    if (commandLine.Count == 0) // This is an empty line (happens on a comment line).
+                        continue;
                 }
                 else
                 {
