@@ -16,13 +16,15 @@ namespace TinConsole
     {
         
         static DirectoryManager pwd = DirectoryManager.FromPwd();
+        static DirectoryManager outDir = pwd;
         static string commandFileName = "TinConsoleCommands.txt";
         static Queue<string> commandList = null;
         static string logFileName = "TinDN Processing Log.log";
         static StreamWriter logFile = null;
+        static List<int> classificationFilter = new List<int> { 2, 11 }; // standard bare ground (ground, road)
         static string hcSource =
             @"D:\Research\Datasets\Lidar\Tilley Creek\decimation research\Tilley Creek Small.las";
-        static TINsurface surface = null;
+        static TINsurface mainSurface = null;
 
         static StringWriter intercept = new StringWriter();
         static TextWriter stdOut = Console.Out;
@@ -63,7 +65,7 @@ namespace TinConsole
                 if (useHardCodes)
                 {
                     mirrorLogPrint("Loading.");
-                    surface = TINsurface.CreateFromLAS(hcSource);
+                    mainSurface = TINsurface.CreateFromLAS(hcSource);
                     mirrorLogPrint("Loaded. Ready.");
                 }
 
@@ -94,15 +96,22 @@ namespace TinConsole
             List<string> s = new List<string>();
             foreach (var item in str.Split(" "))
             {
+                if (item == string.Empty)
+                    continue;
                 if (item[0] == '\"')
                 {
                     insideQuote = new StringBuilder(item);
+                    if (item[^1] == '\"')
+                    {
+                        s.Add(item.Trim('"'));
+                    }
                     continue;
                 }
                 if (item[^1] == '\"')
                 {
                     insideQuote.Append(" ").Append(item);
-                    s.Add(insideQuote.ToString());
+                    var insideQstring = insideQuote.ToString().Trim('"');
+                    s.Add(insideQstring);
                     insideQuote = null;
                     continue;
                 }
@@ -117,6 +126,9 @@ namespace TinConsole
             return s;
         }
 
+        /// <summary>
+        /// Hand-rolled Read/Evaluate/Print/Loop functionality.
+        /// </summary>
         private static void repl()
         {
             var commands = new Dictionary<string, Action<List<string>>>
@@ -124,12 +136,17 @@ namespace TinConsole
                 ["exit"] = ls => System.Environment.Exit(0),
                 ["quit"] = ls => System.Environment.Exit(0),
                 ["log"] = ls => SetupLogging(ls),
+                ["set_dir"] = ls => SetDirectories(ls[1]),
+                ["set_outdir"] = ls => SetDirectories(outDr: ls[1]),
                 ["load"] = ls => Load(ls),
                 ["summarize"] = ls => summarize(ls),
                 ["reload"] = ls => reload(ls),
                 ["decimate_multiple"] = ls => decimate_multiple(),
                 ["performance_test"] = ls => performance_test(ls),
                 ["output_lines"] = ls => output_lines(ls),
+                ["set_filter"] = ls => set_filter(ls),
+                // to do: add points_to_dxf, but remember, we will have two surfaces by then.
+                // to do: add to_obj, same caveat
             };
 
             Action<List<String>> command = null;
@@ -160,10 +177,39 @@ namespace TinConsole
             }
         }
 
+        private static void points_to_dxf(List<string> commandItems)
+        {
+
+        }
+
+        private static void set_filter(List<string> commandItems)
+        {
+            classificationFilter.Clear();
+            foreach(string argument in commandItems.Skip(1))
+            {
+                classificationFilter.Add(Convert.ToInt32(argument));
+            }
+            mirrorLogPrint($"Classification filter set to: {String.Join(", ", classificationFilter)}.");
+        }
+
+        private static void SetDirectories(string inDir=null, string outDr=null)
+        {
+            if(null != inDir)
+            {
+                pwd = DirectoryManager.FromPathString(inDir);
+                mirrorLogPrint($"Input directory set to {pwd}");
+            }
+            if(null != outDr)
+            {
+                outDir = DirectoryManager.FromPathString(outDr);
+                mirrorLogPrint($"Output directory set to {outDir}");
+            }
+        }
+
         private static void Load(List<string> commandItems)
         {
             var openFileStr = pwd.GetPathAndAppendFilename(commandItems[1]);
-            surface = TINsurface.CreateFromLAS(openFileStr);
+            mainSurface = TINsurface.CreateFromLAS(openFileStr, classificationFilter: classificationFilter);
         }
 
         private static void SetupLogging(List<string> commandItems)
@@ -196,7 +242,8 @@ namespace TinConsole
                 default: break;
             }
 
-            localLogFName = pwd.GetPathAndAppendFilename(localLogFName);
+            if(!localLogFName.Contains(":"))
+                localLogFName = pwd.GetPathAndAppendFilename(localLogFName);
             try
             {
                 logFile = openMethod(localLogFName);
@@ -248,36 +295,36 @@ namespace TinConsole
 
         private static void summarize(List<string> commandItems)
         {
-            if (surface is null)
+            if (mainSurface is null)
             {
                 mirrorLogPrint("No file has been loaded. Nothing to summarize.");
                 return;
             }
             mirrorLogPrint("Summarizing ...");
-            mirrorLogPrint(surface.Statistics.ToString());
+            mirrorLogPrint(mainSurface.Statistics.ToString());
         }
 
         private static void output_lines(List<string> commandItems)
         {
             var outfile = @"D:\Research\Datasets\Lidar\Tilley Creek\decimation research\smartDecResults\linesOnly.dxf";
-            surface.writeLinesToDxf(outfile, (Line => Line.DeltaCrossSlopeAsAngleRad > 3.05));
+            mainSurface.writeLinesToDxf(outfile, (Line => Line.DeltaCrossSlopeAsAngleRad > 3.05));
         }
 
         private static void reload(List<string> commandItems)
         {
-            surface = null;
+            mainSurface = null;
             GC.Collect();
             var skipPoints = 0;
             if (commandItems.Count > 1)
                 skipPoints = Convert.ToInt32(commandItems[1]);
             mirrorLogPrint("Reloading primary tin model.");
-            surface = TINsurface.CreateFromLAS(hcSource, skipPoints: skipPoints);
+            mainSurface = TINsurface.CreateFromLAS(hcSource, skipPoints: skipPoints);
             mirrorLogPrint("Primary tin model reloaded.");
         }
 
         private static void performance_test(List<string> commandItems)
         {
-            if (surface is null)
+            if (mainSurface is null)
             {
                 mirrorLogPrint("No file has been loaded. Nothing to summarize.");
                 return;
@@ -287,10 +334,10 @@ namespace TinConsole
             if (commandItems.Count > 1)
                 skipPoints = Convert.ToInt32(commandItems[1]);
 
-            if (surface != null && hcSource != surface.SourceData)
-                surface = TINsurface.CreateFromLAS(hcSource, skipPoints: skipPoints);
+            if (mainSurface != null && hcSource != mainSurface.SourceData)
+                mainSurface = TINsurface.CreateFromLAS(hcSource, skipPoints: skipPoints);
 
-            var bb = surface.BoundingBox;
+            var bb = mainSurface.BoundingBox;
             var rnd = new Random(12345);
             var samples = 10_000_000;
             var testCount = samples;
@@ -299,7 +346,7 @@ namespace TinConsole
             //foreach(var i in Enumerable.Range(0,samples))
             Parallel.For(0, testCount, num =>
             {
-                var el = surface.getElevation(rnd.NextPoint(bb));
+                var el = mainSurface.getElevation(rnd.NextPoint(bb));
             }
             );
 
@@ -332,12 +379,12 @@ namespace TinConsole
         {
             string outname = outputBaseName + $"{skipPoints:D2}";
             Console.Write($"Processing {outname}   ");
-            surface = TINsurface.CreateFromLAS(hcSource, skipPoints: skipPoints);
-            surface.IndexTriangles();
+            mainSurface = TINsurface.CreateFromLAS(hcSource, skipPoints: skipPoints);
+            mainSurface.IndexTriangles();
             Console.Write("Created.   ");
-            surface.saveAsBinary(researchOutpath + outname + ".TinDN");
+            mainSurface.saveAsBinary(researchOutpath + outname + ".TinDN");
             Console.Write("Saved.   ");
-            surface.ComputeErrorStatistics(researchOutpath + summaryFile);
+            mainSurface.ComputeErrorStatistics(researchOutpath + summaryFile);
             Console.WriteLine("Stats computed, written.");
         }
 
