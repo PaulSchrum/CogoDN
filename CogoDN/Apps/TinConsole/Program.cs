@@ -198,8 +198,6 @@ namespace TinConsole
                 mirrorLogPrint("Output filename will have \".zip\" extension appended.");
 
             var writeFileName = GetCorrectOutputFilename(outFilename);
-            if (shouldZip)
-                writeFileName = writeFileName + ".zip";
             mirrorLogPrint($"Creating points dxf file: {writeFileName}");
             if(null != derivedSurface)
             {

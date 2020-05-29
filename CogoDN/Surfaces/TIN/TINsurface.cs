@@ -711,7 +711,19 @@ namespace Surfaces.TIN
 
             messagePump.BroadcastMessage($"Saving points to dxf.");
             dxf.Save(outFile);
-            //zipAndDelete(outFile);  // To Do: Develop this.
+
+            if(shouldZip)
+            {
+                messagePump.BroadcastMessage(
+                    $"Compressing dxf file to zip file {outFile + ".zip"}")
+                zipAndDelete(outFile);
+                messagePump.BroadcastMessage("Save to dxf.zip complete.");
+            }
+            else
+            {
+                messagePump.BroadcastMessage("Save to dxf complete.");
+            }
+
         }
 
         protected Matrix<double> setAffineTransformToZeroCenter(bool translateTo0 = false)
@@ -1054,9 +1066,19 @@ namespace Surfaces.TIN
             System.IO.File.Move(zipFile, filenameToSaveTo);
         }
 
-        private void zipAndDelete(string outfileName, bool appendZipExtension=true)
+        private void zipAndDelete(string outfileName)
         {
-            throw new NotImplementedException();
+            var zipFile = outfileName + ".zip";
+            using (FileStream zipToOpen = new FileStream(zipFile, FileMode.Create))
+            {
+                using (ZipArchive archive = new ZipArchive(zipToOpen, ZipArchiveMode.Create))
+                {
+                    ZipArchiveEntry tinFile = archive.CreateEntryFromFile(outfileName,
+                        System.IO.Path.GetFileName(outfileName));
+                }
+            }
+
+            System.IO.File.Delete(outfileName);
         }
 
         static public TINsurface loadFromBinary(string filenameToLoad)
