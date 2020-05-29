@@ -715,7 +715,7 @@ namespace Surfaces.TIN
             if(shouldZip)
             {
                 messagePump.BroadcastMessage(
-                    $"Compressing dxf file to zip file {outFile + ".zip"}")
+                    $"Compressing dxf file to zip file {outFile + ".zip"}");
                 zipAndDelete(outFile);
                 messagePump.BroadcastMessage("Save to dxf.zip complete.");
             }
