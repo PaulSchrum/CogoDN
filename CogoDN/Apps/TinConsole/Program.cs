@@ -25,6 +25,7 @@ namespace TinConsole
         static string hcSource =
             @"D:\Research\Datasets\Lidar\Tilley Creek\decimation research\Tilley Creek Small.las";
         static TINsurface mainSurface = null;
+        static TINsurface derivedSurface = null;
 
         static StringWriter intercept = new StringWriter();
         static TextWriter stdOut = Console.Out;
@@ -145,8 +146,8 @@ namespace TinConsole
                 ["performance_test"] = ls => performance_test(ls),
                 ["output_lines"] = ls => output_lines(ls),
                 ["set_filter"] = ls => set_filter(ls),
-                // to do: add points_to_dxf, but remember, we will have two surfaces by then.
-                // to do: add to_obj, same caveat
+                ["points_to_dxf"] = ls => points_to_dxf(ls),
+                // to do: add to_obj, but remember, we will have two surfaces by then.
             };
 
             Action<List<String>> command = null;
@@ -177,9 +178,37 @@ namespace TinConsole
             }
         }
 
+        private static string GetCorrectOutputFilename(string filenameIn)
+        {
+            if (filenameIn.Contains(":"))
+                return filenameIn;
+            return outDir.GetPathAndAppendFilename(filenameIn);
+        }
+
         private static void points_to_dxf(List<string> commandItems)
         {
+            bool shouldZip = commandItems.Skip(1).Where(arg => arg.Equals("-zipped")).Any();
+            var outFilename = commandItems.Skip(1).Where(arg => arg.Contains(".dxf")).FirstOrDefault();
+            if(null == outFilename)
+            {
+                mirrorLogPrint("Output file name not specified. Dxf output files must have a \".dxf\" extension.");
+                return;
+            }
+            if(shouldZip)
+                mirrorLogPrint("Output filename will have \".zip\" extension appended.");
 
+            var writeFileName = GetCorrectOutputFilename(outFilename);
+            if (shouldZip)
+                writeFileName = writeFileName + ".zip";
+            mirrorLogPrint($"Creating points dxf file: {writeFileName}");
+            if(null != derivedSurface)
+            {
+
+            }
+            else if(null != mainSurface)
+            {
+                mainSurface.WritePointsToDxf(writeFileName, shouldZip);
+            }
         }
 
         private static void set_filter(List<string> commandItems)
@@ -216,7 +245,7 @@ namespace TinConsole
         {
             string localLogFName = logFileName;
             Func<string, StreamWriter> openMethod = s => File.AppendText(s);
-            string somevar = null; 
+
             var txt = commandItems.RetrieveByIndex(1);
             switch (txt)
             {

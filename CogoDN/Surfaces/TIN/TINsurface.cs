@@ -125,7 +125,7 @@ namespace Surfaces.TIN
             BoundingBox trimBB = null,
             List<int> classificationFilter = null)
         {
-            messagePump.BroadcastMessage("Creating Tin from .LAS.");
+            messagePump.BroadcastMessage($"Creating Tin in memory from {lidarFileName}.");
             LasFile lasFile = new LasFile(lidarFileName,
                 classificationFilter: classificationFilter);
             TINsurface returnObject = new TINsurface();
@@ -162,8 +162,8 @@ namespace Surfaces.TIN
             }
 
             setBoundingBox(returnObject);
+            messagePump.BroadcastMessage($"{lasFile.AllPoints.Count:N0} LAS points loaded.");
             lasFile.ClearAllPoints();  // Because I have them now.
-            messagePump.BroadcastMessage("LAS points loaded.");
 
             for (indexCount = 0; indexCount < returnObject.allUsedPoints.Count; indexCount++)
             {
@@ -172,6 +172,7 @@ namespace Surfaces.TIN
                 returnObject.allUsedPoints[indexCount] = aPoint;
             }
 
+            messagePump.BroadcastMessage("Tesselating points to triangles.");
             var VoronoiMesh = MIConvexHull.VoronoiMesh
                 .Create<TINpoint, ConvexFaceTriangle>(returnObject.allUsedPoints);
 
@@ -188,9 +189,9 @@ namespace Surfaces.TIN
             }
             messagePump.BroadcastMessage("Tin created. Final processing ...");
             returnObject.finalProcessing();
-            messagePump.BroadcastMessage("Final processing complete.");
+            messagePump.BroadcastMessage("Final processing complete. " +
+                $"{returnObject.allTriangles.Count:N0} Triangles, {returnObject.allLines.Count:N0} Lines.");
 
-            
             if (skipPoints == 0) 
                 return returnObject;
             
@@ -697,17 +698,20 @@ namespace Surfaces.TIN
 
         }
 
-        public void WritePointsToDxf(string outFile)
+        public void WritePointsToDxf(string outFile, bool shouldZip=false)
         {
             var dxf = new DxfDocument();
             dxf.DrawingVariables.AcadVer = netDxf.Header.DxfVersion.AutoCad2013;
 
+            messagePump.BroadcastMessage($"Iterating over {allUsedPoints.Count:N0} points.");
             foreach (var item in this.allUsedPoints)
             {
                 item.AddToDxf(dxf);
             }
 
+            messagePump.BroadcastMessage($"Saving points to dxf.");
             dxf.Save(outFile);
+            //zipAndDelete(outFile);  // To Do: Develop this.
         }
 
         protected Matrix<double> setAffineTransformToZeroCenter(bool translateTo0 = false)
@@ -1048,6 +1052,11 @@ namespace Surfaces.TIN
                 }
             }
             System.IO.File.Move(zipFile, filenameToSaveTo);
+        }
+
+        private void zipAndDelete(string outfileName, bool appendZipExtension=true)
+        {
+            throw new NotImplementedException();
         }
 
         static public TINsurface loadFromBinary(string filenameToLoad)
