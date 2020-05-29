@@ -148,6 +148,7 @@ namespace TinConsole
                 ["output_lines"] = ls => output_lines(ls),
                 ["set_filter"] = ls => set_filter(ls),
                 ["points_to_dxf"] = ls => points_to_dxf(ls),
+                ["to_obj"] = ls => to_obj(ls),
                 // to do: add to_obj, but remember, we will have two surfaces by then.
             };
 
@@ -209,6 +210,32 @@ namespace TinConsole
             else if(null != mainSurface)
             {
                 mainSurface.WritePointsToDxf(writeFileName, shouldZip);
+            }
+        }
+
+        private static void to_obj(List<string> commandItems)
+        {
+            bool shouldZip = commandItems.Skip(1).Where(arg => arg.Equals("-zipped")).Any();
+            bool shouldTransform = commandItems.Skip(1).Where(arg => arg.Equals("-transformed")).Any() ||
+                commandItems.Skip(1).Where(arg => arg.Equals("-trans")).Any();
+            var outFilename = commandItems.Skip(1).Where(arg => arg.Contains(".obj")).FirstOrDefault();
+            if (null == outFilename)
+            {
+                mirrorLogPrint("Output file name not specified. Wavefront obj output files must have a \".obj\" extension.");
+                return;
+            }
+            if (shouldZip)
+                mirrorLogPrint("Output filename will have \".zip\" extension appended.");
+
+            var writeFileName = GetCorrectOutputFilename(outFilename);
+            mirrorLogPrint($"Creating surface obj file: {writeFileName}");
+            if (null != derivedSurface)
+            {
+
+            }
+            else if (null != mainSurface)
+            {
+                mainSurface.WriteToWaveFront(writeFileName, shouldTransform, shouldZip);
             }
         }
 

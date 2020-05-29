@@ -771,7 +771,7 @@ namespace Surfaces.TIN
             return str;
         }
 
-        public void WriteToWaveFront(string outfile, bool translateTo0 = true)
+        public void WriteToWaveFront(string outfile, bool translateTo0 = true, bool shouldZip=false)
         {
             var affineXform = setAffineTransformToZeroCenter(translateTo0);
             var aString = convertArrayToString(affineXform.ToArray(), 4, 4);
@@ -784,6 +784,18 @@ namespace Surfaces.TIN
 
                 foreach (var aTriangle in this.ValidTriangles)
                     file.WriteLine(aTriangle.IndicesToWavefrontString());
+            }
+
+            if (shouldZip)
+            {
+                messagePump.BroadcastMessage(
+                    $"Compressing obj file to zip file {outfile + ".zip"}");
+                zipAndDelete(outfile);
+                messagePump.BroadcastMessage("Save to obj.zip complete.");
+            }
+            else
+            {
+                messagePump.BroadcastMessage("Save to obj complete.");
             }
         }
 
