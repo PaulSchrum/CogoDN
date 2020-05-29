@@ -146,5 +146,12 @@ namespace CadFoundation
         {
             return new DirectoryManager();
         }
+
+        public static DirectoryManager FromPathString(string str)
+        {
+            DirectoryManager retVal = new DirectoryManager();
+            retVal.path = str;
+            return retVal;
+        }
     }
 }
