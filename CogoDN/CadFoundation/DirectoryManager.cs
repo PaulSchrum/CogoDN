@@ -9,12 +9,15 @@ namespace CadFoundation
 
     public class DirectoryManager
     {  // From GitHubGist: https://gist.github.com/PaulSchrum/4fb6015d46d79c06b08acb7f1bb00c53
-        // If I add other things (like createDir or move, etc. The version here should be updated.
+       // If I add other things (like createDir or move, etc. The version here should be updated.
+
+        private static string delim = Path.DirectorySeparatorChar.ToString();
+        
         public string GetPathAndAppendFilename(string filename = null)
         {
             if (filename == null || filename.Length == 0)
                 return this.path;
-            return this.path + "\\" + filename;
+            return this.path + delim + filename;
         }
 
         public string path { get; protected set; }
@@ -22,13 +25,13 @@ namespace CadFoundation
         {
             get
             {
-                return this.path.Split('\\').ToList();
+                return this.path.Split(delim).ToList();
             }
         }
 
         protected void setPathFromList(List<string> aList)
         {
-            this.path = string.Join("\\", aList);
+            this.path = string.Join(delim, aList);
         }
 
         public DirectoryManager()
@@ -70,7 +73,7 @@ namespace CadFoundation
                     needToCreate = true;
             }
             if (needToCreate)
-                System.IO.Directory.CreateDirectory(this.path + "\\" + directoryName);
+                System.IO.Directory.CreateDirectory(this.path + delim + directoryName);
             var tempList = this.pathAsList;
             tempList.Add(directoryName);
             this.setPathFromList(tempList);
@@ -85,7 +88,7 @@ namespace CadFoundation
         /// <returns>True if the subElement exists. False otherwise.</returns>
         public bool ConfirmExists(string subElement)
         {
-            var itemName = subElement.Split("\\").LastOrDefault();
+            var itemName = subElement.Split(delim).LastOrDefault();
             if (ListFiles().Contains(itemName))
                 return true;
             return this.ListSubDirectories.Contains(itemName);
@@ -96,7 +99,7 @@ namespace CadFoundation
             get
             {
                 var v = Directory.GetDirectories(this.path)
-                    .Select(s => s.Split('\\').Last())
+                    .Select(s => s.Split(delim).Last())
                     .ToList();
                 return v;
             }
