@@ -243,7 +243,7 @@ namespace TinConsole
             mirrorLogPrint($"Creating surface obj file: {writeFileName}");
             if (null != derivedSurface)
             {
-
+                derivedSurface.WriteToWaveFront(writeFileName, shouldTransform, shouldZip);
             }
             else if (null != mainSurface)
             {
