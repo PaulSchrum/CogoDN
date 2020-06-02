@@ -149,6 +149,7 @@ namespace TinConsole
                 ["set_filter"] = ls => set_filter(ls),
                 ["points_to_dxf"] = ls => points_to_dxf(ls),
                 ["to_obj"] = ls => to_obj(ls),
+                ["decimate_random"] = ls => decimate_random(ls),
                 // to do: add to_obj, but remember, we will have two surfaces by then.
             };
 
@@ -189,6 +190,17 @@ namespace TinConsole
             return outDir.GetPathAndAppendFilename(filenameIn);
         }
 
+        private static void decimate_random(List<string> commandItems)
+        {
+            if (commandItems.Count != 2)
+                throw new ArgumentException(
+                    "Error: decimate_random requires one parameter only.");
+
+            var decimation = Convert.ToDouble(commandItems.Skip(1).FirstOrDefault());
+
+            derivedSurface = TINsurface.CreateByRandomDecimation(mainSurface, decimation);
+        }
+
         private static void points_to_dxf(List<string> commandItems)
         {
             bool shouldZip = commandItems.Skip(1).Where(arg => arg.Equals("-zipped")).Any();
@@ -199,7 +211,7 @@ namespace TinConsole
                 return;
             }
             if(shouldZip)
-                mirrorLogPrint("Output filename will have \".zip\" extension appended.");
+                mirrorLogPrint("points_to_dxf: Output filename will have \".zip\" extension appended.");
 
             var writeFileName = GetCorrectOutputFilename(outFilename);
             mirrorLogPrint($"Creating points dxf file: {writeFileName}");
@@ -225,7 +237,7 @@ namespace TinConsole
                 return;
             }
             if (shouldZip)
-                mirrorLogPrint("Output filename will have \".zip\" extension appended.");
+                mirrorLogPrint("to_obj: Output filename will have \".zip\" extension appended.");
 
             var writeFileName = GetCorrectOutputFilename(outFilename);
             mirrorLogPrint($"Creating surface obj file: {writeFileName}");
@@ -293,7 +305,6 @@ namespace TinConsole
                         mirrorLogPrint("Stopping log file without exiting.");
                         logFile?.Flush();
                         logFile?.Dispose();
-                        //Console.setOut(stdOut);
                         break;
                     }
                 default: break;
@@ -305,7 +316,6 @@ namespace TinConsole
             {
                 logFile = openMethod(localLogFName);
                 mirrorLogPrint("Log file opened.");
-                //Console.setOut(intercept);
             }
             catch (IOException ioe)
             {
@@ -335,16 +345,12 @@ namespace TinConsole
             if (newline)
             {
                 logFile?.WriteLine(msg);
-                //Console.setOut(stdOut);
                 Console.WriteLine(message);
-                //Console.setOut(intercept);
             }
             else
             {
                 logFile?.Write(msg);
-                //Console.setOut(stdOut);
                 Console.Write(message);
-                //Console.setOut(intercept);
             }
 
             priorWasNewline = newline;

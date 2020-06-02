@@ -21,6 +21,7 @@ namespace Surfaces.TIN
         public int lidarClassification { get; set; }
         public int myIndex { get; internal set; }
         public bool isOnHull { get; internal set; } = false;
+        public double retainProbability = 1.0;
 
         public override string ToString()
         {
@@ -36,6 +37,12 @@ namespace Surfaces.TIN
         private static String[] parsedStrings;
 
         internal TINpoint() { }
+
+        public TINpoint(TINpoint otherPt) : this(otherPt.x, otherPt.y, otherPt.z)
+        {
+            lidarClassification = otherPt.lidarClassification;
+            isOnHull = otherPt.isOnHull;
+        }
 
         public TINpoint(double newX, double newY, double newZ = 0.0) : this()
         { x = newX; y = newY; z = newZ; } //myIndex = 0L; }

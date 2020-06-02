@@ -125,6 +125,7 @@ namespace Surfaces.TIN
             BoundingBox trimBB = null,
             List<int> classificationFilter = null)
         {
+            var stopwatch = new Stopwatch(); stopwatch.Start();
             messagePump.BroadcastMessage($"Creating Tin in memory from {lidarFileName}.");
             LasFile lasFile = new LasFile(lidarFileName,
                 classificationFilter: classificationFilter);
@@ -135,7 +136,7 @@ namespace Surfaces.TIN
             int indexCount = 0;
             var gridIndexer = new Dictionary<Tuple<int, int>, int>();
             returnObject.createAllpointsCollection();
-            
+
             foreach (var point in lasFile.AllPoints)
             {
                 if (null != trimBB && !trimBB.isPointInsideBB2d(point))
@@ -143,7 +144,7 @@ namespace Surfaces.TIN
 
                 pointCounter++;
                 runningPointCount++;
-                
+
                 if (runningPointCount % (skipPoints + 1) == 0)
                 {
                     returnObject.allUsedPoints.Add(point);
@@ -184,97 +185,93 @@ namespace Surfaces.TIN
                 var point3 = gridIndexer[vTriangle.Vertices[2].GridCoordinates];
                 var newTriangle = TINtriangle.CreateTriangle(
                     returnObject.allUsedPoints, point1, point2, point3);
-                if(!(newTriangle is null))
+                if (!(newTriangle is null))
                     returnObject.allTriangles.Add(newTriangle);
             }
             messagePump.BroadcastMessage("Tin created. Final processing ...");
             returnObject.finalProcessing();
             messagePump.BroadcastMessage("Final processing complete. " +
-                $"{returnObject.allTriangles.Count:N0} Triangles, {returnObject.allLines.Count:N0} Lines.");
+                $"{returnObject.allTriangles.Count:N0} Triangles, " +
+                $"{returnObject.allLines.Count:N0} Lines.");
+            messagePump.BroadcastMessage
+                ($"In {stopwatch.ElapsedMilliseconds / 1000.0:0.000} seconds" +
+                $"( {stopwatch.ElapsedMilliseconds / 60000.0:0.000} minutes).");
 
-            if (skipPoints == 0) 
-                return returnObject;
-            
-            var baseTin = returnObject;
-            returnObject = null;
+            return returnObject;
+        }
 
-            var tempAllPoints = (baseTin.allUsedPoints.Concat(baseTin.allUnusedPoints)).ToList();
-            foreach (var pt in tempAllPoints)
+        public static TINsurface CreateByRandomDecimation(TINsurface sourceSurface,
+            double decimationRemainingPercent)
+        {
+            messagePump.BroadcastMessage("Standard Decimation Started.");
+            var returnObject = new TINsurface();
+            var tempAllPoints = (sourceSurface.allUsedPoints
+                .Concat(sourceSurface.allUnusedPoints))
+                .Select(pt => new TINpoint(pt))
+                .ToList();
+
+            tempAllPoints.ForEach(pt => pt.hasBeenSkipped = true);
+            returnObject.allUsedPoints = tempAllPoints.Where(pt => pt.isOnHull).ToList();
+            returnObject.allUsedPoints.ForEach(pt => pt.hasBeenSkipped = false);
+            var hullPointCount = returnObject.allUsedPoints.Count;
+            var interiorPointsArray = tempAllPoints.Where(pt => pt.hasBeenSkipped).ToArray();
+            var totalPointCount = tempAllPoints.Count;
+            tempAllPoints = null;
+            GC.Collect();
+            var interiorPointCount = totalPointCount - hullPointCount;
+
+            var targetCountRemainingPoints = (int)
+                (totalPointCount * decimationRemainingPercent);
+            var targetInteriorPointCount = (int)
+                (targetCountRemainingPoints - hullPointCount);
+
+            returnObject.SourceData = sourceSurface.SourceData +
+                $"Randomly Decimated {decimationRemainingPercent:0.000}";
+
+            double retainProb = 
+                decimationRemainingPercent * interiorPointCount 
+                / totalPointCount;
+
+            Parallel.ForEach(interiorPointsArray, pt => pt.retainProbability = retainProb);
+
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            var gridIndexer = new Dictionary<Tuple<int, int>, int>();
+            Random drm = new Random();
+            for (int idx = 0; idx < interiorPointCount; idx++)
             {
-                if (pt.isOnHull)
-                    pt.hasBeenSkipped = false;
-                else
-                    pt.hasBeenSkipped = true;
+                double diceRoll = drm.NextDouble();
+                if (diceRoll <= interiorPointsArray[idx].retainProbability)
+                    interiorPointsArray[idx].hasBeenSkipped = false;
             }
-                
+            returnObject.allUsedPoints.AddRange(
+                interiorPointsArray
+                .Where(pt => pt.hasBeenSkipped == false));
 
-            returnObject = new TINsurface();
-            returnObject.SourceData = lidarFileName;
-            pointCounter = -1;
-            runningPointCount = -1;
-            gridIndexer = new Dictionary<Tuple<int, int>, int>();
-            returnObject.createAllpointsCollection();
-
-            var hullIndices = tempAllPoints.Where(p => p.isOnHull).Select(p => p.myIndex).ToList();
-            var nonHullIndices = tempAllPoints.Where(p => !p.isOnHull).Select(p => p.myIndex).ToList();
-            var targetNonHullCount = (int)(nonHullIndices.Count / (skipPoints + 1));
-
-            Random rdm = new Random();
-            var pointsToIncludeByIndex = new HashSet<int>();
-            for(int i=0; i<=targetNonHullCount; i++)
-            {
-                var proceed = false;
-                while(!proceed)
-                {
-                    var nextIndex = rdm.Next(0, nonHullIndices.Count);
-                    proceed = pointsToIncludeByIndex.Add(nextIndex);
-                }
-            }
-
-            var pointsToUseIndexes = new List<int>(pointsToIncludeByIndex.Count);
-            foreach(var idx in pointsToIncludeByIndex)
-            {
-                pointsToUseIndexes.Add(idx);
-            }
-            pointsToUseIndexes.AddRange(hullIndices);
-            hullIndices = null;
-            pointsToIncludeByIndex = null;
-
-
-            foreach (var idx in pointsToUseIndexes)
-            {
-                var point = tempAllPoints[idx];
-                pointCounter++;
-                runningPointCount++;
-
-                point.hasBeenSkipped = false;
-                returnObject.allUsedPoints.Add(point);
-                // Note this approach will occasionally skip over points that 
-                // are double-stamps. I am fine with that for now.
-                gridIndexer[point.GridCoordinates] = indexCount;
-
-                indexCount++;
-            }
-
-            foreach (var pt in tempAllPoints.Where(pt => pt.hasBeenSkipped))
-            {
-                returnObject.allUnusedPoints.Add(pt);
-                pt.myIndex = -1;
-            }
-
-            var usedCount = tempAllPoints.Where(p => !p.hasBeenSkipped).Count();
-            var notUsedCount = tempAllPoints.Where(p => p.hasBeenSkipped).Count();
-            setBoundingBox(returnObject);
-
+            int indexCount = 0;
             for (indexCount = 0; indexCount < returnObject.allUsedPoints.Count; indexCount++)
             {
                 var aPoint = returnObject.allUsedPoints[indexCount];
                 aPoint.myIndex = indexCount;
+                returnObject.allUsedPoints[indexCount] = aPoint;
                 gridIndexer[aPoint.GridCoordinates] = indexCount;
             }
 
-            VoronoiMesh = MIConvexHull.VoronoiMesh
+            returnObject.unused_points = interiorPointsArray
+                .Where(pt => pt.hasBeenSkipped == true).ToList();
+            interiorPointsArray = null;
+            GC.Collect();
+            setBoundingBox(returnObject);
+
+            messagePump.BroadcastMessage
+                ($"Creating Decimated Tin Surface from {returnObject.allUsedPoints.Count:N0} points.");
+
+            var VoronoiMesh = MIConvexHull.VoronoiMesh
                 .Create<TINpoint, ConvexFaceTriangle>(returnObject.allUsedPoints);
+
+            ////////////////////////////////////////
+            /// To Do: figure out what gridIndex is here and whether I still need it.
 
             returnObject.allTriangles = new List<TINtriangle>(2 * returnObject.allUsedPoints.Count);
             foreach (var vTriangle in VoronoiMesh.Triangles)
@@ -287,11 +284,15 @@ namespace Surfaces.TIN
                 if (!(newTriangle is null))
                     returnObject.allTriangles.Add(newTriangle);
             }
-            returnObject.skippedPoints = skipPoints;
+            messagePump.BroadcastMessage("Final processing.");
             returnObject.finalProcessing();
-            messagePump.BroadcastMessage("Created Tin from .LAS, complete.");
-            messagePump.BroadcastMessage($"File: {lidarFileName}");
-
+            messagePump.BroadcastMessage("Created Tin by random decimation, complete:");
+            messagePump.BroadcastMessage(
+                $"{returnObject.allTriangles.Count:N0} Triangles, {returnObject.allLines.Count:N0} Lines.");
+            stopwatch.Stop();
+            messagePump.BroadcastMessage
+                ($"In {stopwatch.ElapsedMilliseconds / 1000.0:0.000} seconds" +
+                $"( {stopwatch.ElapsedMilliseconds / 60000.0:0.000} minutes).");
             return returnObject;
         }
 
@@ -309,6 +310,8 @@ namespace Surfaces.TIN
         {
             this.pruneTinHull();
             this.IndexTriangles();
+            if (this.allLines.Count <= 1)
+                populateAllLines();
             this.DetermineEdgePoints();
             this.correctUpsidedownTriangles();
         }
@@ -523,8 +526,9 @@ namespace Surfaces.TIN
                 return new Tuple<int, int>(i1, i2);
             return new Tuple<int, int>(i2, i1);
         }
+
         private void populateAllLines()
-        {
+        {   // To do: fix where lines are not computed in random decimation 
             foreach (var aTriangle in this.allTriangles)
             {
                 int point1 = aTriangle.point1.myIndex;
