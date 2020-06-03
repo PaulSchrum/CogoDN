@@ -27,12 +27,13 @@ namespace TinConsole
         static TINsurface mainSurface = null;
         static TINsurface derivedSurface = null;
 
-        static StringWriter intercept = new StringWriter();
-        static TextWriter stdOut = Console.Out;
+        static string StatisticsCsvFile = null;
         static MessageObserver msgObs = new MessageObserver();
+        static Stopwatch overallSW = new Stopwatch();
 
         static void Main(string[] args)
         {
+            overallSW.Start();
             AppDomain.CurrentDomain.UnhandledException += 
                 new UnhandledExceptionEventHandler(OnUnhandledException);
             AppDomain.CurrentDomain.ProcessExit += new EventHandler(OnAppExit);
@@ -78,7 +79,8 @@ namespace TinConsole
 
         static void OnAppExit(object sender, EventArgs e)
         {
-            mirrorLogPrint("Application exiting.");
+            overallSW.Stop();
+            mirrorLogPrint($"Application exiting. Runtime = {overallSW.Elapsed}");
             logFile?.Dispose();
         }
 
@@ -143,14 +145,15 @@ namespace TinConsole
                 ["load"] = ls => Load(ls),
                 ["summarize"] = ls => summarize(ls),
                 ["reload"] = ls => reload(ls),
-                ["decimate_multiple"] = ls => decimate_multiple(),
-                ["performance_test"] = ls => performance_test(ls),
+                ["decimate_multiple"] = ls => decimate_multiple(), // must remove
+                ["performance_test"] = ls => performance_test(ls), // must remove
                 ["output_lines"] = ls => output_lines(ls),
                 ["set_filter"] = ls => set_filter(ls),
                 ["points_to_dxf"] = ls => points_to_dxf(ls),
                 ["to_obj"] = ls => to_obj(ls),
+                ["save_stats"] = ls => save_stats(ls),
                 ["decimate_random"] = ls => decimate_random(ls),
-                // to do: add to_obj, but remember, we will have two surfaces by then.
+                // must remove decimate_single
             };
 
             Action<List<String>> command = null;
@@ -183,6 +186,11 @@ namespace TinConsole
             }
         }
 
+        private static void save_stats(List<string> commandItems)
+        {
+            if(commandItems.Count == 2)
+                StatisticsCsvFile = outDir.GetPathAndAppendFilename(commandItems[1]);
+        }
         private static string GetCorrectOutputFilename(string filenameIn)
         {
             if (filenameIn.Contains(":"))
@@ -190,15 +198,32 @@ namespace TinConsole
             return outDir.GetPathAndAppendFilename(filenameIn);
         }
 
+        /// <summary>
+        /// Random decimates a tin one or more times.
+        /// Arg 1 (req) must be the decimation value (percent points remaining).
+        /// Arg 2 (optional) -xnn is the number of times to decimate (for research purposes).
+        /// </summary>
+        /// <param name="commandItems"></param>
         private static void decimate_random(List<string> commandItems)
         {
-            if (commandItems.Count != 2)
-                throw new ArgumentException(
-                    "Error: decimate_random requires one parameter only.");
+            var runTimes = 1;
+            if(commandItems.Count == 3)
+            {
+                var param2 = commandItems.Skip(2).FirstOrDefault();
+                if (param2.StartsWith("-x"))
+                    runTimes = Convert.ToInt32(param2.Substring(2));
+            }
 
             var decimation = Convert.ToDouble(commandItems.Skip(1).FirstOrDefault());
 
-            derivedSurface = TINsurface.CreateByRandomDecimation(mainSurface, decimation);
+            for(int counter=0; counter<runTimes; counter++)
+            {
+                mirrorLogPrint($"Random Decimation run {counter+1} of {runTimes}.");
+                derivedSurface = TINsurface.CreateByRandomDecimation(mainSurface, decimation);
+
+                if (null != StatisticsCsvFile)
+                    derivedSurface.ComputeErrorStatistics(StatisticsCsvFile);
+            }
         }
 
         private static void points_to_dxf(List<string> commandItems)

@@ -36,7 +36,7 @@ namespace Surfaces.TIN
         [NonSerialized]
         private List<TINpoint> unused_points = new List<TINpoint>();
         public List<TINpoint> allUnusedPoints { get { return unused_points; } }
-        private int skippedPoints = 0;
+        private double decimationRemainingPercent { get; set; }
         
         
         private Dictionary<Tuple<int, int>, TINtriangleLine> allLines { get; set; }
@@ -203,7 +203,7 @@ namespace Surfaces.TIN
         public static TINsurface CreateByRandomDecimation(TINsurface sourceSurface,
             double decimationRemainingPercent)
         {
-            messagePump.BroadcastMessage("Standard Decimation Started.");
+            messagePump.BroadcastMessage($"Random Decimation to {decimationRemainingPercent * 100.0:F2}% -- Started.");
             var returnObject = new TINsurface();
             var tempAllPoints = (sourceSurface.allUsedPoints
                 .Concat(sourceSurface.allUnusedPoints))
@@ -227,6 +227,7 @@ namespace Surfaces.TIN
 
             returnObject.SourceData = sourceSurface.SourceData +
                 $"Randomly Decimated {decimationRemainingPercent:0.000}";
+            returnObject.decimationRemainingPercent = decimationRemainingPercent;
 
             double retainProb = 
                 decimationRemainingPercent * interiorPointCount 
@@ -376,7 +377,8 @@ namespace Surfaces.TIN
             var msPerQuery = (double)sw.ElapsedMilliseconds / allUnusedPoints.Count;
             Console.WriteLine($"   {msPerQuery} milliseconds per query.");
 
-            String outRow = $"{skippedPoints},{this.allUsedPoints.Count},{rootMeanSquared:F5}," +
+            String outRow = $"{decimationRemainingPercent*100.0:F2},"
+                + $"{this.allUsedPoints.Count},{rootMeanSquared:F5}," +
                 $"{rootMaxSquared:F5},{rootP95Squared:F5},{rootVarianceSquared:F5}";
             using (StreamWriter csvFile = new StreamWriter(v, true))
             {
