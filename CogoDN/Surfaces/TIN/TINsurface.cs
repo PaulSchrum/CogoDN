@@ -214,18 +214,52 @@ namespace Surfaces.TIN
             int remainingPointsToTake =
                 sourceSurface.allUsedPoints.Count - reservedForGridScatteringCount;
 
-            returnObject.allUsedPoints = sourceSurface.allUsedPoints
+            var usedIndices = new HashSet<int>(
+                sourceSurface.allUsedPoints
                 .Where(pt => pt.isOnHull)
-                .Select(pt => new TINpoint(pt)).ToList();
+                .Select(pt => pt.myIndex).ToList());
 
-            var pointPool = sourceSurface.allUsedPoints
+            var pointPoolIndices = new HashSet<int>(
+                sourceSurface.allUsedPoints
                 .Where(pt => !pt.isOnHull)
-                .Select(pt => new TINpoint(pt)).ToList();
+                .Select(pt => pt.myIndex).ToList());
+
+            var sourceLines = sourceSurface.allLines
+                .OrderByDescending(line => line.Value.DeltaCrossSlopeAsAngleRad)
+                .Select(line => line.Value)
+                .ToList();
+            
+            remainingPointsToTake -= usedIndices.Count;
+            int pointsToGet =
+                (int)(decimationRemainingPercent * (remainingPointsToTake / 2));
+
+            // Get points based on highest line cross slope until half of the
+            // available points in the Pool have been taken.
+            int lineIndex = 0;
+            while(pointsToGet >=0)
+            {
+                var aLine = sourceLines[lineIndex++];
+                var firstPoint = aLine.firstPoint;
+                if (!usedIndices.Contains(firstPoint.myIndex))
+                {
+                    usedIndices.Add(firstPoint.myIndex);
+                    pointPoolIndices.Remove(firstPoint.myIndex);
+                    pointsToGet--;
+                }
+                var secondPoint = aLine.secondPoint;
+                if (!usedIndices.Contains(secondPoint.myIndex))
+                {
+                    usedIndices.Add(secondPoint.myIndex);
+                    pointPoolIndices.Remove(secondPoint.myIndex);
+                    pointsToGet--;
+                }
+            }
+
+            // Next: Compute Points retention likelihood. 
 
             returnObject.SourceData = sourceSurface.SourceData +
                 $"Decimated {decimationRemainingPercent:0.000}";
             returnObject.decimationRemainingPercent = decimationRemainingPercent;
-            // above this line, the code is the same as random decimation
 
             // Get all interior triangle lines from source, ordered by rollover slope.
 
@@ -360,12 +394,6 @@ namespace Surfaces.TIN
                 populateAllLines();
             this.DetermineEdgePoints();
             this.correctUpsidedownTriangles();
-
-            int counter = 0;
-            //foreach(var pt in this.allUsedPoints)
-            //{
-            //    pt.my
-            //}
         }
 
         [NonSerialized]
