@@ -153,7 +153,7 @@ namespace TinConsole
                 ["to_obj"] = ls => to_obj(ls),
                 ["save_stats"] = ls => save_stats(ls),
                 ["decimate_random"] = ls => decimate_random(ls),
-                // must remove decimate_single
+                ["decimate"] = ls => decimate(ls),
             };
 
             Action<List<String>> command = null;
@@ -196,6 +196,28 @@ namespace TinConsole
             if (filenameIn.Contains(":"))
                 return filenameIn;
             return outDir.GetPathAndAppendFilename(filenameIn);
+        }
+
+        private static void decimate(List<string> commandItems)
+        {
+            var runTimes = 1;
+            if (commandItems.Count == 3)
+            {
+                var param2 = commandItems.Skip(2).FirstOrDefault();
+                if (param2.StartsWith("-x"))
+                    runTimes = Convert.ToInt32(param2.Substring(2));
+            }
+
+            var decimation = Convert.ToDouble(commandItems.Skip(1).FirstOrDefault());
+
+            for (int counter = 0; counter < runTimes; counter++)
+            {
+                mirrorLogPrint($"Random Decimation run {counter + 1} of {runTimes}.");
+                derivedSurface = TINsurface.CreateByDecimation(mainSurface, decimation);
+
+                if (null != StatisticsCsvFile)
+                    derivedSurface.ComputeErrorStatistics(StatisticsCsvFile);
+            }
         }
 
         /// <summary>

@@ -200,11 +200,59 @@ namespace Surfaces.TIN
             return returnObject;
         }
 
+        public static TINsurface CreateByDecimation(TINsurface sourceSurface,
+            double decimationRemainingPercent)
+        {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            messagePump.BroadcastMessage(
+                $"Random Decimation to {decimationRemainingPercent * 100.0:F2}% -- Started.");
+            var returnObject = new TINsurface();
+
+            int reservedForGridScatteringCount = 1200;
+            int remainingPointsToTake =
+                sourceSurface.allUsedPoints.Count - reservedForGridScatteringCount;
+
+            returnObject.allUsedPoints = sourceSurface.allUsedPoints
+                .Where(pt => pt.isOnHull)
+                .Select(pt => new TINpoint(pt)).ToList();
+
+            var pointPool = sourceSurface.allUsedPoints
+                .Where(pt => !pt.isOnHull)
+                .Select(pt => new TINpoint(pt)).ToList();
+
+            returnObject.SourceData = sourceSurface.SourceData +
+                $"Decimated {decimationRemainingPercent:0.000}";
+            returnObject.decimationRemainingPercent = decimationRemainingPercent;
+            // above this line, the code is the same as random decimation
+
+            // Get all interior triangle lines from source, ordered by rollover slope.
+
+
+            // Take points from these lines in descending order until half of 
+            //   targetInteriorPointCount is reached.
+
+
+            // For the remainder, get a retention score based on point density and
+            // approximate curvature.
+
+
+
+            return returnObject;
+        }
+
         public static TINsurface CreateByRandomDecimation(TINsurface sourceSurface,
             double decimationRemainingPercent)
         {
-            messagePump.BroadcastMessage($"Random Decimation to {decimationRemainingPercent * 100.0:F2}% -- Started.");
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            messagePump.BroadcastMessage(
+                $"Random Decimation to {decimationRemainingPercent * 100.0:F2}% -- Started.");
             var returnObject = new TINsurface();
+
+            // Get points from source
             var tempAllPoints = (sourceSurface.allUsedPoints
                 .Concat(sourceSurface.allUnusedPoints))
                 .Select(pt => new TINpoint(pt))
@@ -234,9 +282,6 @@ namespace Surfaces.TIN
                 / totalPointCount;
 
             Parallel.ForEach(interiorPointsArray, pt => pt.retainProbability = retainProb);
-
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
 
             var gridIndexer = new Dictionary<Tuple<int, int>, int>();
             Random drm = new Random();
@@ -315,6 +360,12 @@ namespace Surfaces.TIN
                 populateAllLines();
             this.DetermineEdgePoints();
             this.correctUpsidedownTriangles();
+
+            int counter = 0;
+            //foreach(var pt in this.allUsedPoints)
+            //{
+            //    pt.my
+            //}
         }
 
         [NonSerialized]
