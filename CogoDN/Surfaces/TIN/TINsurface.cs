@@ -213,16 +213,24 @@ namespace Surfaces.TIN
             int reservedForGridScatteringCount = 1200;
             int remainingPointsToTake =
                 sourceSurface.allUsedPoints.Count - reservedForGridScatteringCount;
+            Parallel.ForEach(sourceSurface.allUsedPoints,
+                pt => pt.hasBeenSkipped = true);
 
             var usedIndices = new HashSet<int>(
                 sourceSurface.allUsedPoints
                 .Where(pt => pt.isOnHull)
                 .Select(pt => pt.myIndex).ToList());
 
-            var pointPoolIndices = new HashSet<int>(
+            var pointPoolIndices = new Dictionary<int, tinPointParameters>();
+            foreach(var anInt in 
                 sourceSurface.allUsedPoints
                 .Where(pt => !pt.isOnHull)
-                .Select(pt => pt.myIndex).ToList());
+                .Select(pt => pt.myIndex))
+            {
+                pointPoolIndices.Add(anInt, new tinPointParameters());
+            }
+            Parallel.ForEach(pointPoolIndices.Keys,
+                idx => sourceSurface.allUsedPoints[idx].hasBeenSkipped = false);
 
             var sourceLines = sourceSurface.allLines
                 .OrderByDescending(line => line.Value.DeltaCrossSlopeAsAngleRad)
@@ -254,8 +262,12 @@ namespace Surfaces.TIN
                     pointsToGet--;
                 }
             }
+            foreach (var idx in usedIndices)
+                sourceSurface.allUsedPoints[idx].hasBeenSkipped = false;
 
-            // Next: Compute Points retention likelihood. 
+            // Next: Compute Points retention likelihood.
+            ComputePointRetentionLikelihood(sourceSurface, pointPoolIndices);
+            
 
             returnObject.SourceData = sourceSurface.SourceData +
                 $"Decimated {decimationRemainingPercent:0.000}";
@@ -274,6 +286,52 @@ namespace Surfaces.TIN
 
 
             return returnObject;
+        }
+
+        /// <summary>
+        /// For each point in the dictionary (keys), computes the point density,
+        /// Aggregate Cross Slope, and the Retain Probability
+        /// </summary>
+        /// <param name="pointPoolIndices"></param>
+        private static void ComputePointRetentionLikelihood
+            (TINsurface sourceSurface,
+            Dictionary<int, tinPointParameters> pointPoolIndices)
+        {
+            // populate line and triangle references for each point
+            foreach(var line in sourceSurface.allLines.Values)
+            {
+                TINpoint firstPoint = line.firstPoint;
+                int idx = firstPoint.myIndex;
+                if(pointPoolIndices.ContainsKey(idx))
+                {
+                    pointPoolIndices[idx].myLines.Add(line);
+                }
+
+                TINpoint secondPoint = line.secondPoint;
+                idx = secondPoint.myIndex;
+                if (pointPoolIndices.ContainsKey(idx))
+                {
+                    pointPoolIndices[idx].myLines.Add(line);
+                }
+            }
+            foreach (var triangle in sourceSurface.allTriangles)
+            {
+                int idx = triangle.point1.myIndex;
+                if(pointPoolIndices.ContainsKey(idx))
+                    pointPoolIndices[idx].myTriangles.Add(triangle);
+
+                idx = triangle.point2.myIndex;
+                if (pointPoolIndices.ContainsKey(idx))
+                    pointPoolIndices[idx].myTriangles.Add(triangle);
+
+                idx = triangle.point3.myIndex;
+                if (pointPoolIndices.ContainsKey(idx))
+                    pointPoolIndices[idx].myTriangles.Add(triangle);
+            }
+            // end: populate line and triangle references for each point
+
+
+
         }
 
         public static TINsurface CreateByRandomDecimation(TINsurface sourceSurface,
@@ -1459,6 +1517,16 @@ namespace Surfaces.TIN
         }
 
         
+    }
+
+    internal class tinPointParameters
+    {
+        public double pointDensity;
+        public double aggregateCrossSlope;
+        public double retainProbability;
+        public HashSet<TINtriangleLine> myLines = new HashSet<TINtriangleLine>();
+        public HashSet<TINtriangle> myTriangles = new HashSet<TINtriangle>();
+
     }
 
     internal class randomIndices
