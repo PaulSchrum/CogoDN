@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -11,7 +12,7 @@ namespace CadFoundation
     {  // From GitHubGist: https://gist.github.com/PaulSchrum/4fb6015d46d79c06b08acb7f1bb00c53
        // If I add other things (like createDir or move, etc. The version here should be updated.
 
-        private static string delim = Path.DirectorySeparatorChar.ToString();
+        protected static string delim = Path.DirectorySeparatorChar.ToString();
         
         public string GetPathAndAppendFilename(string filename = null)
         {
@@ -31,7 +32,7 @@ namespace CadFoundation
 
         protected void setPathFromList(List<string> aList)
         {
-            this.path = string.Join(delim, aList);
+            this.path = string.Join(delim, aList) + delim;
         }
 
         public DirectoryManager()
@@ -47,6 +48,8 @@ namespace CadFoundation
             }
         }
 
+        public bool AccessDenied { get; protected set; } = false;
+
         public DirectoryManager Clone()
         {
             var returnValue = new DirectoryManager();
@@ -60,6 +63,16 @@ namespace CadFoundation
             var wd = this.pathAsList.Take(depth - upSteps).ToList();
             this.setPathFromList(wd);
             return this;
+        }
+
+        public int Depth
+        {
+            get { return this.pathAsList.Count - 1; }
+        }
+
+        public DirectoryManager CdRoot()
+        {
+            return CdUp(Depth - 1);
         }
 
         public DirectoryManager CdDown(string directoryName, bool createIfNeeded = false)
@@ -155,6 +168,107 @@ namespace CadFoundation
             DirectoryManager retVal = new DirectoryManager();
             retVal.path = str;
             return retVal;
+        }
+    }
+
+    internal class DirectoryNode : DirectoryManager
+    {
+        public List<DirectoryNode> Subdirectories { get; private set; }
+        public List<FileNode> Files { get; private set; }
+        public long Size { get; private set; } = 0;
+        public double SizeMB
+        {
+            get { return (double)Size / 1048576; }
+        }
+        public double SizeGB
+        {
+            get { return (double)Size / 1073741824; }
+        }
+
+        public long DirectoryCount { get; private set; } = 0;
+        public long FileCount { get; private set; } = 0;
+
+        public DirectoryNode() : base()
+        {
+
+        }
+
+        public DirectoryNode(DirectoryManager dm)
+        {
+            this.path = dm.path;
+        }
+
+        public DirectoryNode(string path)
+        {
+            this.path = path;
+        }
+
+        public void PopulateAll()
+        {
+            Subdirectories = new List<DirectoryNode>();
+            if (path.Contains("$RECYCLE.BIN")
+                || path.Contains("System Volume Information")
+                )
+            {
+                AccessDenied = true;
+                Files = new List<FileNode>();
+                Size = 1028;
+                DirectoryCount++;
+                return;
+            }
+
+
+            foreach(var aDir in Directory.EnumerateDirectories(path))
+            {
+                Subdirectories.Add(new DirectoryNode(aDir));
+            }
+
+            Files = Directory.EnumerateFiles(path)
+                .Select(str => FileNode.Create(this, str))
+                .ToList();
+
+            foreach(var aFile in Files)
+            {
+                aFile.Size = new FileInfo(GetPathAndAppendFilename(aFile.Name))
+                    .Length;
+                this.Size += aFile.Size;
+                this.FileCount++;
+            }
+
+            foreach(var aDirectory in Subdirectories)
+            {
+                aDirectory.PopulateAll();
+                Size += aDirectory.Size;
+                DirectoryCount += aDirectory.DirectoryCount;
+                FileCount += aDirectory.FileCount;
+            }
+            DirectoryCount += Subdirectories.Count;
+
+            Size += 1028; // Estimated min dir size for NTFS.
+        }
+    }
+
+    internal class FileNode : DirectoryManager
+    {
+        public static FileNode Create(DirectoryNode dir, string fullpathname)
+        {
+            string filename = fullpathname.Split(delim).Last();
+            FileNode returnInstance = new FileNode(dir, filename);
+            return returnInstance;
+        }
+
+        private FileNode(DirectoryNode parent, string name)
+        {
+            Name = name;
+            this.path = parent.path;
+        }
+
+        public string Name { get; set; }
+        public long Size { get; set; }
+
+        public override string ToString()
+        {
+            return path + delim + Name;
         }
     }
 }

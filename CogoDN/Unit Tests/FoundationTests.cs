@@ -421,4 +421,21 @@ namespace Unit_Tests
     {
         public BoundingBox BoundingBox { get; set; }
     }
+
+    [TestClass]
+    public class DirectoryManagerTests
+    {
+        [TestMethod]
+        public void DirectoryNode_TestBasics()
+        {
+            var cwd = new DirectoryManager();
+            var depth = cwd.pathAsList.Count;
+            var dir = new DirectoryNode(cwd);
+            dir.PopulateAll();
+
+            var rootDir = new DirectoryNode(cwd);
+            rootDir.CdRoot();
+            rootDir.PopulateAll();
+        }
+    }
 }
