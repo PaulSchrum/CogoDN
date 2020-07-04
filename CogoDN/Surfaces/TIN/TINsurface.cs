@@ -210,7 +210,7 @@ namespace Surfaces.TIN
                 $"Random Decimation to {decimationRemainingPercent * 100.0:F2}% -- Started.");
             var returnObject = new TINsurface();
 
-            int reservedForGridScatteringCount = 1200;
+            int reservedForGridScatteringCount = 0;
             int remainingPointsToTake =
                 sourceSurface.allUsedPoints.Count - reservedForGridScatteringCount;
             Parallel.ForEach(sourceSurface.allUsedPoints,
@@ -330,7 +330,52 @@ namespace Surfaces.TIN
             }
             // end: populate line and triangle references for each point
 
+            foreach(var idx in pointPoolIndices.Keys)
+            {
+                var ptParams = pointPoolIndices[idx];
+                ptParams.aggregateCrossSlope =
+                    ptParams.myLines
+                    .Where(L => null != L.DeltaCrossSlopeAsAngleRad)
+                    .Select(L => 
+                        Math.Abs((double)L.DeltaCrossSlopeAsAngleRad) / L.Length2d)
+                    .Sum() / ptParams.myLines.Count;
 
+                ptParams.pointSparsity = ptParams.myTriangles
+                    .Select(t => t.Area2d).Sum() / 3.0;
+
+                ptParams.retainProbability = 
+                    ptParams.pointSparsity * ptParams.aggregateCrossSlope;
+            }
+
+            int removedCount = 0;
+            foreach (var idx in pointPoolIndices.Keys)
+            {
+                if (Double.IsNaN(pointPoolIndices[idx].retainProbability))
+                {
+                    pointPoolIndices.Remove(idx);
+                    removedCount++;
+                }
+            }
+            var maxVal = pointPoolIndices.Values.Select(v => v.retainProbability).Max();
+            foreach(var poolItem in pointPoolIndices.Values)
+            {
+                poolItem.retainProbability /= maxVal;
+            }
+            foreach(var poolItem in pointPoolIndices.Values)
+            {
+                double retainProb = poolItem.retainProbability;
+                double oneComplement = 1.0 - retainProb;
+            }
+            var stats = new DescriptiveStatistics
+                (pointPoolIndices.Values.Select(v => v.retainProbability));
+
+            //DistributionPlotter.writeProbabilityCsv(
+            //    collection: pointPoolIndices.Values.OrderBy(
+            //        p => p.retainProbability).Select(p => p.retainProbability),
+            //    binCount: 200
+            //);
+
+            //temp_testSelectionRate(pointPoolIndices);
 
         }
 
@@ -1521,8 +1566,20 @@ namespace Surfaces.TIN
 
     internal class tinPointParameters
     {
-        public double pointDensity;
+        /// <summary>
+        /// Point Sparsity is the reciprocal of point density. The higher the value,
+        /// the lower the number of points per area unit. In other words, a low sparsity
+        /// indicates a high point density.
+        /// </summary>
+        public double pointSparsity;
+        
+        /// <summary>
+        /// The weighted sum of the cross slope of each line associated with the
+        /// given point. 
+        /// </summary>
         public double aggregateCrossSlope;
+
+
         public double retainProbability;
         public HashSet<TINtriangleLine> myLines = new HashSet<TINtriangleLine>();
         public HashSet<TINtriangle> myTriangles = new HashSet<TINtriangle>();

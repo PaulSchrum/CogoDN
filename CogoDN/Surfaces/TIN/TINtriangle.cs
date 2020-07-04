@@ -134,6 +134,22 @@ namespace Surfaces.TIN
             }
         }
 
+        [NonSerialized]
+        private double? area2d_ = null;
+        public double Area2d
+        {
+            get
+            {
+                if(null == area2d_)
+                {
+                    Vector vec12 = new Vector(point2.x - point1.x, point2.y - point1.y);
+                    Vector vec23 = new Vector(point3.x - point2.x, point3.y - point2.y);
+                    area2d_ = vec12.crossProduct(vec23).Length / 2.0;
+                }
+                return (double)area2d_;
+            }
+        }
+
         // non-substantive fields
         [NonSerialized]
         private BoundingBox myBoundingBox_;
