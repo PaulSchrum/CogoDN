@@ -13,7 +13,8 @@ namespace CadFoundation
        // If I add other things (like createDir or move, etc. The version here should be updated.
 
         protected static string delim = Path.DirectorySeparatorChar.ToString();
-        
+        private DriveInfo d;
+
         public string GetPathAndAppendFilename(string filename = null)
         {
             if (filename == null || filename.Length == 0)
@@ -38,6 +39,11 @@ namespace CadFoundation
         public DirectoryManager()
         {
             this.path = System.IO.Directory.GetCurrentDirectory();
+        }
+
+        public DirectoryManager(DriveInfo d)
+        {
+            this.path = d.RootDirectory.FullName;
         }
 
         public int depth
@@ -169,6 +175,13 @@ namespace CadFoundation
             retVal.path = str;
             return retVal;
         }
+
+        public static List<DirectoryManager> ListDrives()
+        {
+            return DriveInfo.GetDrives().Select(d => new DirectoryManager(d))
+                .ToList();
+        }
+
     }
 
     internal class DirectoryNode : DirectoryManager
@@ -201,6 +214,20 @@ namespace CadFoundation
         public DirectoryNode(string path)
         {
             this.path = path;
+        }
+
+        public static DirectoryNode SetAtDriveLetterRoot(string driveLetter)
+        {
+            if (driveLetter.Length == 1)
+                driveLetter += ":";
+            var drives = DirectoryManager.ListDrives();
+            foreach(var drive in drives)
+            {
+                if (drive.pathAsList.First().ToUpper() == driveLetter.ToUpper())
+                    return new DirectoryNode(driveLetter + delim);
+            }
+
+            return null;
         }
 
         public void PopulateAll()
@@ -237,7 +264,14 @@ namespace CadFoundation
 
             foreach(var aDirectory in Subdirectories)
             {
-                aDirectory.PopulateAll();
+                try
+                {
+                    aDirectory.PopulateAll();
+                }
+                catch(UnauthorizedAccessException uae)
+                {
+                    this.AccessDenied = true;
+                }
                 Size += aDirectory.Size;
                 DirectoryCount += aDirectory.DirectoryCount;
                 FileCount += aDirectory.FileCount;
@@ -246,6 +280,49 @@ namespace CadFoundation
 
             Size += 1028; // Estimated min dir size for NTFS.
         }
+
+        public List<FileNode> allFilesFlat
+        {
+            get
+            {
+                var returnList = new List<FileNode>();
+                if (this.AccessDenied)
+                    return returnList;
+
+                if (null == Files)
+                {
+                    try
+                    {
+                        PopulateAll();
+                    }
+                    catch (UnauthorizedAccessException uae)
+                    {
+                        this.AccessDenied = true;
+                        return returnList;
+                    }
+                }
+
+                returnList = Files;
+                foreach(var dirNode in Subdirectories)
+                {
+                    returnList.AddRange(dirNode.allFilesFlat);
+                }
+                return returnList;
+            }
+        }
+
+        internal IReadOnlyList<string> FindAll(string searchString)
+        {
+            var returnList = new List<string>();
+            
+            returnList = this.allFilesFlat
+                .Where(f => f.Name.Contains(searchString))
+                .Select(f => f.PathAndName)
+                .ToList();
+
+            return returnList;
+        }
+
     }
 
     internal class FileNode : DirectoryManager
@@ -265,6 +342,10 @@ namespace CadFoundation
 
         public string Name { get; set; }
         public long Size { get; set; }
+        public string PathAndName
+        {
+            get { return path + delim + Name; }
+        }
 
         public override string ToString()
         {

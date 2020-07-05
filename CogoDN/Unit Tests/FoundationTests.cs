@@ -5,6 +5,7 @@ using CadFoundation.Angles;
 using CadFoundation.Coordinates;
 using CadFoundation.Coordinates.Indexing;
 using System.Collections.Generic;
+using System.Net.Http.Headers;
 
 namespace Unit_Tests
 {
@@ -436,6 +437,17 @@ namespace Unit_Tests
             var rootDir = new DirectoryNode(cwd);
             rootDir.CdRoot();
             rootDir.PopulateAll();
+        }
+
+        [TestMethod]
+        public void DirectoryNode_SearchByFilter()
+        {
+            var aDrive = DirectoryNode.SetAtDriveLetterRoot("C");
+            Assert.IsNotNull(aDrive);
+            aDrive.CdDown("Windows");
+            
+            var results = aDrive.FindAll(".exe");
+            Assert.IsTrue(results.Count > 1);
         }
     }
 }
