@@ -267,7 +267,10 @@ namespace Surfaces.TIN
 
             // Next: Compute Points retention likelihood.
             ComputePointRetentionLikelihood(sourceSurface, pointPoolIndices);
-            
+            goalSeekRetainProbabilityToValue(pointPoolIndices,
+                decimationRemainingPercent);
+
+
 
             returnObject.SourceData = sourceSurface.SourceData +
                 $"Decimated {decimationRemainingPercent:0.000}";
@@ -286,6 +289,18 @@ namespace Surfaces.TIN
 
 
             return returnObject;
+        }
+
+        private static void goalSeekRetainProbabilityToValue(
+            Dictionary<int, tinPointParameters> pointPoolIndices, 
+            double decimationRemainingPercent)
+        {
+            int skipVal = pointPoolIndices.Count / 10000;
+            List<double> startingSet = new List<double>();
+            for(int idx = 0; idx < pointPoolIndices.Count; idx += skipVal)
+            {
+                startingSet.Add(pointPoolIndices[idx].retainProbability);
+            }
         }
 
         /// <summary>
@@ -375,8 +390,44 @@ namespace Surfaces.TIN
             //    binCount: 200
             //);
 
-            //temp_testSelectionRate(pointPoolIndices);
+            //temp_testSelectionRate(sourceSurface, pointPoolIndices);
+            //temp_writeProbabilitiesToCsv(pointPoolIndices);
 
+        }
+
+        private static void temp_writeProbabilitiesToCsv(Dictionary<int, tinPointParameters> pointPoolIndices)
+        {
+            var outFile = @"C:\Temp\data\" + DateTime.Now.ToString("yyyyMMddHHmmss"
+                    + ".csv");
+
+            var sb = new StringBuilder();
+            
+            foreach (var value in pointPoolIndices.Values)
+            {
+                sb.Append($"{value.retainProbability:F6}" + Environment.NewLine);
+            }
+            File.WriteAllText(outFile, sb.ToString());
+        }
+
+        private static void temp_testSelectionRate(
+            TINsurface sourceSurface,
+            Dictionary<int, tinPointParameters> pointPoolIndices)
+        {
+            // start here.
+            var rnd = new Random();
+            List<double> selectedPercentages = new List<double>();
+            int runs = 3;
+            for(int i=0; i<runs; i++)
+            {
+                int keptCount = 0;
+                foreach(var pt in pointPoolIndices.Keys)
+                {
+                    var testValue = rnd.NextDouble();
+                    if (testValue <= pointPoolIndices[pt].retainProbability)
+                        keptCount++;
+                }
+                selectedPercentages.Add((double) keptCount / (double) pointPoolIndices.Count);
+            }
         }
 
         public static TINsurface CreateByRandomDecimation(TINsurface sourceSurface,
