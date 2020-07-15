@@ -374,6 +374,7 @@ namespace TinConsole
             logFile?.Flush();
         }
 
+        static int attemptCount = 0;
         static bool logMessageGiven = false;
         static bool priorWasNewline = true;
         public static void mirrorLogPrint(string message, bool newline=true)
@@ -386,6 +387,8 @@ namespace TinConsole
 
             if(null == logFile && !logMessageGiven)
             {
+                attemptCount++;
+                if(attemptCount > 2000) Environment.Exit(-1);
                 Console.WriteLine("Logging requested but could not be started.");
                 logMessageGiven = true;
             }
