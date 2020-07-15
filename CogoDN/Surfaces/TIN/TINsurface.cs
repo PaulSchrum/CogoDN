@@ -266,11 +266,9 @@ namespace Surfaces.TIN
                 sourceSurface.allUsedPoints[idx].hasBeenSkipped = false;
 
             // Next: Compute Points retention likelihood.
-            ComputePointRetentionLikelihood(sourceSurface, pointPoolIndices);
-            goalSeekRetainProbabilityToValue(pointPoolIndices,
-                decimationRemainingPercent);
-
-
+            var startingStats = 
+                ComputePointRetentionLikelihood(sourceSurface, 
+                pointPoolIndices, decimationRemainingPercent);
 
             returnObject.SourceData = sourceSurface.SourceData +
                 $"Decimated {decimationRemainingPercent:0.000}";
@@ -291,15 +289,34 @@ namespace Surfaces.TIN
             return returnObject;
         }
 
-        private static void goalSeekRetainProbabilityToValue(
-            Dictionary<int, tinPointParameters> pointPoolIndices, 
-            double decimationRemainingPercent)
+        private static void adjustLiklihoodsToTargetMean(
+            Dictionary<int, tinPointParameters> dataset, 
+            double targetMean, double pretransformMean=-1.0)
         {
-            int skipVal = pointPoolIndices.Count / 10000;
-            List<double> startingSet = new List<double>();
-            for(int idx = 0; idx < pointPoolIndices.Count; idx += skipVal)
+            //double preTransMean = pretransformMean;
+            if(pretransformMean < 0.0)
             {
-                startingSet.Add(pointPoolIndices[idx].retainProbability);
+                pretransformMean = (new DescriptiveStatistics
+                (dataset.Values.Select(v => v.retainProbability))).Mean;
+            }
+
+            // Equation taken from Weilinga 2007, pp 6, 7
+            // https://www.mwsug.org/proceedings/2007/saspres/MWSUG-2007-SAS01.pdf
+            // Weilinga, D., 2007, Identifying and Overcoming Common Data Mining Mistakes
+            // SAS Global Forum. Orlando, FL, p 7. I use Weilinga's symbols here.
+            double p1 = pretransformMean;
+            double p0 = 1.0 - p1;
+            double tau1 = targetMean;
+            double tau0 = 1.0 - tau1;
+
+            foreach(var item in dataset.Values)
+            {
+                var P = item.retainProbability;
+
+                var Padj = (P * tau1 * p0) /
+                    ((P * tau1 * p0)+((1.0 - P) * tau0 * p1));
+
+                item.retainProbability = Padj;
             }
         }
 
@@ -308,9 +325,10 @@ namespace Surfaces.TIN
         /// Aggregate Cross Slope, and the Retain Probability
         /// </summary>
         /// <param name="pointPoolIndices"></param>
-        private static void ComputePointRetentionLikelihood
+        private static DescriptiveStatistics ComputePointRetentionLikelihood
             (TINsurface sourceSurface,
-            Dictionary<int, tinPointParameters> pointPoolIndices)
+            Dictionary<int, tinPointParameters> pointPoolIndices,
+            double decimationRemainingPercent)
         {
             // populate line and triangle references for each point
             foreach(var line in sourceSurface.allLines.Values)
@@ -384,50 +402,20 @@ namespace Surfaces.TIN
             var stats = new DescriptiveStatistics
                 (pointPoolIndices.Values.Select(v => v.retainProbability));
 
-            //DistributionPlotter.writeProbabilityCsv(
-            //    collection: pointPoolIndices.Values.OrderBy(
-            //        p => p.retainProbability).Select(p => p.retainProbability),
-            //    binCount: 200
-            //);
+            double popMean = stats.Mean;
 
-            //temp_testSelectionRate(sourceSurface, pointPoolIndices);
-            //temp_writeProbabilitiesToCsv(pointPoolIndices);
-
-        }
-
-        private static void temp_writeProbabilitiesToCsv(Dictionary<int, tinPointParameters> pointPoolIndices)
-        {
-            var outFile = @"C:\Temp\data\" + DateTime.Now.ToString("yyyyMMddHHmmss"
-                    + ".csv");
-
-            var sb = new StringBuilder();
-            
-            foreach (var value in pointPoolIndices.Values)
+            while(Math.Abs(popMean - decimationRemainingPercent) > 0.00001)
             {
-                sb.Append($"{value.retainProbability:F6}" + Environment.NewLine);
-            }
-            File.WriteAllText(outFile, sb.ToString());
-        }
+                adjustLiklihoodsToTargetMean(pointPoolIndices,
+                    decimationRemainingPercent, popMean);
 
-        private static void temp_testSelectionRate(
-            TINsurface sourceSurface,
-            Dictionary<int, tinPointParameters> pointPoolIndices)
-        {
-            // start here.
-            var rnd = new Random();
-            List<double> selectedPercentages = new List<double>();
-            int runs = 3;
-            for(int i=0; i<runs; i++)
-            {
-                int keptCount = 0;
-                foreach(var pt in pointPoolIndices.Keys)
-                {
-                    var testValue = rnd.NextDouble();
-                    if (testValue <= pointPoolIndices[pt].retainProbability)
-                        keptCount++;
-                }
-                selectedPercentages.Add((double) keptCount / (double) pointPoolIndices.Count);
+                stats = new DescriptiveStatistics
+                    (pointPoolIndices.Values.Select(v => v.retainProbability));
+
+                popMean = stats.Mean;
             }
+
+            return stats;
         }
 
         public static TINsurface CreateByRandomDecimation(TINsurface sourceSurface,
