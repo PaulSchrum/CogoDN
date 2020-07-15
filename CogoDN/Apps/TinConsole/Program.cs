@@ -212,7 +212,7 @@ namespace TinConsole
 
             for (int counter = 0; counter < runTimes; counter++)
             {
-                mirrorLogPrint($"Random Decimation run {counter + 1} of {runTimes}.");
+                mirrorLogPrint($"Decimation run {counter + 1} of {runTimes}.");
                 derivedSurface = TINsurface.CreateByDecimation(mainSurface, decimation);
 
                 if (null != StatisticsCsvFile)
