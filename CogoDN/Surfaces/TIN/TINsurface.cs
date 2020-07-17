@@ -200,6 +200,16 @@ namespace Surfaces.TIN
             return returnObject;
         }
 
+        /// <summary>
+        /// Decimates a given TINsurface using the Smart Decimation algorithm.
+        /// 1. Retain all hull points.
+        /// 2. Retain points associated with lines of high rollover.
+        /// 3. Retain randomly selected points via score based on curvature and sparsity.
+        /// 4. Create a new TINsurface from the retained points.
+        /// </summary>
+        /// <param name="sourceSurface">Instance of TINsurface with all points. This is the dataset that is to be decimated.</param>
+        /// <param name="decimationRemainingPercent"></param>
+        /// <returns></returns>
         public static TINsurface CreateByDecimation(TINsurface sourceSurface,
             double decimationRemainingPercent)
         {
@@ -216,11 +226,24 @@ namespace Surfaces.TIN
             Parallel.ForEach(sourceSurface.allUsedPoints,
                 pt => pt.hasBeenSkipped = true);
 
+            int desiredPointCount = (int)Math.Floor(
+                sourceSurface.allUsedPoints.Count * decimationRemainingPercent);
+
+            // To do: Make usedIndices thread safe by making it a ConcurrentDictionary.
             var usedIndices = new HashSet<int>(
                 sourceSurface.allUsedPoints
                 .Where(pt => pt.isOnHull)
                 .Select(pt => pt.myIndex).ToList());
+            int pointCountSoFar = usedIndices.Count;
 
+            // We will use a dictionary where each entry refers to a point in the
+            // original point collection. This is a way to add "extension properties"
+            // to each point without bloating the point class with luggage that is
+            // used only for this process.
+            // Variable pointPoolIndices is the indices of points that have not
+            // yet been selected to retain in the used-points dataset.
+            // When a point is selected for retention, it is moved from the pool to
+            // the variable usedIndices.
             var pointPoolIndices = new Dictionary<int, tinPointParameters>();
             foreach(var anInt in 
                 sourceSurface.allUsedPoints
@@ -229,8 +252,6 @@ namespace Surfaces.TIN
             {
                 pointPoolIndices.Add(anInt, new tinPointParameters());
             }
-            Parallel.ForEach(pointPoolIndices.Keys,
-                idx => sourceSurface.allUsedPoints[idx].hasBeenSkipped = false);
 
             var sourceLines = sourceSurface.allLines
                 .OrderByDescending(line => line.Value.DeltaCrossSlopeAsAngleRad)
@@ -242,7 +263,8 @@ namespace Surfaces.TIN
                 (int)(decimationRemainingPercent * (remainingPointsToTake / 2));
 
             // Get points based on highest line cross slope until half of the
-            // available points in the Pool have been taken.
+            // available points in the Pool have been taken. In other words, take
+            // points until usedIndices is full.
             int lineIndex = 0;
             while(pointsToGet >=0)
             {
@@ -253,6 +275,8 @@ namespace Surfaces.TIN
                     usedIndices.Add(firstPoint.myIndex);
                     pointPoolIndices.Remove(firstPoint.myIndex);
                     pointsToGet--;
+                    remainingPointsToTake--;
+                    pointCountSoFar++;
                 }
                 var secondPoint = aLine.secondPoint;
                 if (!usedIndices.Contains(secondPoint.myIndex))
@@ -260,31 +284,52 @@ namespace Surfaces.TIN
                     usedIndices.Add(secondPoint.myIndex);
                     pointPoolIndices.Remove(secondPoint.myIndex);
                     pointsToGet--;
+                    remainingPointsToTake--;
+                    pointCountSoFar++;
                 }
             }
+
+            // Next: Compute Points retention likelihood from all remaining
+            //   pool points.
+            int pointsNowNeeded = desiredPointCount - pointCountSoFar;
+            double percentOfRemaining = (double) pointsNowNeeded / 
+                (double) pointPoolIndices.Count;
+
+
+            ComputePointRetentionLikelihood(sourceSurface, 
+                pointPoolIndices, percentOfRemaining);
+
+            // Based on retainProbability, select points to retain
+            // There is no need to take points out of the pool now as it is 
+            // discarded next.
+            var rnd = new Random();
+            //Parallel.ForEach(pointPoolIndices,
+            //    kvp =>
+            foreach(var kvp in pointPoolIndices)
+                {
+                    double retainProbability = kvp.Value.retainProbability;
+                    double testValue = rnd.NextDouble();
+                    if(retainProbability > testValue)
+                    {
+                        usedIndices.Add(kvp.Key);
+                    }
+                }
+            //);
+
             foreach (var idx in usedIndices)
                 sourceSurface.allUsedPoints[idx].hasBeenSkipped = false;
 
-            // Next: Compute Points retention likelihood.
-            var startingStats = 
-                ComputePointRetentionLikelihood(sourceSurface, 
-                pointPoolIndices, decimationRemainingPercent);
+            pointPoolIndices = null;
+            GC.Collect();
+
+            // for diagnostics only.
+            //var retainedPointCount = sourceSurface.allUsedPoints
+            //    .Where(p => p.hasBeenSkipped == false)
+            //    .Count();
 
             returnObject.SourceData = sourceSurface.SourceData +
                 $"Decimated {decimationRemainingPercent:0.000}";
             returnObject.decimationRemainingPercent = decimationRemainingPercent;
-
-            // Get all interior triangle lines from source, ordered by rollover slope.
-
-
-            // Take points from these lines in descending order until half of 
-            //   targetInteriorPointCount is reached.
-
-
-            // For the remainder, get a retention score based on point density and
-            // approximate curvature.
-
-
 
             return returnObject;
         }
@@ -322,16 +367,24 @@ namespace Surfaces.TIN
 
         /// <summary>
         /// For each point in the dictionary (keys), computes the point density,
-        /// Aggregate Cross Slope, and the Retain Probability
+        /// Aggregate Cross Slope, and the Retain Probability.
+        /// This is a side-effect function. It modifies each point pool index
+        /// retainProbability in-place to bring the dataset mean to the 
+        /// desired percent within a tolerance. Tolerance is hard-coded.
         /// </summary>
-        /// <param name="pointPoolIndices"></param>
+        /// <param name="sourceSurface">The undecimted TINsurface upon which to based computations.</param>
+        /// <param name="pointPoolIndices">The collection of values to be modified in-place.</param>
+        /// <param name="decimationRemainingPercent">Target value for the collection mean retain probability.</param>
+        /// <returns>Descriptive Statistics of the final state of the retain probabilities. This is for verification only and may be ignored.</returns>
         private static DescriptiveStatistics ComputePointRetentionLikelihood
             (TINsurface sourceSurface,
             Dictionary<int, tinPointParameters> pointPoolIndices,
             double decimationRemainingPercent)
         {
+            double tolerance = 0.00001;
+
             // populate line and triangle references for each point
-            foreach(var line in sourceSurface.allLines.Values)
+            foreach (var line in sourceSurface.allLines.Values)
             {
                 TINpoint firstPoint = line.firstPoint;
                 int idx = firstPoint.myIndex;
@@ -403,8 +456,7 @@ namespace Surfaces.TIN
                 (pointPoolIndices.Values.Select(v => v.retainProbability));
 
             double popMean = stats.Mean;
-
-            while(Math.Abs(popMean - decimationRemainingPercent) > 0.00001)
+            while(Math.Abs(popMean - decimationRemainingPercent) > tolerance)
             {
                 adjustLiklihoodsToTargetMean(pointPoolIndices,
                     decimationRemainingPercent, popMean);
