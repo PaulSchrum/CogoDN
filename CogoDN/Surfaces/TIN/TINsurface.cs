@@ -124,7 +124,7 @@ namespace Surfaces.TIN
             int skipPoints = 0,
             BoundingBox trimBB = null,
             List<int> classificationFilter = null)
-        {
+        { // ToDo: Throw file not found exception
             var stopwatch = new Stopwatch(); stopwatch.Start();
             messagePump.BroadcastMessage($"Creating Tin in memory from {lidarFileName}.");
             LasFile lasFile = new LasFile(lidarFileName,
@@ -470,8 +470,59 @@ namespace Surfaces.TIN
             return stats;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sourceSurface"></param>
+        /// <param name="decimationPercent"></param>
+        private static List<TINpoint> computeLikelihoodsRandom(TINsurface sourceSurface, 
+            double decimationPercent)
+        {
+            int usedPoints = 0;
+            var tempAllPoints = (sourceSurface.allUsedPoints
+                .Concat(sourceSurface.allUnusedPoints))
+                .Select(pt => new TINpoint(pt))
+                .ToList();
+            //tempAllPoints.ForEach(
+            Parallel.ForEach(tempAllPoints,
+                pt =>
+                {
+                    pt.hasBeenSkipped = true;
+                    if (pt.isOnHull)
+                    {
+                        pt.retainProbability = 1.0;
+                        usedPoints++;
+                    }
+                    else
+                        pt.retainProbability = 0.0;
+                });
+
+            int hullPointCount = usedPoints;
+            int nonHullPointCount = tempAllPoints.Count;
+            int targetPointCount = (int) (decimationPercent * tempAllPoints.Count);
+            int remainingPointsToGetCount = targetPointCount - hullPointCount;
+            double adjustedRetainProbability = (double)remainingPointsToGetCount /
+                (double)tempAllPoints.Count;
+            Parallel.ForEach(tempAllPoints,
+                pt =>
+                {
+                    pt.hasBeenSkipped = true;
+                    if (!pt.isOnHull)
+                        pt.retainProbability = adjustedRetainProbability;
+                });
+            return tempAllPoints;
+        }
+
         public static TINsurface CreateByRandomDecimation(TINsurface sourceSurface,
             double decimationRemainingPercent)
+        {
+            return CreateByReductionAlgorithm(sourceSurface, decimationRemainingPercent,
+                computeLikelihoodsRandom);
+        }
+
+        protected static TINsurface CreateByReductionAlgorithm(TINsurface sourceSurface,
+            double decimationRemainingPercent,
+            Func<TINsurface, double, List<TINpoint>> algogrithmFunc)
         {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -480,61 +531,38 @@ namespace Surfaces.TIN
                 $"Random Decimation to {decimationRemainingPercent * 100.0:F2}% -- Started.");
             var returnObject = new TINsurface();
 
-            // Get points from source
-            var tempAllPoints = (sourceSurface.allUsedPoints
-                .Concat(sourceSurface.allUnusedPoints))
-                .Select(pt => new TINpoint(pt))
-                .ToList();
-
-            tempAllPoints.ForEach(pt => pt.hasBeenSkipped = true);
-            returnObject.allUsedPoints = tempAllPoints.Where(pt => pt.isOnHull).ToList();
-            returnObject.allUsedPoints.ForEach(pt => pt.hasBeenSkipped = false);
-            var hullPointCount = returnObject.allUsedPoints.Count;
-            var interiorPointsArray = tempAllPoints.Where(pt => pt.hasBeenSkipped).ToArray();
-            var totalPointCount = tempAllPoints.Count;
-            tempAllPoints = null;
-            GC.Collect();
-            var interiorPointCount = totalPointCount - hullPointCount;
-
-            var targetCountRemainingPoints = (int)
-                (totalPointCount * decimationRemainingPercent);
-            var targetInteriorPointCount = (int)
-                (targetCountRemainingPoints - hullPointCount);
+            var tempAllPoints =
+                algogrithmFunc(sourceSurface, decimationRemainingPercent);
 
             returnObject.SourceData = sourceSurface.SourceData +
                 $"Randomly Decimated {decimationRemainingPercent:0.000}";
             returnObject.decimationRemainingPercent = decimationRemainingPercent;
 
-            double retainProb = 
-                decimationRemainingPercent * interiorPointCount 
-                / totalPointCount;
-
-            Parallel.ForEach(interiorPointsArray, pt => pt.retainProbability = retainProb);
-
             var gridIndexer = new Dictionary<Tuple<int, int>, int>();
             Random drm = new Random();
-            for (int idx = 0; idx < interiorPointCount; idx++)
+            foreach(var pt in tempAllPoints)
             {
                 double diceRoll = drm.NextDouble();
-                if (diceRoll <= interiorPointsArray[idx].retainProbability)
-                    interiorPointsArray[idx].hasBeenSkipped = false;
+                if (diceRoll <= pt.retainProbability)
+                    pt.hasBeenSkipped = false;
             }
-            returnObject.allUsedPoints.AddRange(
-                interiorPointsArray
-                .Where(pt => pt.hasBeenSkipped == false));
+
+            returnObject.allUsedPoints =
+                tempAllPoints
+                .Where(pt => pt.hasBeenSkipped == false)
+                .ToList();
+            returnObject.unused_points = tempAllPoints
+                .Where(pt => pt.hasBeenSkipped == true).ToList();
 
             int indexCount = 0;
-            for (indexCount = 0; indexCount < returnObject.allUsedPoints.Count; indexCount++)
+            foreach (var aPoint in returnObject.allUsedPoints)
             {
-                var aPoint = returnObject.allUsedPoints[indexCount];
                 aPoint.myIndex = indexCount;
-                returnObject.allUsedPoints[indexCount] = aPoint;
                 gridIndexer[aPoint.GridCoordinates] = indexCount;
+                indexCount++;
             }
 
-            returnObject.unused_points = interiorPointsArray
-                .Where(pt => pt.hasBeenSkipped == true).ToList();
-            interiorPointsArray = null;
+            tempAllPoints = null;
             GC.Collect();
             setBoundingBox(returnObject);
 
@@ -544,16 +572,14 @@ namespace Surfaces.TIN
             var VoronoiMesh = MIConvexHull.VoronoiMesh
                 .Create<TINpoint, ConvexFaceTriangle>(returnObject.allUsedPoints);
 
-            ////////////////////////////////////////
-            /// To Do: figure out what gridIndex is here and whether I still need it.
-
             returnObject.allTriangles = new List<TINtriangle>(2 * returnObject.allUsedPoints.Count);
             foreach (var vTriangle in VoronoiMesh.Triangles)
             {
                 var point1 = gridIndexer[vTriangle.Vertices[0].GridCoordinates];
                 var point2 = gridIndexer[vTriangle.Vertices[1].GridCoordinates];
                 var point3 = gridIndexer[vTriangle.Vertices[2].GridCoordinates];
-                var newTriangle = TINtriangle.CreateTriangle(
+                TINtriangle newTriangle = null;
+                newTriangle = TINtriangle.CreateTriangle(
                     returnObject.allUsedPoints, point1, point2, point3);
                 if (!(newTriangle is null))
                     returnObject.allTriangles.Add(newTriangle);
@@ -612,8 +638,10 @@ namespace Surfaces.TIN
             if (allUnusedPoints.Count == 0)
                 return;
 
+            // ToDo: Verify path exists; throw if not.
+
             if(!File.Exists(v))
-                System.IO.File.WriteAllText(v, "PointsSkipped,PointCount,RMSE,RMaxSE,Rp95SE,rootVarianceSquared\r\n");
+                System.IO.File.WriteAllText(v, "DecimationPercent,PointCount,RMSE,RMaxSE,Rp95SE,rootVarianceSquared\r\n");
 
             randomIndices rdmIdc = new randomIndices(allUnusedPoints.Count, 1000);
             var squaredErrorsBag = new ConcurrentBag<double?>();
