@@ -210,14 +210,23 @@ namespace Surfaces.TIN
         /// <param name="sourceSurface">Instance of TINsurface with all points. This is the dataset that is to be decimated.</param>
         /// <param name="decimationRemainingPercent"></param>
         /// <returns></returns>
-        public static TINsurface CreateByDecimation(TINsurface sourceSurface,
+        public static TINsurface CreateByDecimation
+            (TINsurface sourceSurface, 
+            double decimationRemainingPercent)
+        {
+            return CreateByReductionAlgorithm(sourceSurface, decimationRemainingPercent,
+                computeLikelihoodsSmart);
+        }
+
+
+        public static TINsurface CreateByDecimation_old(TINsurface sourceSurface,
             double decimationRemainingPercent)
         {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
             messagePump.BroadcastMessage(
-                $"Random Decimation to {decimationRemainingPercent * 100.0:F2}% -- Started.");
+                $"Decimation to {decimationRemainingPercent * 100.0:F2}% -- Started.");
             var returnObject = new TINsurface();
 
             int reservedForGridScatteringCount = 0;
@@ -234,7 +243,7 @@ namespace Surfaces.TIN
                 sourceSurface.allUsedPoints
                 .Where(pt => pt.isOnHull)
                 .Select(pt => pt.myIndex).ToList());
-            int pointCountSoFar = usedIndices.Count;
+            int pointCountSoFar = usedIndices.Count;  // start here 1
 
             // We will use a dictionary where each entry refers to a point in the
             // original point collection. This is a way to add "extension properties"
@@ -470,8 +479,53 @@ namespace Surfaces.TIN
             return stats;
         }
 
+        private static List<TINpoint> computeLikelihoodsSmart
+            (TINsurface sourceSurface, double decimationPercent)
+        { 
+            int usedPoints = 0;
+            var tempAllPoints = (sourceSurface.allUsedPoints
+                .Concat(sourceSurface.allUnusedPoints))
+                .Select(pt => new TINpoint(pt))
+                .ToList();
+
+            // Force hull points to be always included.
+            //tempAllPoints.ForEach(
+            Parallel.ForEach(tempAllPoints,
+                pt =>
+                {
+                    pt.hasBeenSkipped = true;
+                    if (pt.isOnHull)
+                    {
+                        pt.retainProbability = 1.0;
+                        usedPoints++;
+                    }
+                    else
+                        pt.retainProbability = 0.0;
+                });
+
+            int hullPointCount = usedPoints;
+            int nonHullPointCount = tempAllPoints.Count;
+            int targetPointCount = (int)(decimationPercent * tempAllPoints.Count);
+            int remainingPointsToGetCount = targetPointCount - hullPointCount;
+            double adjustedRetainProbability = (double)remainingPointsToGetCount /
+                (double)tempAllPoints.Count;
+
+            // start here 2
+            // Assign retain probability to all other points based on smart decimation.
+            //    For half of available points, retain based on line cross slope
+            //    end of "For half of available points, retain based on line cross slope"
+
+            //    For half, assign retain prob based on curvature/sparsity score
+            //    end of "For half, assign retain prob based on curvature/sparsity score"
+
+            // end of "Assign retain probability to all other points"
+
+
+            return tempAllPoints;
+        }
+
         /// <summary>
-        /// 
+        /// Implements random decimation
         /// </summary>
         /// <param name="sourceSurface"></param>
         /// <param name="decimationPercent"></param>
@@ -483,6 +537,8 @@ namespace Surfaces.TIN
                 .Concat(sourceSurface.allUnusedPoints))
                 .Select(pt => new TINpoint(pt))
                 .ToList();
+
+            // Force hull points to be always included.
             //tempAllPoints.ForEach(
             Parallel.ForEach(tempAllPoints,
                 pt =>
@@ -503,6 +559,8 @@ namespace Surfaces.TIN
             int remainingPointsToGetCount = targetPointCount - hullPointCount;
             double adjustedRetainProbability = (double)remainingPointsToGetCount /
                 (double)tempAllPoints.Count;
+
+            // Assign random retain probability values to all other points.
             Parallel.ForEach(tempAllPoints,
                 pt =>
                 {
@@ -510,6 +568,7 @@ namespace Surfaces.TIN
                     if (!pt.isOnHull)
                         pt.retainProbability = adjustedRetainProbability;
                 });
+
             return tempAllPoints;
         }
 
