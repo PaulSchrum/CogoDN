@@ -153,7 +153,7 @@ namespace TinConsole
                 ["to_obj"] = ls => to_obj(ls),
                 ["save_stats"] = ls => save_stats(ls),
                 ["decimate_random"] = ls => decimate_random(ls),
-                ["decimate"] = ls => decimate(ls),
+                ["decimate"] = ls => decimate(ls), //decimate(ls),
             };
 
             Action<List<String>> command = null;
@@ -241,7 +241,8 @@ namespace TinConsole
             for(int counter=0; counter<runTimes; counter++)
             {
                 mirrorLogPrint($"Random Decimation run {counter+1} of {runTimes}.");
-                derivedSurface = TINsurface.CreateByRandomDecimation(mainSurface, decimation);
+                derivedSurface = TINsurface.CreateByRandomDecimation(mainSurface, 
+                    decimation);
 
                 if (null != StatisticsCsvFile)
                     derivedSurface.ComputeErrorStatistics(StatisticsCsvFile);
