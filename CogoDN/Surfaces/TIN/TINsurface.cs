@@ -37,8 +37,8 @@ namespace Surfaces.TIN
         private List<TINpoint> unused_points = new List<TINpoint>();
         public List<TINpoint> allUnusedPoints { get { return unused_points; } }
         private double decimationRemainingPercent { get; set; }
-        
-        
+        public double runSpanMinutes { get; private set; }
+
         private Dictionary<Tuple<int, int>, TINtriangleLine> allLines { get; set; }
             = new Dictionary<Tuple<int, int>, TINtriangleLine>();
         private List<TINtriangle> allTriangles;
@@ -386,7 +386,6 @@ namespace Surfaces.TIN
             double decimationRemainingPercent = (double)remainingPointsToGetCount /
                 (double)tempAllPoints.Count;
 
-            // start here 2
             // Assign retain probability to all other points based on smart decimation.
             //    For half of available points, retain based on line cross slope
 
@@ -555,13 +554,15 @@ namespace Surfaces.TIN
             returnObject.decimationRemainingPercent = decimationRemainingPercent;
 
             var gridIndexer = new Dictionary<Tuple<int, int>, int>();
-            Random drm = new Random();
-            foreach(var pt in tempAllPoints)
+            //foreach(var pt in tempAllPoints)
+            Parallel.ForEach(tempAllPoints, pt => 
             {
+                Random drm = new Random();
                 double diceRoll = drm.NextDouble();
                 if (diceRoll <= pt.retainProbability)
                     pt.hasBeenSkipped = false;
             }
+            );
 
             returnObject.allUsedPoints =
                 tempAllPoints
@@ -577,6 +578,7 @@ namespace Surfaces.TIN
                 gridIndexer[aPoint.GridCoordinates] = indexCount;
                 indexCount++;
             }
+            var runSpanMinutes = stopwatch.ElapsedMilliseconds / 60000.0;
 
             tempAllPoints = null;
             GC.Collect();
@@ -610,6 +612,9 @@ namespace Surfaces.TIN
             messagePump.BroadcastMessage
                 ($"In {stopwatch.ElapsedMilliseconds / 1000.0:0.000} seconds" +
                 $"( {stopwatch.ElapsedMilliseconds / 60000.0:0.000} minutes).");
+
+            returnObject.runSpanMinutes = runSpanMinutes;
+
             return returnObject;
         }
 
@@ -658,27 +663,29 @@ namespace Surfaces.TIN
             // ToDo: Verify path exists; throw if not.
 
             if(!File.Exists(v))
-                System.IO.File.WriteAllText(v, "DecimationPercent,PointCount,RMSE,RMaxSE,Rp95SE,rootVarianceSquared\r\n");
+                System.IO.File.WriteAllText(v, "DecimationPercent,PointCount,AbsMean,RMSE,RMaxSE,Rp95SE,rootVarianceSquared,creationTimeSpan\r\n");
 
             randomIndices rdmIdc = new randomIndices(allUnusedPoints.Count, 1000);
             var squaredErrorsBag = new ConcurrentBag<double?>();
-
+            var errorsBag = new ConcurrentBag<double>();
 
             Console.WriteLine();
             Console.WriteLine("Starting Elevation Sweep");
             
             var sw = Stopwatch.StartNew();
-            //foreach(var idx in rdmIdc.indices)
+            //foreach(var pt in allUnusedPoints)
             Parallel.ForEach(allUnusedPoints, pt =>
             {
                  var error = pt.z - getElevation(pt);
                  squaredErrorsBag.Add(error * error);
+                 if(error != null)
+                     errorsBag.Add(Math.Abs((double) error));
             }
             );
             //;
 
-            //allUnusedPoints.Select(p => p.z - getElevation(p)).ToList();
-            //var squaredErrors = allUnusedPoints.Select(p => p.z - getElevation(p)).Select(e => e * e).ToList();
+            double absoluteMean = errorsBag.Mean();
+            
             List<double?> squaredErrors = new List<double?>(squaredErrorsBag);
             squaredErrors.Sort();
             squaredErrorsBag.Clear();
@@ -696,8 +703,9 @@ namespace Surfaces.TIN
             Console.WriteLine($"   {msPerQuery} milliseconds per query.");
 
             String outRow = $"{decimationRemainingPercent*100.0:F2},"
-                + $"{this.allUsedPoints.Count},{rootMeanSquared:F5}," +
-                $"{rootMaxSquared:F5},{rootP95Squared:F5},{rootVarianceSquared:F5}";
+                + $"{this.allUsedPoints.Count},{absoluteMean:F5},{rootMeanSquared:F5}," +
+                $"{rootMaxSquared:F5},{rootP95Squared:F5},{rootVarianceSquared:F5},"
+                + $"{this.runSpanMinutes:F2}";
             using (StreamWriter csvFile = new StreamWriter(v, true))
             {
                 csvFile.WriteLine(outRow);
@@ -1305,7 +1313,7 @@ namespace Surfaces.TIN
             //
             //System.Console.WriteLine("Indexing Triangles for adjacency took:");
             //stopwatch.Reset(); stopwatch.Start();
-            //generateTriangleLineIndex();  start here
+            //generateTriangleLineIndex();
             //stopwatch.Stop(); consoleOutStopwatch(stopwatch);
 
         }
