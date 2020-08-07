@@ -214,6 +214,8 @@ namespace Surfaces.TIN
             (TINsurface sourceSurface, 
             double decimationRemainingPercent)
         {
+            messagePump.BroadcastMessage(
+                $"Smart Decimation to {decimationRemainingPercent * 100.0:F2}% -- Started.");
             return CreateByReductionAlgorithm(sourceSurface, decimationRemainingPercent,
                 computeLikelihoodsSmart);
         }
@@ -531,6 +533,8 @@ namespace Surfaces.TIN
         public static TINsurface CreateByRandomDecimation(TINsurface sourceSurface,
             double decimationRemainingPercent)
         {
+            messagePump.BroadcastMessage(
+                $"Random Decimation to {decimationRemainingPercent * 100.0:F2}% -- Started.");
             return CreateByReductionAlgorithm(sourceSurface, decimationRemainingPercent,
                 computeLikelihoodsRandom);
         }
@@ -542,8 +546,6 @@ namespace Surfaces.TIN
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            messagePump.BroadcastMessage(
-                $"Random Decimation to {decimationRemainingPercent * 100.0:F2}% -- Started.");
             var returnObject = new TINsurface();
 
             var tempAllPoints =
