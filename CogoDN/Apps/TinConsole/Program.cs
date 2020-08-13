@@ -46,6 +46,7 @@ namespace TinConsole
                 {
                     var fileToRead = pwd.GetPathAndAppendFilename(commandFileName);
                     commandList = new Queue<string>(File.ReadAllLines(fileToRead));
+                    mirrorLogPrint($"Loaded commands from {fileToRead}.");
                 }
                 repl();
             }
@@ -162,9 +163,13 @@ namespace TinConsole
             {
                 if(commandList.Count >= 1)
                 {
-                    commandLine = parseLine(commandList.Dequeue());
+                    var rawCommandLine = commandList.Dequeue();
+                    commandLine = parseLine(rawCommandLine);
                     if (commandLine.Count == 0) // This is an empty line (happens on a comment line).
+                    {
+                        mirrorLogPrint(rawCommandLine);
                         continue;
+                    }
                 }
                 else
                 {
@@ -190,6 +195,19 @@ namespace TinConsole
         {
             if(commandItems.Count == 2)
                 StatisticsCsvFile = outDir.GetPathAndAppendFilename(commandItems[1]);
+            if(commandItems.Count == 3)
+            {
+                if(commandItems[1] == "reset")
+                {
+                    outDir.DeleteFile(commandItems[2]);
+                    StatisticsCsvFile = outDir.GetPathAndAppendFilename(commandItems[2]);
+                }
+                else if(commandItems[2] == "reset")
+                {
+                    outDir.DeleteFile(commandItems[1]);
+                    StatisticsCsvFile = outDir.GetPathAndAppendFilename(commandItems[1]);
+                }
+            }
         }
         private static string GetCorrectOutputFilename(string filenameIn)
         {
@@ -340,8 +358,13 @@ namespace TinConsole
             {
                 case "reset":
                     {
-                        openMethod = s => new StreamWriter(s);
                         localLogFName = commandItems.RetrieveByIndex(2) ?? logFileName;
+                        if (outDir.ConfirmExists(localLogFName))
+                        {
+                            outDir.DeleteFile(localLogFName);
+                            outDir.CreateTextFile(localLogFName);
+                        }
+                        openMethod = s => new StreamWriter(s);
                         break;
                     }
                 case string s when s.Contains("."):

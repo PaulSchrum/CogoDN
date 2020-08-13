@@ -2,7 +2,7 @@
   "profiles": {
     "TinConsole": {
       "commandName": "Project",
-      "workingDirectory": "D:\\Research\\Datasets\\Lidar\\Tilley Creek"
+      "workingDirectory": "D:\\Research\\Datasets\\Lidar\\Outputs\\TuttleSF\\RandomDecimation"
     }
   }
 }

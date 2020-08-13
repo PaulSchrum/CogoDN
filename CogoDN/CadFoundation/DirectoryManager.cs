@@ -113,6 +113,18 @@ namespace CadFoundation
             return this.ListSubDirectories.Contains(itemName);
         }
 
+        public bool DeleteFile(string filename)
+        {
+            if (!ConfirmExists(filename))
+                return true;
+
+            var fullName = GetPathAndAppendFilename(filename);
+            File.Delete(fullName);
+            if (ConfirmExists(filename))
+                return false;
+            return true;
+        }
+
         public IReadOnlyList<string> ListSubDirectories
         {
             get
@@ -182,6 +194,12 @@ namespace CadFoundation
                 .ToList();
         }
 
+        public void CreateTextFile(string localLogFName)
+        {
+            var fileToCreate = GetPathAndAppendFilename(localLogFName);
+            using (File.Create(fileToCreate)) ;
+
+        }
     }
 
     internal class DirectoryNode : DirectoryManager
