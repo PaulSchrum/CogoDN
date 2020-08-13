@@ -18,7 +18,7 @@ namespace TinConsole
         static DirectoryManager pwd = DirectoryManager.FromPwd();
         static DirectoryManager outDir = pwd;
         static string commandFileName = "TinConsoleCommands.txt";
-        static Queue<string> commandList = null;
+        static Queue<string> commandList = new Queue<string>();
         static string logFileName = "TinDN Processing Log.log";
         static StreamWriter logFile = null;
         static List<int> classificationFilter = new List<int> { 2, 11 }; // standard bare ground (ground, road)
@@ -304,7 +304,8 @@ namespace TinConsole
             classificationFilter.Clear();
             foreach(string argument in commandItems.Skip(1))
             {
-                classificationFilter.Add(Convert.ToInt32(argument));
+                var arg = argument.Replace(",", "");
+                classificationFilter.Add(Convert.ToInt32(arg));
             }
             mirrorLogPrint($"Classification filter set to: {String.Join(", ", classificationFilter)}.");
         }
