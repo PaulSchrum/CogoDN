@@ -1875,6 +1875,9 @@ namespace Surfaces.TIN
         public TINstatistics(TINsurface dtm)
         {
             PointCount = dtm.allUsedPoints.Count;
+            HullPointCount = dtm.allUsedPoints.Where(pt => pt.isOnHull)
+                .Count();
+            HullPointPercent = HullPointCount / (double) PointCount;
 
             var sortedInX = dtm.allUsedPoints.OrderBy(pt => pt.x);
             MinX = sortedInX.First().x;
@@ -1894,9 +1897,9 @@ namespace Surfaces.TIN
             sortedInY = null;
             AverageY = dtm.allUsedPoints.Average(pt => pt.y);
 
-            var sortedInZ = dtm.allUsedPoints.OrderBy(pt => pt.y);
-            MinZ = sortedInZ.First().x;
-            MaxZ = sortedInZ.Last().x;
+            var sortedInZ = dtm.allUsedPoints.OrderBy(pt => pt.z);
+            MinZ = sortedInZ.First().z;
+            MaxZ = sortedInZ.Last().z;
             HeightZ = MaxZ - MinZ;
             CenterZ = MinZ + HeightZ / 2.0;
             MedianZ = Median(sortedInZ.Select(pt => pt.z));
@@ -1921,6 +1924,8 @@ namespace Surfaces.TIN
         }
 
         public int PointCount { get; set; }
+        public int HullPointCount { get; set; }
+        public double HullPointPercent { get; set; }
         public double WidthX { get; set; }
         public double WidthY { get; set; }
         public double HeightZ { get; set; }
@@ -1985,21 +1990,23 @@ namespace Surfaces.TIN
         {
             // To Do:
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"Points: {PointCount}");
+            sb.AppendLine($"Points: {PointCount:n0}");
+            sb.AppendLine($"Hull Points: {HullPointCount:n0}   " +
+                $"{HullPointPercent * 100.0:n4}%");
             sb.AppendLine($"Width (in x): {WidthX:F2}    Depth (in y): {WidthY:F2}   EL: {HeightZ:F2}");
 
             sb.AppendLine();
-            sb.AppendLine($"Lines: {LineCount}");
-            sb.AppendLine($"Planar Lengths: Min: {ShortestLinePlane}  Median: {MedianLinePlane:F2}   Max: {LongestLinePlane:F2}");
+            sb.AppendLine($"Lines: {LineCount:n0}");
+            sb.AppendLine($"Planar Lengths: Min: {ShortestLinePlane:F5}  Median: {MedianLinePlane:F2}   Max: {LongestLinePlane:F2}");
 
             sb.AppendLine();
-            sb.AppendLine($"Triangles: {TriangleCount}");
+            sb.AppendLine($"Triangles: {TriangleCount:n0}");
             sb.AppendLine($"Planar Areas: Min: ?   Median: ?   Max: ?");
 
             sb.AppendLine();
-            sb.AppendLine($"Bounding Box: {PlanarArea}");
-            sb.AppendLine($"Points per Square Unit: {PointsPerSquareUnit}");
-            sb.AppendLine($"Square Units per Point: {1.0 / PointsPerSquareUnit}");
+            sb.AppendLine($"Bounding Box Area: {PlanarArea:n2}");
+            sb.AppendLine($"Points per Square Unit: {PointsPerSquareUnit:n4}");
+            sb.AppendLine($"Square Units per Point: {1.0 / PointsPerSquareUnit:n4}");
 
             return sb.ToString();
         }
