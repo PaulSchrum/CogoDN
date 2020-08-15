@@ -188,4 +188,28 @@ namespace CadFoundation
             return theList[index];
         }
     }
+
+    public class binCell
+    {
+        public static int decimalPlaces = 5;
+
+        public double binMinX { get; protected set; }
+        public double binMaxX { get; protected set; }
+        public int binCount { get; protected set; }
+
+        public binCell(double minX, double xRange, int count)
+        {
+            binMinX = minX;
+            binMaxX = minX + xRange;
+            binCount = count;
+        }
+
+        public override string ToString()
+        {
+            int p = decimalPlaces;
+            return binMinX.ToString($"F{decimalPlaces}") + "," 
+                + binMaxX.ToString($"F{decimalPlaces}") + ","
+                + binCount;
+        }
+    }
 }
