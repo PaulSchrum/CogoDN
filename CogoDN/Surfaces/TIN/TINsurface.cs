@@ -93,8 +93,7 @@ namespace Surfaces.TIN
         protected static TextMessagePump messagePump = new TextMessagePump();
         public static TextMessagePump GetMessagePump(IObserver<String> observer)
         {
-            messagePump.Register(observer, 
-                "Messaging from TinSurface established.");
+            messagePump.Register(observer);
             return messagePump;
         }
 
@@ -2122,8 +2121,7 @@ namespace Surfaces.TIN
         protected static TextMessagePump messagePump = new TextMessagePump();
         public static TextMessagePump GetMessagePump(IObserver<String> observer)
         {
-            messagePump.Register(observer,
-                "Messaging from TinSurface established.");
+            messagePump.Register(observer);
             return messagePump;
         }
 
