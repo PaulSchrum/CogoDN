@@ -154,7 +154,8 @@ namespace TinConsole
                 ["to_obj"] = ls => to_obj(ls),
                 ["save_stats"] = ls => save_stats(ls),
                 ["decimate_random"] = ls => decimate_random(ls),
-                ["decimate"] = ls => decimate(ls), //decimate(ls),
+                ["decimate"] = ls => decimate(ls),
+                ["histogram"] =  ls => histogram(ls),
             };
 
             Action<List<String>> command = null;
@@ -265,6 +266,49 @@ namespace TinConsole
                 if (null != StatisticsCsvFile)
                     derivedSurface.ComputeErrorStatistics(StatisticsCsvFile);
             }
+        }
+
+        /// <summary>
+        /// Create a histogram of the last created surface.
+        /// Pattern: histogram [type] [binCount] [outputFileName]
+        /// type "Sparsity" - 2d sparisty of each point
+        /// binCount is an integer.
+        /// outputFileName is the name of the csv file created without path.
+        /// </summary>
+        /// <param name="commandItems"></param>
+        private static void histogram(List<string> commandItems)
+        {
+            string parameterType = commandItems.Skip(1).FirstOrDefault();
+            int binCount = Convert.ToInt32(commandItems.Skip(2).FirstOrDefault());
+            string fileName = commandItems.Skip(3).FirstOrDefault();
+            TINsurface surfaceToUse = (null == derivedSurface) ? mainSurface
+                : derivedSurface;
+            
+            
+            IReadOnlyList<binCell> counts;
+
+            switch(parameterType.ToLower())
+            {
+                case "sparsity":
+                    {
+                        mirrorLogPrint("Creating point sparsities histogram in " +
+                            $"{binCount} bins");
+                        counts = TINstatistics.GetPointSparsityHistogram(surfaceToUse,
+                            binCount);
+                        break;
+                    }
+                default:
+                    {
+                        mirrorLogPrint($"The histogram type \"{parameterType}\" is not " +
+                            "available.\n  Continuing without creating the histogram.");
+                        return;
+                    }
+            }
+
+            string pathFileName = outDir.GetPathAndAppendFilename(fileName);
+            File.WriteAllLines(pathFileName, 
+                counts.Select(count => count.ToString()));
+            mirrorLogPrint($"Operation complete. File created: {pathFileName}.");
         }
 
         private static void points_to_dxf(List<string> commandItems)

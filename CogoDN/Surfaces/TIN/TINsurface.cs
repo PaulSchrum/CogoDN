@@ -1691,6 +1691,39 @@ namespace Surfaces.TIN
             allUsedPoints = new List<TINpoint>();
         }
 
+        internal void setPointsTriangleIndices()
+        {
+            var testPt = this.allUsedPoints.First();
+            if (null != testPt.myTriangles)
+                return;
+
+            Parallel.ForEach(allUsedPoints,
+                pt =>
+                {
+                    pt.myTriangles = new ConcurrentBag<TINtriangle>();
+                });
+
+            //Parallel.ForEach(allTriangles,
+            //    aTriangle =>
+            foreach(var aTriangle in allTriangles)
+            {
+                aTriangle.point1.myTriangles.Add(aTriangle);
+                aTriangle.point2.myTriangles.Add(aTriangle);
+                aTriangle.point3.myTriangles.Add(aTriangle);
+            } //);
+
+        }
+
+        internal void clearPointsTriangleIndices()
+        {
+            Parallel.ForEach(allUsedPoints,
+                pt =>
+                {
+                    pt.myTriangles = null;
+                });
+            GC.Collect();
+        }
+
         public String GenerateSizeSummaryString()
         {
             StringBuilder returnString = new StringBuilder();
@@ -2011,6 +2044,63 @@ namespace Surfaces.TIN
             sb.AppendLine($"Square Units per Point: {1.0 / PointsPerSquareUnit:n4}");
 
             return sb.ToString();
+        }
+
+        public static IReadOnlyList<binCell> 
+            GetPointSparsityHistogram(TINsurface aSurface,
+            int binCount)
+        {
+            ConcurrentBag<double> sparsities = new ConcurrentBag<double>();
+
+            aSurface.setPointsTriangleIndices();
+
+            //foreach (var pt in aSurface.allUsedPoints)
+            Parallel.ForEach(aSurface.allUsedPoints,
+                pt =>
+            {
+                double aSparsity = pt.Sparsity(aSurface);
+                    sparsities.Add(aSparsity);
+                } );
+
+            var minSparsity = sparsities.AsParallel().Min();
+            var maxSparsity = sparsities.AsParallel().Max();
+            var range = maxSparsity - minSparsity;
+
+            ConcurrentDictionary<int, int> counts = new ConcurrentDictionary<int, int>();
+            for (int i = 0; i < binCount; i++)
+                counts[i] = 0;
+
+             foreach(var aSparsity in sparsities)
+            //Parallel.ForEach(sparsities,
+            //    aSparsity =>
+                {
+                int index=0;
+                index = (int)(binCount * (aSparsity - minSparsity) / range);
+                try
+                {
+                    counts[index]++;
+                }
+                catch (Exception e)
+                {
+                    counts[index-1]++;
+                }
+            }
+            //);
+
+            double binSpan = range / binCount;
+            double binMin = minSparsity;
+            List<binCell> returnList = new List<binCell>();
+            for (int i = 0; i < binCount; i++)
+            {
+                returnList.Add(new binCell(
+                    binMin,
+                    binSpan,
+                    counts[i]
+                    ));
+                binMin += binSpan;
+            }
+
+            return returnList;
         }
     }
 
