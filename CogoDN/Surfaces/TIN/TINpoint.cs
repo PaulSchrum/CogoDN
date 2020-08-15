@@ -7,6 +7,7 @@ using netDxf;
 using MathNet.Numerics.LinearAlgebra;
 using CadFoundation.Coordinates;
 using Surfaces.TIN;
+using System.Collections.Concurrent;
 
 namespace Surfaces.TIN
 {
@@ -22,6 +23,8 @@ namespace Surfaces.TIN
         public int myIndex { get; internal set; }
         public bool isOnHull { get; internal set; } = false;
         public double retainProbability = 1.0;
+
+        public ConcurrentBag<TINtriangle> myTriangles { get; internal set; } = null;
 
         public override string ToString()
         {
@@ -111,6 +114,24 @@ namespace Surfaces.TIN
                 double[] vec = { this.x, this.y, this.z, 1.0 };
                 return Vector<double>.Build.DenseOfArray(vec);
             }
+        }
+
+        private double sparsity_ = -1.0;
+        public double Sparsity(TINsurface mySurface)
+        {
+            if (null == myTriangles)
+                return 0.0;
+
+            if(sparsity_ < 0.0)
+            {
+                sparsity_ = 0.0;
+                foreach(var t in myTriangles)
+                {
+                    sparsity_ += t.Area2d;
+                }
+                sparsity_ /= 3.0;
+            }
+            return sparsity_;
         }
 
         internal string ToString(Matrix<double> affineXform)
