@@ -283,8 +283,8 @@ namespace TinConsole
             string fileName = commandItems.Skip(3).FirstOrDefault();
             TINsurface surfaceToUse = (null == derivedSurface) ? mainSurface
                 : derivedSurface;
-            
-            
+
+            TINstatistics.GetMessagePump(msgObs);
             IReadOnlyList<binCell> counts;
 
             switch(parameterType.ToLower())

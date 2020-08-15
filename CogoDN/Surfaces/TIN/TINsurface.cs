@@ -2100,12 +2100,38 @@ namespace Surfaces.TIN
                 binMin += binSpan;
             }
 
+            // Get the mode of the histogram.
+            int iMax = -1;
+            int countMax = -1;
+            for(int i=0; i<binCount; i++)
+            {
+                if(counts[i] > countMax)
+                {
+                    iMax = i;
+                    countMax = counts[i];
+                }
+            }
+            var modeBin = returnList[iMax];
+            
+            TINstatistics.messagePump.BroadcastMessage
+            ($"Sparsity mode is bin {iMax}, {modeBin}.");
+
             return returnList;
         }
+
+        protected static TextMessagePump messagePump = new TextMessagePump();
+        public static TextMessagePump GetMessagePump(IObserver<String> observer)
+        {
+            messagePump.Register(observer,
+                "Messaging from TinSurface established.");
+            return messagePump;
+        }
+
+
     }
 
 
-        public static class TupleExtensionMethods
+    public static class TupleExtensionMethods
     {
         public static bool Contains(this Tuple<int, int> tpl, int first, int second)
         {
