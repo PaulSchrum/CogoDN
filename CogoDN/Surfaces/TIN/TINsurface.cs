@@ -2113,7 +2113,7 @@ namespace Surfaces.TIN
             var modeBin = returnList[iMax];
             
             TINstatistics.messagePump.BroadcastMessage
-            ($"Sparsity mode is bin {iMax}, {modeBin}.");
+            ($"Sparsity mode value is bin number {iMax}: {modeBin}.");
 
             return returnList;
         }
