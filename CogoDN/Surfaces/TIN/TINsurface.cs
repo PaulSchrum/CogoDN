@@ -22,6 +22,7 @@ using Cogo.Utils;
 using CadFoundation;
 using System.IO.Compression;
 using CadFoundation.Coordinates.Indexing;
+using Surfaces.TIN.Support;
 
 [assembly: InternalsVisibleTo("Unit Tests")]
 
@@ -248,6 +249,13 @@ namespace Surfaces.TIN
 
                 item.retainProbability = Padj;
             }
+        }
+
+        protected SamplingGrid samplingGrid { get; set; } = null;
+        public void SetSampleGrid(double desiredSamplePointDensity)
+        {
+            samplingGrid = new SamplingGrid(this.myBoundingBox, desiredSamplePointDensity);
+            samplingGrid.SetSourceElevationValues(this);
         }
 
         /// <summary>

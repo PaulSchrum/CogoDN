@@ -156,6 +156,7 @@ namespace TinConsole
                 ["decimate_random"] = ls => decimate_random(ls),
                 ["decimate"] = ls => decimate(ls),
                 ["histogram"] =  ls => histogram(ls),
+                ["set_sample_grid"] = ls => set_sample_grid(ls),
             };
 
             Action<List<String>> command = null;
@@ -266,6 +267,17 @@ namespace TinConsole
                 if (null != StatisticsCsvFile)
                     derivedSurface.ComputeErrorStatistics(StatisticsCsvFile);
             }
+        }
+
+        private static void set_sample_grid(List<string> commandItems)
+        {
+            double desiredSamplePointDensity = Convert.ToDouble(commandItems[1]);
+            if (null == mainSurface)
+                return;
+            
+            mirrorLogPrint("Sample Grid creation in progress.");
+            mainSurface.SetSampleGrid(desiredSamplePointDensity);
+            mirrorLogPrint("Sample Grid Created.");
         }
 
         /// <summary>
