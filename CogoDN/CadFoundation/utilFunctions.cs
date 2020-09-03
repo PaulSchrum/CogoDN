@@ -193,8 +193,8 @@ namespace CadFoundation
     {
         public static int decimalPlaces = 5;
 
-        public double binMinX { get; protected set; }
-        public double binMaxX { get; protected set; }
+        public double binMinX { get; set; }
+        public double binMaxX { get; set; }
         public int binCount { get; protected set; }
 
         public binCell(double minX, double xRange, int count)
