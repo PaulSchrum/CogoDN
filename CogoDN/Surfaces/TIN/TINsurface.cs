@@ -23,6 +23,7 @@ using CadFoundation;
 using System.IO.Compression;
 using CadFoundation.Coordinates.Indexing;
 using Surfaces.TIN.Support;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 [assembly: InternalsVisibleTo("Unit Tests")]
 
@@ -1711,13 +1712,14 @@ namespace Surfaces.TIN
                 });
 
             //Parallel.ForEach(allTriangles,
-            //    aTriangle =>
+              //  aTriangle =>
             foreach(var aTriangle in allTriangles)
             {
                 aTriangle.point1.myTriangles.Add(aTriangle);
                 aTriangle.point2.myTriangles.Add(aTriangle);
                 aTriangle.point3.myTriangles.Add(aTriangle);
-            } //);
+            } 
+            //);
 
         }
 
@@ -2055,9 +2057,9 @@ namespace Surfaces.TIN
 
         public static IReadOnlyList<binCell> 
             GetPointSparsityHistogram(TINsurface aSurface,
-            int binCount)
+            int binCount, double capRatio=double.PositiveInfinity)
         {
-            ConcurrentBag<double> sparsities = new ConcurrentBag<double>();
+            ConcurrentBag<double> allSparsities = new ConcurrentBag<double>();
 
             aSurface.setPointsTriangleIndices();
 
@@ -2066,22 +2068,29 @@ namespace Surfaces.TIN
                 pt =>
             {
                 double aSparsity = pt.Sparsity(aSurface);
-                    sparsities.Add(aSparsity);
+                    allSparsities.Add(aSparsity);
                 } );
-
-            var minSparsity = sparsities.AsParallel().Min();
-            var maxSparsity = sparsities.AsParallel().Max();
-            var range = maxSparsity - minSparsity;
 
             ConcurrentDictionary<int, int> counts = new ConcurrentDictionary<int, int>();
             for (int i = 0; i < binCount; i++)
                 counts[i] = 0;
 
-             foreach(var aSparsity in sparsities)
+            var minSparsity = allSparsities.AsParallel().Min();
+            var maxSparsity = allSparsities.AsParallel().Max();
+            var aveSparsity = allSparsities.AsParallel().Average();
+            var cap = aveSparsity * capRatio;
+            var range = maxSparsity - minSparsity;
+            if (maxSparsity > cap)
+            {
+                binCount -= 1;
+                range = cap - minSparsity;
+            }
+
+            foreach (var aSparsity in allSparsities)
             //Parallel.ForEach(sparsities,
             //    aSparsity =>
                 {
-                int index=0;
+                int index = 0;
                 index = (int)(binCount * (aSparsity - minSparsity) / range);
                 try
                 {
@@ -2089,7 +2098,7 @@ namespace Surfaces.TIN
                 }
                 catch (Exception e)
                 {
-                    counts[index-1]++;
+                    counts[binCount-1]++;
                 }
             }
             //);
@@ -2105,6 +2114,11 @@ namespace Surfaces.TIN
                     counts[i]
                     ));
                 binMin += binSpan;
+            }
+            if(maxSparsity > cap)
+            {
+                var lastBin = returnList.Last();
+                lastBin.binMaxX = maxSparsity;
             }
 
             // Get the mode of the histogram.
@@ -2122,6 +2136,10 @@ namespace Surfaces.TIN
             
             TINstatistics.messagePump.BroadcastMessage
             ($"Sparsity mode value is bin number {iMax}: {modeBin}.");
+
+            // debugging diagnostics only
+            var totalOfCounts = returnList.Aggregate(0, (acc, b) => acc + b.binCount);
+            var finalBin = returnList.Last();
 
             return returnList;
         }
