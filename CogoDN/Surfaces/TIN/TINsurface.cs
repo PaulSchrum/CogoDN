@@ -255,6 +255,11 @@ namespace Surfaces.TIN
         protected SamplingGrid samplingGrid { get; set; } = null;
         public void SetSampleGrid(double desiredSamplePointDensity)
         {
+            if(desiredSamplePointDensity == 0.0)
+            {
+                samplingGrid = null;
+                return;
+            }
             samplingGrid = new SamplingGrid(this.myBoundingBox, desiredSamplePointDensity);
             samplingGrid.SetSourceElevationValues(this);
         }
