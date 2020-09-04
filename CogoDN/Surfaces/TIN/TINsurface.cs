@@ -670,8 +670,12 @@ namespace Surfaces.TIN
             }
         }
 
-        public void ComputeErrorStatistics(string v)
+        public void ComputeErrorStatistics(string v, TINsurface mainSurface=null)
         {
+            SamplingGrid samplingGrid = null;
+            if (null != mainSurface)
+                samplingGrid = mainSurface.samplingGrid;
+
             if (allUnusedPoints.Count == 0)
                 return;
 
@@ -688,16 +692,54 @@ namespace Surfaces.TIN
             Console.WriteLine("Starting Elevation Sweep");
             
             var sw = Stopwatch.StartNew();
-            //foreach(var pt in allUnusedPoints)
-            Parallel.ForEach(allUnusedPoints, pt =>
+            if(samplingGrid == null)
             {
-                 var error = pt.z - getElevation(pt);
-                 squaredErrorsBag.Add(error * error);
-                 if(error != null)
-                     errorsBag.Add(Math.Abs((double) error));
+                //foreach(var pt in allUnusedPoints)
+                Parallel.ForEach(allUnusedPoints, pt =>
+                {
+                    var error = pt.z - getElevation(pt);
+                    squaredErrorsBag.Add(error * error);
+                    if (error != null)
+                        errorsBag.Add(Math.Abs((double)error));
+                }
+                );
+                //;
             }
-            );
-            //;
+            else
+            {
+                int columns = samplingGrid.columns;
+                int rows = samplingGrid.rows;
+                var x = samplingGrid.x;
+                var y = samplingGrid.y;
+                var z = samplingGrid.z;
+                Parallel.For(0, columns,
+                    i =>
+                //for (int i = 0; i < columns; i++)
+                {
+                        for (int j = 0; j < rows; j++)
+                        {
+                            var xCoord = x[(int)i, j];
+                            var yCoord = y[(int)i, j];
+                            double? elevation;
+                            try  // this try block is necessary because of an apparent bug
+                            {    // .Net Core.
+                                elevation = (double) getElevation(
+                                    xCoord, yCoord);
+                            }
+                            catch (Exception e)
+                            {
+                                elevation = null;
+                            }
+                            if(elevation != null)
+                            {
+                                var error = z[(int)i, j] - (double) elevation;
+                                squaredErrorsBag.Add(error * error);
+                                errorsBag.Add(error);
+                            }
+                        }
+                    }
+                );
+            }
 
             double absoluteMean = errorsBag.Mean();
             
