@@ -154,7 +154,9 @@ namespace TinConsole
                 ["to_obj"] = ls => to_obj(ls),
                 ["save_stats"] = ls => save_stats(ls),
                 ["decimate_random"] = ls => decimate_random(ls),
+
                 ["decimate"] = ls => decimate(ls),
+                
                 ["histogram"] =  ls => histogram(ls),
                 ["set_sample_grid"] = ls => set_sample_grid(ls),
             };
@@ -236,7 +238,7 @@ namespace TinConsole
                 derivedSurface = TINsurface.CreateByDecimation(mainSurface, decimation);
 
                 if (null != StatisticsCsvFile)
-                    derivedSurface.ComputeErrorStatistics(StatisticsCsvFile);
+                    derivedSurface.ComputeErrorStatistics(StatisticsCsvFile, mainSurface);
             }
         }
 
@@ -282,10 +284,11 @@ namespace TinConsole
 
         /// <summary>
         /// Create a histogram of the last created surface.
-        /// Pattern: histogram [type] [binCount] [outputFileName]
+        /// Pattern: histogram [type] [binCount] [outputFileName] [ratioCap]
         /// type "Sparsity" - 2d sparisty of each point
         /// binCount is an integer.
         /// outputFileName is the name of the csv file created without path.
+        /// ratioCap, optional, is the ratio over the dataset mean at which to cap bins 1 : n-1
         /// </summary>
         /// <param name="commandItems"></param>
         private static void histogram(List<string> commandItems)
@@ -293,6 +296,10 @@ namespace TinConsole
             string parameterType = commandItems.Skip(1).FirstOrDefault();
             int binCount = Convert.ToInt32(commandItems.Skip(2).FirstOrDefault());
             string fileName = commandItems.Skip(3).FirstOrDefault();
+            string capString = commandItems.Skip(4).FirstOrDefault();
+            double capRatio = double.PositiveInfinity;
+            if (null != capString)
+                capRatio = Convert.ToDouble(capString);
             TINsurface surfaceToUse = (null == derivedSurface) ? mainSurface
                 : derivedSurface;
 
@@ -306,7 +313,7 @@ namespace TinConsole
                         mirrorLogPrint("Creating point sparsities histogram in " +
                             $"{binCount} bins");
                         counts = TINstatistics.GetPointSparsityHistogram(surfaceToUse,
-                            binCount);
+                            binCount, capRatio);
                         break;
                     }
                 default:
