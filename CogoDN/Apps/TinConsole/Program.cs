@@ -220,14 +220,25 @@ namespace TinConsole
             return outDir.GetPathAndAppendFilename(filenameIn);
         }
 
+        /// <summary>
+        /// Creates a new tin model derived from the source tin using Smart Decimation.
+        /// > decimate !valuePercent! -x!runTimes! -s!methodSplit!
+        /// valuePercent: Percent of points to be retained.
+        /// runTimes: Number of times to run the decimation. Used for experimental runs.
+        /// dihedralCurvatureSplit: Percent of points retained by dihedral angle method
+        /// </summary>
+        /// <param name="commandItems">List of all string items in the command line.</param>
         private static void decimate(List<string> commandItems)
         {
+            var dihedralCurvatureSplit = 0.50;
             var runTimes = 1;
-            if (commandItems.Count == 3)
+            for(int i=2; i<commandItems.Count;i++)
             {
-                var param2 = commandItems.Skip(2).FirstOrDefault();
-                if (param2.StartsWith("-x"))
-                    runTimes = Convert.ToInt32(param2.Substring(2));
+                var param = commandItems[i];
+                if (param.StartsWith("-x"))
+                    runTimes = Convert.ToInt32(param.Substring(2));
+                if (param.StartsWith("-s"))
+                    dihedralCurvatureSplit = Convert.ToDouble(param.Substring(2));
             }
 
             var decimation = Convert.ToDouble(commandItems.Skip(1).FirstOrDefault());
@@ -235,7 +246,8 @@ namespace TinConsole
             for (int counter = 0; counter < runTimes; counter++)
             {
                 mirrorLogPrint($"Decimation run {counter + 1} of {runTimes}.");
-                derivedSurface = TINsurface.CreateByDecimation(mainSurface, decimation);
+                derivedSurface = TINsurface.CreateByDecimation(mainSurface, decimation,
+                    dihedralCurvatureSplit);
 
                 if (null != StatisticsCsvFile)
                     derivedSurface.ComputeErrorStatistics(StatisticsCsvFile, mainSurface);

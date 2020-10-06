@@ -213,12 +213,13 @@ namespace Surfaces.TIN
         /// <returns></returns>
         public static TINsurface CreateByDecimation
             (TINsurface sourceSurface, 
-            double decimationRemainingPercent)
+            double decimationRemainingPercent,
+            double dihedral_CurvatureSplit=0.50)
         {
             messagePump.BroadcastMessage(
                 $"Smart Decimation to {decimationRemainingPercent * 100.0:F2}% -- Started.");
             return CreateByReductionAlgorithm(sourceSurface, decimationRemainingPercent,
-                computeLikelihoodsSmart);
+                computeLikelihoodsSmart, dihedral_CurvatureSplit);
         }
 
         private static void adjustLiklihoodsToTargetMean(
@@ -370,7 +371,8 @@ namespace Surfaces.TIN
         }
 
         private static List<TINpoint> computeLikelihoodsSmart
-            (TINsurface sourceSurface, double decimationPercent)
+            (TINsurface sourceSurface, double decimationPercent, 
+            double dihedral_CurvatureSplit)
         { 
             int usedPoints = 0;
             var tempAllPoints = (sourceSurface.allUsedPoints
@@ -436,7 +438,8 @@ namespace Surfaces.TIN
 
             remainingPointsToGetCount -= usedIndices.Count;
             int pointsToGet =
-                (int)(decimationRemainingPercent * (remainingPointsToGetCount / 2));
+                (int)(decimationRemainingPercent * 
+                (dihedral_CurvatureSplit * remainingPointsToGetCount));
 
             // Get points based on highest line cross slope until half of the
             // available points in the Pool have been taken. In other words, take
@@ -501,7 +504,7 @@ namespace Surfaces.TIN
         /// <param name="sourceSurface"></param>
         /// <param name="decimationPercent"></param>
         private static List<TINpoint> computeLikelihoodsRandom(TINsurface sourceSurface, 
-            double decimationPercent)
+            double decimationPercent, double notUsed=0.0)
         {
             int usedPoints = 0;
             var tempAllPoints = (sourceSurface.allUsedPoints
@@ -549,12 +552,13 @@ namespace Surfaces.TIN
             messagePump.BroadcastMessage(
                 $"Random Decimation to {decimationRemainingPercent * 100.0:F2}% -- Started.");
             return CreateByReductionAlgorithm(sourceSurface, decimationRemainingPercent,
-                computeLikelihoodsRandom);
+                computeLikelihoodsRandom, 0.0);
         }
 
         protected static TINsurface CreateByReductionAlgorithm(TINsurface sourceSurface,
             double decimationRemainingPercent,
-            Func<TINsurface, double, List<TINpoint>> likelihoodFunction)
+            Func<TINsurface, double, double, List<TINpoint>> likelihoodFunction,
+            double dihedral_CurvatureSplit)
         {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -562,7 +566,8 @@ namespace Surfaces.TIN
             var returnObject = new TINsurface();
 
             var tempAllPoints =
-                likelihoodFunction(sourceSurface, decimationRemainingPercent);
+                likelihoodFunction(sourceSurface, decimationRemainingPercent, 
+                dihedral_CurvatureSplit);
 
             returnObject.SourceData = sourceSurface.SourceData +
                 $"Randomly Decimated {decimationRemainingPercent:0.000}";
