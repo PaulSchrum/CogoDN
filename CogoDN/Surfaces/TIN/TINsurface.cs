@@ -686,15 +686,17 @@ namespace Surfaces.TIN
 
             // ToDo: Verify path exists; throw if not.
 
-            if(!File.Exists(v))
-                System.IO.File.WriteAllText(v, "DecimationPercent,PointCount,AbsMean,RMSE,RMaxSE,Rp95SE,rootVarianceSquared,creationTimeSpan\r\n");
+            if (!File.Exists(v))
+                System.IO.File.WriteAllText(v,
+                    "DecimationPercent,PointCount," +
+                    "p25,AbsMean,p75,p95,Max,RMSE,\r\n");
 
             randomIndices rdmIdc = new randomIndices(allUnusedPoints.Count, 1000);
             var squaredErrorsBag = new ConcurrentBag<double?>();
             var errorsBag = new ConcurrentBag<double>();
 
             Console.WriteLine();
-            Console.WriteLine("Starting Elevation Sweep");
+            Console.WriteLine("Starting Elevation Computation");
             
             var sw = Stopwatch.StartNew();
             if(samplingGrid == null)
@@ -747,27 +749,33 @@ namespace Surfaces.TIN
             }
 
             double absoluteMean = errorsBag.Mean();
-            
+
             List<double?> squaredErrors = new List<double?>(squaredErrorsBag);
             squaredErrors.Sort();
             squaredErrorsBag.Clear();
             squaredErrorsBag = null;
             var stats = new DescriptiveStatistics(squaredErrors);
-            var rootMaxSquared = Math.Sqrt(stats.Maximum);
+            //var rootMaxSquared = Math.Sqrt(stats.Maximum);
             var rootMeanSquared = Math.Sqrt(stats.Mean);
-            var rootVarianceSquared = Math.Sqrt(stats.Variance);
-            int idxP95 = (int)(0.95*(double)squaredErrors.Count);
-            var rootP95Squared = Math.Sqrt((double)squaredErrors[idxP95]);
+            //var rootVarianceSquared = Math.Sqrt(stats.Variance);
+            int idxP25 = (int)(0.25 * (double)errorsBag.Count);
+            int idxP75 = (int)(0.75 * (double)errorsBag.Count);
+            int idxP95 = (int)(0.95 * (double)errorsBag.Count);
+            var errorsList = errorsBag.ToList();
+            errorsList.Sort();
+            var p25 = (double)errorsList[idxP25];
+            var p75 = (double)errorsList[idxP75];
+            var p95 = (double)errorsList[idxP95];
+            var maxVal = (double)errorsList.Last();
             sw.Stop();
             Console.Write(sw.Elapsed);
             //var msPerQuery = (double)sw.ElapsedMilliseconds / rdmIdc.SampleCount;
             var msPerQuery = (double)sw.ElapsedMilliseconds / allUnusedPoints.Count;
             Console.WriteLine($"   {msPerQuery} milliseconds per query.");
 
-            String outRow = $"{decimationRemainingPercent*100.0:F2},"
-                + $"{this.allUsedPoints.Count},{absoluteMean:F5},{rootMeanSquared:F5}," +
-                $"{rootMaxSquared:F5},{rootP95Squared:F5},{rootVarianceSquared:F5},"
-                + $"{this.runSpanMinutes:F2}";
+            String outRow = $"{decimationRemainingPercent * 100.0:F2},"
+                + $"{this.allUsedPoints.Count},{p25:F5},{absoluteMean:F5}," +
+                $"{p75:F5},{p95:F5},{maxVal:F5},{rootMeanSquared:F5}";
             using (StreamWriter csvFile = new StreamWriter(v, true))
             {
                 csvFile.WriteLine(outRow);
