@@ -741,7 +741,7 @@ namespace Surfaces.TIN
                             {
                                 var error = z[(int)i, j] - (double) elevation;
                                 squaredErrorsBag.Add(error * error);
-                                errorsBag.Add(error);
+                                errorsBag.Add(Math.Abs(error));
                             }
                         }
                     }
