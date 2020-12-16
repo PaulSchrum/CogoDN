@@ -482,15 +482,15 @@ namespace Surfaces.TIN
             ComputePointRetentionLikelihood(sourceSurface,
                 pointPoolIndices, percentOfRemaining);
 
-            //Parallel.ForEach(pointPoolIndices,
-            //    kvp =>
-            foreach (var kvp in pointPoolIndices)
+            Parallel.ForEach(pointPoolIndices,
+                kvp =>
+            //foreach (var kvp in pointPoolIndices)
             {
                 ptIdx = kvp.Key;
                 tempAllPoints[ptIdx].retainProbability = 
                     kvp.Value.retainProbability;
             }
-            //);
+            );
             //    end of "For half, assign retain prob based on curvature/sparsity score"
 
             // end of "Assign retain probability to all other points"
