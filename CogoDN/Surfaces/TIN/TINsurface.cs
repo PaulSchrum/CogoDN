@@ -316,9 +316,15 @@ namespace Surfaces.TIN
             }
             // end: populate line and triangle references for each point
 
+            // Compute Gaussian curvature for each point.
             foreach(var idx in pointPoolIndices.Keys)
             {
                 var ptParams = pointPoolIndices[idx];
+                ptParams.gaussianCurvature = 0.0;
+                foreach(var tri in ptParams.myTriangles)
+                {
+                    ptParams.gaussianCurvature += tri.getFaceAngleForPoint(idx);
+                }
                 ptParams.aggregateCrossSlope =
                     ptParams.myLines
                     .Where(L => null != L.DeltaCrossSlopeAsAngleRad)
@@ -332,6 +338,7 @@ namespace Surfaces.TIN
                 ptParams.retainProbability = 
                     ptParams.pointSparsity * ptParams.aggregateCrossSlope;
             }
+            // Compute Gaussian curvature for each point.
 
             int removedCount = 0;
             foreach (var idx in pointPoolIndices.Keys)
@@ -1823,9 +1830,18 @@ namespace Surfaces.TIN
         
         /// <summary>
         /// The weighted sum of the cross slope of each line associated with the
-        /// given point. 
+        /// given point. This value is not currently computed.
         /// </summary>
-        public double aggregateCrossSlope;
+        //public double aggregateCrossSlope;
+
+        /// <summary>
+        /// The gaussian curvature of the point, computed by summing all connected
+        /// triangle angles per the Gauss-Bonnet Equation.  Ref:
+        /// Crane, Keenan, 2013, Digital Geometry Processing with Discrete Exterior
+        ///    Calculus, In: ACM SIGGRAPH 2013 courses, SIGGRAPH ’13. ACM, New York, 
+        ///    NY, USA (2013), p 56 (Se Exercise 7)
+        /// </summary>
+        public double gaussianCurvature;
 
 
         public double retainProbability;

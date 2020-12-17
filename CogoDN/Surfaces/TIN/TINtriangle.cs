@@ -81,7 +81,7 @@ namespace Surfaces.TIN
             internal set { this.lines[2] = value; }
         }
 
-        private void computeAngles()
+        private void computeAngles2D()
         {
             Vector vec12 = new Vector(point2.x - point1.x, point2.y - point1.y);
             Vector vec23 = new Vector(point3.x - point2.x, point3.y - point2.y);
@@ -105,7 +105,7 @@ namespace Surfaces.TIN
             get
             {
                 if (this.angle1_ is null)
-                    this.computeAngles();
+                    this.computeAngles2D();
                 return (Double)this.angle1_;
             }
         }
@@ -117,7 +117,7 @@ namespace Surfaces.TIN
             get
             {
                 if (this.angle2_ is null)
-                    this.computeAngles();
+                    this.computeAngles2D();
                 return (Double)this.angle2_;
             }
         }
@@ -129,7 +129,7 @@ namespace Surfaces.TIN
             get
             {
                 if (this.angle3_ is null)
-                    this.computeAngles();
+                    this.computeAngles2D();
                 return (Double)this.angle3_;
             }
         }
