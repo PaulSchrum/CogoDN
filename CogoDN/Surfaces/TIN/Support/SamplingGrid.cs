@@ -26,18 +26,15 @@ namespace Surfaces.TIN.Support
         public double actualPointDensity { get; protected set; }
 
 
-        public SamplingGrid(BoundingBox aBB, double AverageDensity)
+        public SamplingGrid(BoundingBox aBB, double pointSpacing)
         {
             myBB = aBB;
-            int pointCount = (int) (myBB.Area / AverageDensity);
-            double sqrtPointCount = Math.Sqrt(pointCount);
-
-            rows = (int)(sqrtPointCount + 0.5);
-            columns = (int)(sqrtPointCount + 0.5);
-            x_Spacing = columns / myBB.Width;
-            y_Spacing = rows / myBB.Depth;
-            pointCount = rows * columns;
-            actualPointDensity = x_Spacing * y_Spacing;
+            columns = (int)(aBB.Width / pointSpacing);
+            rows = (int)(aBB.Depth / pointSpacing);
+            int pointCount = rows * columns;
+            x_Spacing = pointSpacing;
+            y_Spacing = pointSpacing;
+            actualPointDensity = pointCount / myBB.Area;
 
             x = Matrix<double>.Build.Dense(rows, columns, notDefined);
             y = Matrix<double>.Build.Dense(rows, columns, notDefined);
