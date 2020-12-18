@@ -118,6 +118,20 @@ namespace CadFoundation.Coordinates
             }
         }
 
+        /// <summary>
+        /// Computes the angle 
+        /// </summary>
+        /// <param name="otherVec"></param>
+        /// <returns></returns>
+        public double AngleBetween(Vector otherVec)
+        {
+            if (otherVec.Length == 0.0 || this.Length == 0.0)
+                throw new DivideByZeroException("Vector length must be nonzero.");
+
+            var dotProduct = this.dotProduct(otherVec);
+            return Math.Acos(dotProduct / (this.Length * otherVec.Length));
+        }
+
         public double dotProduct(Vector otherVec)
         {
             return (this.x * otherVec.x) + (this.y * otherVec.y) + (this.z * otherVec.z);
