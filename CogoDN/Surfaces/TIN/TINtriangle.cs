@@ -81,56 +81,80 @@ namespace Surfaces.TIN
             internal set { this.lines[2] = value; }
         }
 
+        public void GivePointsTheirInteriorAngles()
+        {
+            var p1 = point1; var p2 = point2; var p3 = point3;
+            Vector vec12 = new Vector(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z);
+            Vector vec13 = new Vector(p3.x - p1.x, p3.y - p1.y, p3.z - p1.z);
+            var angleRadians = Math.Abs(vec13.AngleBetween(vec12));
+            p1.addToSumOfInteriorFaceAngles(angleRadians);
+
+            p1 = point2; p2 = point3; p3 = point1;
+            vec12 = new Vector(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z);
+            vec13 = new Vector(p3.x - p1.x, p3.y - p1.y, p3.z - p1.z);
+            angleRadians = Math.Abs(vec13.AngleBetween(vec12));
+            p1.addToSumOfInteriorFaceAngles(angleRadians);
+
+            p1 = point3; p2 = point1; p3 = point2;
+            vec12 = new Vector(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z);
+            vec13 = new Vector(p3.x - p1.x, p3.y - p1.y, p3.z - p1.z);
+            angleRadians = Math.Abs(vec13.AngleBetween(vec12));
+        }
+
+        /// <summary>
+        /// Computes 2D (projected to xy plane) angles of all three triangles.
+        /// It does not compute the face angles.
+        /// </summary>
         private void computeAngles2D()
         {
             Vector vec12 = new Vector(point2.x - point1.x, point2.y - point1.y);
             Vector vec23 = new Vector(point3.x - point2.x, point3.y - point2.y);
             Vector vec31 = new Vector(point1.x - point3.x, point1.y - point3.y);
-            angle1_ = (new Deflection(vec31.Azimuth, vec12.Azimuth, false))
+            angle1Proj_ = (new Deflection(vec31.Azimuth, vec12.Azimuth, false))
                 .piCompliment.getAsDegreesDouble();
-            angle2_ = new Deflection(vec12.Azimuth, vec23.Azimuth, false)
+            angle2Proj_ = new Deflection(vec12.Azimuth, vec23.Azimuth, false)
                 .piCompliment.getAsDegreesDouble();
-            angle3_ = new Deflection(vec23.Azimuth, vec31.Azimuth, false)
+            angle3Proj_ = new Deflection(vec23.Azimuth, vec31.Azimuth, false)
                 .piCompliment.getAsDegreesDouble();
 
-            angle1_ = Math.Abs((double)angle1_);
-            angle2_ = Math.Abs((double)angle2_);
-            angle3_ = Math.Abs((double)angle3_);
+            angle1Proj_ = Math.Abs((double)angle1Proj_);
+            angle2Proj_ = Math.Abs((double)angle2Proj_);
+            angle3Proj_ = Math.Abs((double)angle3Proj_);
         }
 
         [NonSerialized]
-        private double? angle1_ = null;
-        public double angle1
+        private double? angle1Proj_ = null;
+        public double angle1Proj
         {
             get
             {
-                if (this.angle1_ is null)
+                if (this.angle1Proj_ is null)
                     this.computeAngles2D();
-                return (Double)this.angle1_;
+                return (Double)this.angle1Proj_;
             }
         }
 
         [NonSerialized]
-        private double? angle2_ = null;
-        public double angle2
+        private double? angle2Proj_ = null;
+        public double angle2Proj
         {
             get
             {
-                if (this.angle2_ is null)
+                if (this.angle2Proj_ is null)
                     this.computeAngles2D();
-                return (Double)this.angle2_;
+                return (Double)this.angle2Proj_;
             }
         }
 
         [NonSerialized]
-        private double? angle3_ = null;
-        public double angle3
+        private double? angle3Proj_ = null;
+        public double angle3Proj
         {
             get
             {
-                if (this.angle3_ is null)
+                if (this.angle3Proj_ is null)
                     this.computeAngles2D();
-                return (Double)this.angle3_;
+                return (Double)this.angle3Proj_;
             }
         }
 
@@ -342,7 +366,7 @@ namespace Surfaces.TIN
                 return true;
             // if max interior angle > threshold, true
             var maxInteriorAngle =
-                Math.Max(this.angle1, Math.Max(this.angle2, this.angle3));
+                Math.Max(this.angle1Proj, Math.Max(this.angle2Proj, this.angle3Proj));
             if (maxInteriorAngle > triangleInternalAngleThreshold)
                 return true;
 

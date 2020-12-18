@@ -282,6 +282,7 @@ namespace Surfaces.TIN
             double decimationRemainingPercent)
         {
             double tolerance = 0.00001;
+            double TwoPI = Math.PI * 2.0;
 
             // populate line and triangle references for each point
             foreach (var line in sourceSurface.allLines.Values)
@@ -302,6 +303,7 @@ namespace Surfaces.TIN
             }
             foreach (var triangle in sourceSurface.allTriangles)
             {
+                triangle.GivePointsTheirInteriorAngles();
                 int idx = triangle.point1.myIndex;
                 if(pointPoolIndices.ContainsKey(idx))
                     pointPoolIndices[idx].myTriangles.Add(triangle);
@@ -316,29 +318,32 @@ namespace Surfaces.TIN
             }
             // end: populate line and triangle references for each point
 
-            // Compute Gaussian curvature for each point.
             foreach(var idx in pointPoolIndices.Keys)
             {
                 var ptParams = pointPoolIndices[idx];
-                ptParams.gaussianCurvature = 0.0;
-                foreach(var tri in ptParams.myTriangles)
-                {
-                    ptParams.gaussianCurvature += tri.getFaceAngleForPoint(idx);
-                }
-                ptParams.aggregateCrossSlope =
-                    ptParams.myLines
-                    .Where(L => null != L.DeltaCrossSlopeAsAngleRad)
-                    .Select(L => 
-                        Math.Abs((double)L.DeltaCrossSlopeAsAngleRad) / L.Length2d)
-                    .Sum() / ptParams.myLines.Count;
+                //var angleAccumulator = 0.0;
+                //foreach(var tri in ptParams.myTriangles)
+                //{
+                //    try
+                //    { angleAccumulator += tri.GetInternalAngleForPoint(idx); }
+                //    catch (DivideByZeroException)
+                //    { continue; } // If this happens, the two points are identical, so ignore it.
+                //}
+                //ptParams.gaussianCurvature = TwoPI - angleAccumulator;
+                //ptParams.aggregateCrossSlope =
+                //    ptParams.myLines
+                //    .Where(L => null != L.DeltaCrossSlopeAsAngleRad)
+                //    .Select(L => 
+                //        Math.Abs((double)L.DeltaCrossSlopeAsAngleRad) / L.Length2d)
+                //    .Sum() / ptParams.myLines.Count;
 
                 ptParams.pointSparsity = ptParams.myTriangles
                     .Select(t => t.Area2d).Sum() / 3.0;
 
-                ptParams.retainProbability = 
-                    ptParams.pointSparsity * ptParams.aggregateCrossSlope;
+                //ptParams.retainProbability = ptParams.pointSparsity * ptParams.aggregateCrossSlope;
+                ptParams.retainProbability = ptParams.pointSparsity * 
+                    Math.Abs(sourceSurface.allUsedPoints[idx].GaussianCurvature);
             }
-            // Compute Gaussian curvature for each point.
 
             int removedCount = 0;
             foreach (var idx in pointPoolIndices.Keys)
@@ -430,12 +435,12 @@ namespace Surfaces.TIN
             //      When a point is selected for retention, it is moved from the pool to
             //      the variable usedIndices.
             var pointPoolIndices = new Dictionary<int, tinPointParameters>();
-            foreach (var anInt in
+            foreach (var anIndex in
                 sourceSurface.allUsedPoints
                 .Where(pt => !pt.isOnHull)
                 .Select(pt => pt.myIndex))
             {
-                pointPoolIndices.Add(anInt, new tinPointParameters());
+                pointPoolIndices.Add(anIndex, new tinPointParameters(anIndex));
             }
 
             var sourceLines = sourceSurface.allLines
@@ -1821,6 +1826,13 @@ namespace Surfaces.TIN
 
     internal class tinPointParameters
     {
+        internal tinPointParameters(int anInt)
+        {
+            myPointsIndex = anInt;
+        }
+        public int myPointsIndex { get; private set; }
+
+
         /// <summary>
         /// Point Sparsity is the reciprocal of point density. The higher the value,
         /// the lower the number of points per area unit. In other words, a low sparsity
@@ -1841,7 +1853,7 @@ namespace Surfaces.TIN
         ///    Calculus, In: ACM SIGGRAPH 2013 courses, SIGGRAPH ’13. ACM, New York, 
         ///    NY, USA (2013), p 56 (Se Exercise 7)
         /// </summary>
-        public double gaussianCurvature;
+        //public double gaussianCurvature;
 
 
         public double retainProbability;

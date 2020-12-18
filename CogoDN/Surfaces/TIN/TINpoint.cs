@@ -116,6 +116,36 @@ namespace Surfaces.TIN
             }
         }
 
+        private double sumOfInteriorFaceAngles_ = 0.0;
+        internal void addToSumOfInteriorFaceAngles(double angleToAdd)
+        {
+            sumOfInteriorFaceAngles_ += angleToAdd;
+        }
+
+        private double gaussianCurvature_ = Double.NaN;
+        /// <summary>
+        /// The gaussian curvature of the point, computed by summing all connected
+        /// triangle angles per the Gauss-Bonnet Equation.  Ref:
+        /// Crane, Keenan, 2013, Digital Geometry Processing with Discrete Exterior
+        ///    Calculus, In: ACM SIGGRAPH 2013 courses, SIGGRAPH ’13. ACM, New York, 
+        ///    NY, USA (2013), p 56 (Se Exercise 7)
+        /// </summary>
+        public double GaussianCurvature
+        {
+            get
+            {
+                if (isOnHull)
+                    return Double.NaN;
+
+                if(Double.IsNaN(gaussianCurvature_))
+                {
+                    gaussianCurvature_ = Math.PI * 2.0 - sumOfInteriorFaceAngles_;
+                }
+                return gaussianCurvature_;
+            }
+            private set { }
+        }
+
         private double sparsity_ = -1.0;
         public double Sparsity(TINsurface mySurface)
         {
