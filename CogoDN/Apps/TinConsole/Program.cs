@@ -262,6 +262,7 @@ namespace TinConsole
         /// <param name="commandItems"></param>
         private static void decimate_random(List<string> commandItems)
         {
+            mirrorLogPrint("Random Decimation is deprecated. Decimate is the recommended command.");
             var runTimes = 1;
             if(commandItems.Count == 3)
             {
