@@ -144,6 +144,7 @@ namespace TinConsole
                 ["set_dir"] = ls => SetDirectories(ls[1]),
                 ["set_outdir"] = ls => SetDirectories(outDr: ls[1]),
                 ["load"] = ls => Load(ls),
+                ["to_las"] = ls => ToLas(ls),
                 ["summarize"] = ls => summarize(ls),
                 ["reload"] = ls => reload(ls),
                 ["decimate_multiple"] = ls => decimate_multiple(), // must remove
@@ -262,7 +263,8 @@ namespace TinConsole
         /// <param name="commandItems"></param>
         private static void decimate_random(List<string> commandItems)
         {
-            mirrorLogPrint("Random Decimation is deprecated. Decimate is the recommended command.");
+            mirrorLogPrint(
+                "Random Decimation is deprecated. Decimate is the recommended command.");
             var runTimes = 1;
             if(commandItems.Count == 3)
             {
@@ -422,6 +424,29 @@ namespace TinConsole
         {
             var openFileStr = pwd.GetPathAndAppendFilename(commandItems[1]);
             mainSurface = TINsurface.CreateFromLAS(openFileStr, classificationFilter: classificationFilter);
+        }
+
+        private static void ToLas(List<string> commandItems)
+        {
+            TINsurface sourceSurface = derivedSurface;
+            if (null == derivedSurface)
+                sourceSurface = mainSurface;
+
+            if(commandItems.Count < 2)
+            {
+                mirrorLogPrint("Las file not created. No output file name given.");
+                return;
+            }
+
+            var outFileName = GetCorrectOutputFilename(commandItems[1]);
+            if (outFileName == sourceSurface.SourceData)
+            {
+                mirrorLogPrint("Warning: It is not possible to overwrite the original, source Las file.");
+                mirrorLogPrint("Save_las command not executed.");
+                return;
+            }
+
+            sourceSurface.ExportToLas(outFileName, mainSurface);
         }
 
         private static void SetupLogging(List<string> commandItems)

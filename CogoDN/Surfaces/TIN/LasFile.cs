@@ -98,15 +98,18 @@ namespace Surfaces.TIN
         private void populateAllPoints(BinaryReader reader)
         {
             int pointCounter = 0;
+            int sequenceCounter = 0; // Counts all points in the file.
             this.AllPoints = new List<TINpoint>();
             foreach (int recNo in Enumerable.Range(1, this.NumberOfPointRecords))
             {
                 int offset = recNo * this.PointDataRecordLength;
                 int address = offset + this.OffsetToPointData;
                 TINpoint aPoint = this.readPoint(reader, address);
+                sequenceCounter++;
                 if (!this.classificationFilter.Contains(aPoint.lidarClassification))
                     continue;
                 pointCounter++;
+                aPoint.originalSequenceNumber = sequenceCounter;
 
                 if (pointCounter % (skipPoints + 1) == 0)
                     this.AllPoints.Add(aPoint);
@@ -138,6 +141,54 @@ namespace Surfaces.TIN
             return retPoint;
         }
 
+        public static void CreateLasFromLas(string filename, string sourceFilename,
+            IReadOnlyList<int> rowsToWrite)
+        {
+            int totalPointsToWrite = rowsToWrite.Count;
+            int hdrLen = 375;
+            byte[] headerByteArray = new byte[hdrLen];
+            using (BinaryReader reader = new BinaryReader(File.Open(sourceFilename, FileMode.Open)))
+            {
+                reader.Read(headerByteArray, 0, hdrLen);
+                //var aseg = new ArraySegment<byte>(memoryData, 0, 4);
+                //var hdrStr = String.Concat(aseg.Select(c => (char) c));
+                var hdrStr = headerByteArray.getString(0, 4);
+                if (!hdrStr.Equals("LASF"))
+                    throw new IOException("File is not a .las file.");
+
+                int VersionMajor = headerByteArray.getChar(24);
+                int VersionMinor = headerByteArray.getChar(25);
+
+                if (VersionMajor != 1 && VersionMinor != 4)
+                    throw new IOException("Las file is not Version 1.4. Unable to process.");
+
+                var OffsetToPointData = (int)headerByteArray.getLong(96);
+                var PointDataRecordLength = headerByteArray.getInt(105);
+                byte[] pointData = new byte[PointDataRecordLength];
+                int totalSourcePointRow = (int)headerByteArray.getLongLong(247);
+                headerByteArray.setLongLong(247, (long)totalPointsToWrite);
+
+                using(var writer = new BinaryWriter(File.Open(filename, FileMode.Create)))
+                {
+                    writer.Write(headerByteArray);
+                    int rowCounter = 0;
+                    foreach(int idx in rowsToWrite.OrderBy(i => i))
+                    {
+                        while(rowCounter < idx)
+                        {
+                            rowCounter++;
+                            if (rowCounter >= totalSourcePointRow)
+                                return;
+                        }
+                        int offset = rowCounter * PointDataRecordLength;
+                        int address = offset + OffsetToPointData;
+                        reader.Read(pointData, 0, PointDataRecordLength);
+                        writer.Write(pointData);
+                    }
+                }
+            }
+
+        }
     }
 
     public static class byteArrayExtensions
@@ -166,6 +217,16 @@ namespace Surfaces.TIN
         public static ulong getLongLong(this byte[] byteArray, int index)
         {
             return BitConverter.ToUInt64(byteArray, index);
+        }
+
+        public static void setLongLong(this byte[] byteArray, int index, long newValue)
+        {
+            int byteCount = 8; // for long long.
+            var bytes = BitConverter.GetBytes(newValue);
+            for(int i=0; i<byteCount; i++)
+            {
+                byteArray[index + i] = bytes[i];
+            }
         }
 
         public static double getDouble(this byte[] byteArray, int index)

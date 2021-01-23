@@ -40,7 +40,7 @@ namespace Surfaces.TIN
         public List<TINpoint> allUnusedPoints { get { return unused_points; } }
         private double decimationRemainingPercent { get; set; }
         public double runSpanMinutes { get; private set; }
-
+        
         private Dictionary<Tuple<int, int>, TINtriangleLine> allLines { get; set; }
             = new Dictionary<Tuple<int, int>, TINtriangleLine>();
         private List<TINtriangle> allTriangles;
@@ -360,7 +360,7 @@ namespace Surfaces.TIN
                 poolItem.retainProbability /= maxVal;
             }
             foreach(var poolItem in pointPoolIndices.Values)
-            {
+            {  // this for loop was for diagnostics and is not needed. Remove.
                 double retainProb = poolItem.retainProbability;
                 double oneComplement = 1.0 - retainProb;
             }
@@ -508,6 +508,12 @@ namespace Surfaces.TIN
             // end of "Assign retain probability to all other points"
 
             return tempAllPoints;
+        }
+
+        public void ExportToLas(string outFileName, TINsurface mainSurface)
+        {
+            LasFile.CreateLasFromLas(outFileName, mainSurface.SourceData,
+                this.allUsedPoints.Select(pt => pt.originalSequenceNumber).ToList());
         }
 
         /// <summary>

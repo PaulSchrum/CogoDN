@@ -23,6 +23,7 @@ namespace Surfaces.TIN
         public int myIndex { get; internal set; }
         public bool isOnHull { get; internal set; } = false;
         public double retainProbability = 1.0;
+        public int originalSequenceNumber = -1;
 
         public ConcurrentBag<TINtriangle> myTriangles { get; internal set; } = null;
 
