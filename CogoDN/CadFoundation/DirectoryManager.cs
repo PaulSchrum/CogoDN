@@ -22,6 +22,15 @@ namespace CadFoundation
             return this.path + delim + filename;
         }
 
+        public string PrependPWDifNotAlreadyFullPath(string filename)
+        {
+            if (null == filename) return null;
+            if (filename.Contains(delim, System.StringComparison.InvariantCulture))
+                return filename;
+            else
+                return GetPathAndAppendFilename(filename);
+        }
+
         public string path { get; protected set; }
         public List<string> pathAsList
         {
