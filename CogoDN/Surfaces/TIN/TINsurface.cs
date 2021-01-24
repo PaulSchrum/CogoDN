@@ -121,6 +121,16 @@ namespace Surfaces.TIN
             return CreateFromLAS(lidarFileName, skipPoints, bb, classificationFilter);
         }
 
+        public static int PointCountFromLAS(string lidarFileName,
+            BoundingBox trimBB = null,
+            List<int> classificationFilter = null)
+        {
+            messagePump.BroadcastMessage($"Reading points from {lidarFileName}.");
+            LasFile lasFile = new LasFile(lidarFileName,
+                classificationFilter: classificationFilter);
+            return lasFile.AllPoints.Count;
+        }
+
         public static TINsurface CreateFromLAS(string lidarFileName,
             int skipPoints = 0,
             BoundingBox trimBB = null,

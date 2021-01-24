@@ -14,7 +14,7 @@ namespace TinConsole
 {
     class Program
     {
-        
+
         static DirectoryManager pwd = DirectoryManager.FromPwd();
         static DirectoryManager outDir = pwd;
         static string commandFileName = "TinConsoleCommands.txt";
@@ -34,7 +34,7 @@ namespace TinConsole
         static void Main(string[] args)
         {
             overallSW.Start();
-            AppDomain.CurrentDomain.UnhandledException += 
+            AppDomain.CurrentDomain.UnhandledException +=
                 new UnhandledExceptionEventHandler(OnUnhandledException);
             AppDomain.CurrentDomain.ProcessExit += new EventHandler(OnAppExit);
 
@@ -143,6 +143,7 @@ namespace TinConsole
                 ["log"] = ls => SetupLogging(ls),
                 ["set_dir"] = ls => SetDirectories(ls[1]),
                 ["set_outdir"] = ls => SetDirectories(outDr: ls[1]),
+                ["point_count"] = ls => point_count(ls),
                 ["load"] = ls => Load(ls),
                 ["to_las"] = ls => ToLas(ls),
                 ["summarize"] = ls => summarize(ls),
@@ -157,8 +158,8 @@ namespace TinConsole
                 ["decimate_random"] = ls => decimate_random(ls),
 
                 ["decimate"] = ls => decimate(ls),
-                
-                ["histogram"] =  ls => histogram(ls),
+
+                ["histogram"] = ls => histogram(ls),
                 ["set_sample_grid"] = ls => set_sample_grid(ls),
             };
 
@@ -278,7 +279,7 @@ namespace TinConsole
             for(int counter=0; counter<runTimes; counter++)
             {
                 mirrorLogPrint($"Random Decimation run {counter+1} of {runTimes}.");
-                derivedSurface = TINsurface.CreateByRandomDecimation(mainSurface, 
+                derivedSurface = TINsurface.CreateByRandomDecimation(mainSurface,
                     decimation);
 
                 if (null != StatisticsCsvFile)
@@ -291,7 +292,7 @@ namespace TinConsole
             double desiredSamplePointDensity = Convert.ToDouble(commandItems[1]);
             if (null == mainSurface)
                 return;
-            
+
             mirrorLogPrint("Sample Grid creation in progress.");
             mainSurface.SetSampleGrid(desiredSamplePointDensity);
             mirrorLogPrint("Sample Grid Created.");
@@ -340,7 +341,7 @@ namespace TinConsole
             }
 
             string pathFileName = outDir.GetPathAndAppendFilename(fileName);
-            File.WriteAllLines(pathFileName, 
+            File.WriteAllLines(pathFileName,
                 counts.Select(count => count.ToString()));
             mirrorLogPrint($"Operation complete. File created: {pathFileName}.");
         }
@@ -418,6 +419,14 @@ namespace TinConsole
                 outDir = DirectoryManager.FromPathString(outDr);
                 mirrorLogPrint($"Output directory set to {outDir}");
             }
+        }
+
+        private static void point_count(List<string> commandItems)
+        {
+            var panelId = commandItems[1];
+            var openFileStr = pwd.GetPathAndAppendFilename(panelId);
+            int pointCount = TINsurface.PointCountFromLAS(openFileStr, classificationFilter: classificationFilter);
+            mirrorLogPrint($"File {panelId} contains {pointCount:n0}.");
         }
 
         private static void Load(List<string> commandItems)
@@ -568,7 +577,7 @@ namespace TinConsole
                 mirrorLogPrint("No file has been loaded. Nothing to summarize.");
                 return;
             }
-            
+
             var skipPoints = 1;
             if (commandItems.Count > 1)
                 skipPoints = Convert.ToInt32(commandItems[1]);
