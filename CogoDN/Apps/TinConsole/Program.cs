@@ -26,6 +26,7 @@ namespace TinConsole
             @"D:\Research\Datasets\Lidar\Tilley Creek\decimation research\Tilley Creek Small.las";
         static TINsurface mainSurface = null;
         static TINsurface derivedSurface = null;
+        static BoundingBox filterBB = null;
 
         static string StatisticsCsvFile = null;
         static MessageObserver msgObs = new MessageObserver();
@@ -143,6 +144,7 @@ namespace TinConsole
                 ["log"] = ls => SetupLogging(ls),
                 ["set_dir"] = ls => SetDirectories(ls[1]),
                 ["set_outdir"] = ls => SetDirectories(outDr: ls[1]),
+                ["set_bounding_box"] = ls => set_bounding_box(ls),
                 ["point_count"] = ls => point_count(ls),
                 ["load"] = ls => Load(ls),
                 ["to_las"] = ls => ToLas(ls),
@@ -420,6 +422,29 @@ namespace TinConsole
                 mirrorLogPrint($"Output directory set to {outDir}");
             }
         }
+        
+        /// <summary>
+        /// Sets bounding box coordinates for all following operations.
+        /// Arguments:
+        /// No arguments = clears the bounding box.
+        /// 4 arguments, all numbers, are
+        ///    Lower Left x (easting), Lower Left y (northing)
+        ///    Upper Right x, Upper Right y
+        /// </summary>
+        /// <param name="commandItems"></param>
+        private static void set_bounding_box(List<string> commandItems)
+        {
+            if(commandItems.Count != 5)
+            {
+                filterBB = null;
+                return;
+            }
+            var llx = Convert.ToDouble(commandItems[1]);
+            var lly = Convert.ToDouble(commandItems[2]);
+            var urx = Convert.ToDouble(commandItems[3]);
+            var ury = Convert.ToDouble(commandItems[4]);
+            filterBB = new BoundingBox(llx, lly, urx, ury);
+        }
 
         private static void point_count(List<string> commandItems)
         {
@@ -432,7 +457,14 @@ namespace TinConsole
         private static void Load(List<string> commandItems)
         {
             var openFileStr = pwd.GetPathAndAppendFilename(commandItems[1]);
-            mainSurface = TINsurface.CreateFromLAS(openFileStr, classificationFilter: classificationFilter);
+            if(null == filterBB)
+                mainSurface = TINsurface.CreateFromLAS(openFileStr,
+                classificationFilter: classificationFilter);
+            else
+                mainSurface = TINsurface.CreateFromLAS(openFileStr, 
+                    filterBB.lowerLeftPt.x, filterBB.lowerLeftPt.y,
+                    filterBB.upperRightPt.x, filterBB.upperRightPt.y, 
+                    classificationFilter: classificationFilter);
         }
 
         private static void ToLas(List<string> commandItems)

@@ -114,7 +114,7 @@ namespace Surfaces.TIN
             return;
         }
 
-        public static TINsurface CreateFromLAS(string lidarFileName, double minX, double maxX, double minY, double maxY,
+        public static TINsurface CreateFromLAS(string lidarFileName, double minX, double minY , double maxX, double maxY,
             int skipPoints = 0, List<int> classificationFilter = null)
         {
             var bb = new BoundingBox(minX, minY, maxX, maxY);
@@ -148,11 +148,9 @@ namespace Surfaces.TIN
             var gridIndexer = new Dictionary<Tuple<int, int>, int>();
             returnObject.createAllpointsCollection();
 
-            foreach (var point in lasFile.AllPoints)
+            foreach (var point in lasFile.AllPoints
+                .Where(p => trimBB.isPointInsideBB2d(p)))
             {
-                if (null != trimBB && !trimBB.isPointInsideBB2d(point))
-                    continue;
-
                 pointCounter++;
                 runningPointCount++;
 
