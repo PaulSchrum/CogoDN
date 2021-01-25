@@ -362,7 +362,7 @@ namespace TinConsole
             mirrorLogPrint($"Creating points dxf file: {writeFileName}");
             if(null != derivedSurface)
             {
-
+                derivedSurface.WritePointsToDxf(writeFileName, shouldZip);
             }
             else if(null != mainSurface)
             {
