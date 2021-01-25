@@ -376,6 +376,7 @@ namespace TinConsole
         {
             bool shouldZip = commandItems.Skip(1).Where(arg => arg.Equals("-zipped")).Any();
             bool shouldTransform = commandItems.Skip(1).Where(arg => arg.Equals("-transformed")).Any() ||
+                commandItems.Skip(1).Where(arg => arg.Equals("-transform")).Any() ||
                 commandItems.Skip(1).Where(arg => arg.Equals("-trans")).Any();
             var outFilename = commandItems.Skip(1).Where(arg => arg.Contains(".obj")).FirstOrDefault();
             if (null == outFilename)
