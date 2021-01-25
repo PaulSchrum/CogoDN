@@ -1209,7 +1209,7 @@ namespace Surfaces.TIN
             return str;
         }
 
-        public void WriteToWaveFront(string outfile, bool translateTo0 = true, bool shouldZip=false)
+        public void WriteToWaveFront(string outfile, bool shouldZip=false)
         {
             var aString = convertArrayToString(affineTransform.ToArray(), 4, 4);
             using (System.IO.StreamWriter file = new System.IO.StreamWriter(outfile))
