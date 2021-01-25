@@ -1157,14 +1157,21 @@ namespace Surfaces.TIN
 
         }
 
-        protected Matrix<double> setAffineTransformToZeroCenter(bool translateTo0 = false)
+        /// <summary>
+        /// The affine transform is only applied when writing point to dxf or when 
+        ///    writing the TIN model to a wavefront obj.
+        /// </summary>
+        public static Matrix<double> affineTransform { get; private set; } = null;
+
+        public static void setAffineTransformToZeroCenter(TINsurface tinsurf, 
+            bool translateTo0 = false)
         {
             double[,] m;
             if (translateTo0)
             {
-                double[,] m1 = {{ 1.0, 0.0, 0.0, -1.0 * this.myBoundingBox.Center.x},
-                           { 0.0, 1.0, 0.0, -1.0 * this.myBoundingBox.Center.y},
-                           { 0.0, 0.0, 1.0, -1.0 * this.myBoundingBox.Center.z},
+                double[,] m1 = {{ 1.0, 0.0, 0.0, -1.0 * tinsurf.myBoundingBox.Center.x},
+                           { 0.0, 1.0, 0.0, -1.0 * tinsurf.myBoundingBox.Center.y},
+                           { 0.0, 0.0, 1.0, -1.0 * tinsurf.myBoundingBox.Center.z},
                            //{ 0.0, 0.0, 1.0, 1.0},
                            { 0.0, 0.0, 0.0, 1.0}};
                 m = m1;
@@ -1180,7 +1187,7 @@ namespace Surfaces.TIN
             var M = Matrix<double>.Build.DenseOfArray(m);
             var mstr = M.ToMatrixString();
 
-            return Matrix<double>.Build.DenseOfArray(m);
+            affineTransform = Matrix<double>.Build.DenseOfArray(m);
         }
 
         protected StringBuilder convertArrayToString(double[,] array, int colCount, int rowCount)
@@ -1204,14 +1211,13 @@ namespace Surfaces.TIN
 
         public void WriteToWaveFront(string outfile, bool translateTo0 = true, bool shouldZip=false)
         {
-            var affineXform = setAffineTransformToZeroCenter(translateTo0);
-            var aString = convertArrayToString(affineXform.ToArray(), 4, 4);
+            var aString = convertArrayToString(affineTransform.ToArray(), 4, 4);
             using (System.IO.StreamWriter file = new System.IO.StreamWriter(outfile))
             {
                 file.WriteLine("# Created by CogoDN: Tin Mesh");
                 file.WriteLine(aString.ToString());
                 foreach (var aPt in this.allUsedPoints)
-                    file.WriteLine("v " + aPt.ToString(affineXform));
+                    file.WriteLine("v " + aPt.ToString(affineTransform));
 
                 foreach (var aTriangle in this.ValidTriangles)
                     file.WriteLine(aTriangle.IndicesToWavefrontString());

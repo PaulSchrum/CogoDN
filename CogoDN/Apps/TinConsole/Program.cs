@@ -154,6 +154,7 @@ namespace TinConsole
                 ["performance_test"] = ls => performance_test(ls), // must remove
                 ["output_lines"] = ls => output_lines(ls),
                 ["set_filter"] = ls => set_filter(ls),
+                ["transform_to_zero"] = ls => transform_to_zero(ls),
                 ["points_to_dxf"] = ls => points_to_dxf(ls),
                 ["to_obj"] = ls => to_obj(ls),
                 ["save_stats"] = ls => save_stats(ls),
@@ -346,6 +347,37 @@ namespace TinConsole
             File.WriteAllLines(pathFileName,
                 counts.Select(count => count.ToString()));
             mirrorLogPrint($"Operation complete. File created: {pathFileName}.");
+        }
+
+        /// <summary>
+        /// Sets the affine transform for the export operations of points_to_dxf and
+        ///    to_obj. Invoke this command if loading in Unity3d or Blender will be
+        ///    used.
+        /// One argument: true or false. Setting true invokes the transform. Setting 
+        ///    false deactivates it.
+        /// When invoked, cooridnates of output elements are changed so that the tin model's
+        ///     center is at 0,0,0. This is necessary to view them in Blender and Unity.
+        /// The command is only effective after a TIN surface has been created.
+        /// </summary>
+        /// <param name="commandItems"></param>
+        private static void transform_to_zero(List<string> commandItems)
+        {
+            if(null == mainSurface)
+            {
+                mirrorLogPrint("The transform_to_zero command cannot be invoked " +
+                    "until the main surface has been created.");
+                mirrorLogPrint("   No transform created.");
+            }
+            if(commandItems.Count > 1)
+            {
+                if(commandItems[1].ToLower() == "false")
+                {
+                    TINsurface.setAffineTransformToZeroCenter(mainSurface, false);
+                    mirrorLogPrint("Transform cleared.");
+                }
+            }
+            TINsurface.setAffineTransformToZeroCenter(mainSurface, true);
+            mirrorLogPrint("Transform to zero now set.");
         }
 
         private static void points_to_dxf(List<string> commandItems)
