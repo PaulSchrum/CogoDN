@@ -148,8 +148,11 @@ namespace Surfaces.TIN
             var gridIndexer = new Dictionary<Tuple<int, int>, int>();
             returnObject.createAllpointsCollection();
 
-            foreach (var point in lasFile.AllPoints
-                .Where(p => trimBB.isPointInsideBB2d(p)))
+            IEnumerable<TINpoint> lasPoints = lasFile.AllPoints;
+            if (null != trimBB)
+                 lasPoints = lasFile.AllPoints.Where(p => trimBB.isPointInsideBB2d(p));
+
+            foreach (var point in lasPoints)
             {
                 pointCounter++;
                 runningPointCount++;
