@@ -1137,7 +1137,7 @@ namespace Surfaces.TIN
             messagePump.BroadcastMessage($"Iterating over {allUsedPoints.Count:N0} points.");
             foreach (var item in this.allUsedPoints)
             {
-                item.AddToDxf(dxf);
+                item.AddToDxf(dxf, affineTransform);
             }
 
             messagePump.BroadcastMessage($"Saving points to dxf.");

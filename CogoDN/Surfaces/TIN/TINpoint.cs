@@ -97,9 +97,23 @@ namespace Surfaces.TIN
             return new TINpoint(aPt.x, aPt.y, aPt.z);
         }
 
-        internal void AddToDxf(DxfDocument dxf)
+        internal void AddToDxf(DxfDocument dxf, Matrix<double> affineTransform=null)
         {
-            var pt = new netDxf.Entities.Point(new Vector3(this.x, this.y, this.z));
+            double x, y, z;
+
+            if(null == affineTransform)
+            {
+                x = this.x; y = this.y; z = this.z;
+            }
+            else
+            {
+                var transformedPoint = affineTransform.Multiply(this.MathNetVector);
+                x = transformedPoint[0];
+                y = transformedPoint[1];
+                z = transformedPoint[2];
+            }
+
+            var pt = new netDxf.Entities.Point(new Vector3(x, y, z));
             dxf.AddEntity(pt);
         }
 
