@@ -29,7 +29,7 @@ namespace Surfaces.TIN
 
         public override string ToString()
         {
-            return $"{x:f2}, {y:f2} {z:f2}";
+            return $"{x:f2},{y:f2},{z:f2}";
         }
 
         public double[] Position
@@ -184,8 +184,8 @@ namespace Surfaces.TIN
             var transformedPoint = affineXform.Multiply(this.MathNetVector);
 
             var x = transformedPoint[0];
-            var y = transformedPoint[1];
-            var z = transformedPoint[2];
+            var z = transformedPoint[1];
+            var y = transformedPoint[2];
             return $"{x:0.000} {y:0.000} {z:0.000}";
         }
     }

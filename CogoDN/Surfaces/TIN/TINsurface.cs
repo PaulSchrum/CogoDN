@@ -370,14 +370,16 @@ namespace Surfaces.TIN
             {
                 poolItem.retainProbability /= maxVal;
             }
-            foreach(var poolItem in pointPoolIndices.Values)
-            {  // this for loop was for diagnostics and is not needed. Remove.
-                double retainProb = poolItem.retainProbability;
-                double oneComplement = 1.0 - retainProb;
-            }
+            //foreach(var poolItem in pointPoolIndices.Values)
+            //{  // this for loop was for diagnostics and is not needed. Remove.
+            //    double retainProb = poolItem.retainProbability;
+            //    double oneComplement = 1.0 - retainProb;
+            //}
             var stats = new DescriptiveStatistics
                 (pointPoolIndices.Values.Select(v => v.retainProbability));
-
+            
+            //temp_diagnostic_outputPointProbabilitiesRankOrdered(pointPoolIndices,
+            //    @"E:\Research\Datasets\Lidar\Outputs\MakeStuff\probabilitiesBeforeDilation.csv");
             double popMean = stats.Mean;
             while(Math.Abs(popMean - decimationRemainingPercent) > tolerance)
             {
@@ -389,9 +391,24 @@ namespace Surfaces.TIN
 
                 popMean = stats.Mean;
             }
+            //temp_diagnostic_outputPointProbabilitiesRankOrdered(pointPoolIndices,
+            //    @"E:\Research\Datasets\Lidar\Outputs\MakeStuff\probabilitiesAfterDilation.csv");
 
             return stats;
         }
+
+        //private static void temp_diagnostic_outputPointProbabilitiesRankOrdered(
+        //    Dictionary<int, tinPointParameters> pointPoolIndices,
+        //    string outFileName)
+        //{
+        //    using(var sw = new StreamWriter(outFileName))
+        //    {
+        //        foreach (var pt in pointPoolIndices.Values.OrderBy(i => i.retainProbability))
+        //        {
+        //            sw.WriteLine($"{pt.retainProbability:F6}");
+        //        }
+        //    }
+        //}
 
         private static List<TINpoint> computeLikelihoodsSmart
             (TINsurface sourceSurface, double decimationPercent, 
@@ -525,6 +542,15 @@ namespace Surfaces.TIN
         {
             LasFile.CreateLasFromLas(outFileName, mainSurface.SourceData,
                 this.allUsedPoints.Select(pt => pt.originalSequenceNumber).ToList());
+        }
+
+        public void ExportToXYZ(string outFileName)
+        {
+            using(var outfile = new StreamWriter(outFileName))
+            {
+                foreach (var pt in this.allUsedPoints)
+                    outfile.WriteLine(pt.ToString());
+            }
         }
 
         /// <summary>
