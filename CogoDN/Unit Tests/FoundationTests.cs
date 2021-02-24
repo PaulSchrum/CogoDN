@@ -439,6 +439,7 @@ namespace Unit_Tests
             rootDir.PopulateAll();
         }
 
+        [Ignore]
         [TestMethod]
         public void DirectoryNode_SearchByFilter()
         {
