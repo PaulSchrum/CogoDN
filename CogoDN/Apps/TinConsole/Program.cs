@@ -641,7 +641,7 @@ namespace TinConsole
         private static void output_lines(List<string> commandItems)
         {
             var outfile = @"D:\Research\Datasets\Lidar\Tilley Creek\decimation research\smartDecResults\linesOnly.dxf";
-            mainSurface.writeLinesToDxf(outfile, (Line => Line.DeltaCrossSlopeAsAngleRad > 3.05));
+            mainSurface.writeLinesToDxf(outfile, (Line => Line.DihedralAngleAsRad > 3.05));
         }
 
         private static void reload(List<string> commandItems)

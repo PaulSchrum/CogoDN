@@ -129,7 +129,7 @@ namespace Surfaces.TIN
             }
         }
 
-        public double? DeltaCrossSlopeAsAngleRad
+        public double? DihedralAngleAsRad
         {
             get
             {

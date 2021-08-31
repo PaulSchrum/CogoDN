@@ -344,9 +344,9 @@ namespace Surfaces.TIN
                 //ptParams.gaussianCurvature = TwoPI - angleAccumulator;
                 //ptParams.aggregateCrossSlope =
                 //    ptParams.myLines
-                //    .Where(L => null != L.DeltaCrossSlopeAsAngleRad)
+                //    .Where(L => null != L.DihedralAngleAsRad)
                 //    .Select(L => 
-                //        Math.Abs((double)L.DeltaCrossSlopeAsAngleRad) / L.Length2d)
+                //        Math.Abs((double)L.DihedralAngleAsRad) / L.Length2d)
                 //    .Sum() / ptParams.myLines.Count;
 
                 ptParams.pointSparsity = ptParams.myTriangles
@@ -473,7 +473,7 @@ namespace Surfaces.TIN
             }
 
             var sourceLines = sourceSurface.allLines
-                .OrderByDescending(line => line.Value.DeltaCrossSlopeAsAngleRad)
+                .OrderByDescending(line => line.Value.DihedralAngleAsRad)
                 .Select(line => line.Value)
                 .ToList();
 

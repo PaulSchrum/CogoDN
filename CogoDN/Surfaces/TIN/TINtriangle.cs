@@ -370,7 +370,7 @@ namespace Surfaces.TIN
             if (maxInteriorAngle > triangleInternalAngleThreshold)
                 return true;
 
-            var maxXslope = lines.Select(Line => Line.DeltaCrossSlopeAsAngleRad).OrderBy(x => x).Last();
+            var maxXslope = lines.Select(Line => Line.DihedralAngleAsRad).OrderBy(x => x).Last();
             if (maxXslope > 3.0)
                 return true;
 
