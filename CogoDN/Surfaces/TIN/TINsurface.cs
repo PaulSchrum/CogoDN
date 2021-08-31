@@ -209,6 +209,7 @@ namespace Surfaces.TIN
                 ($"In {stopwatch.ElapsedMilliseconds / 1000.0:0.000} seconds" +
                 $"( {stopwatch.ElapsedMilliseconds / 60000.0:0.000} minutes).");
 
+            setAffineTransformToZeroCenter(returnObject, false);
             return returnObject;
         }
 
