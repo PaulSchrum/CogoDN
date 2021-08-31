@@ -148,6 +148,7 @@ namespace TinConsole
                 ["point_count"] = ls => point_count(ls),
                 ["load"] = ls => Load(ls),
                 ["to_las"] = ls => ToLas(ls),
+                ["to_xyz"] = ls => ToXYZ(ls),
                 ["summarize"] = ls => summarize(ls),
                 ["reload"] = ls => reload(ls),
                 ["decimate_multiple"] = ls => decimate_multiple(), // must remove
@@ -404,6 +405,29 @@ namespace TinConsole
             }
         }
 
+        private static void ToXYZ(List<string> commandItems)
+        {
+            var outFilename = commandItems.Skip(1).Where(arg => arg.Contains(".xyz")).FirstOrDefault();
+            if (null == outFilename)
+            {
+                mirrorLogPrint("Output file name not specified. xyz output files must have a \".xyz\" extension.");
+                return;
+            }
+
+            var writeFileName = GetCorrectOutputFilename(outFilename);
+            mirrorLogPrint($"Creating xyz file: {writeFileName}");
+            if (null != derivedSurface)
+            {
+                derivedSurface.ExportToXYZ(writeFileName);
+            }
+            else if (null != mainSurface)
+            {
+                mainSurface.ExportToXYZ(writeFileName);
+            }
+        }
+
+
+
         private static void to_obj(List<string> commandItems)
         {
             bool shouldZip = commandItems.Skip(1).Where(arg => arg.Equals("-zipped")).Any();
@@ -503,7 +527,7 @@ namespace TinConsole
             if (null == derivedSurface)
                 sourceSurface = mainSurface;
 
-            if(commandItems.Count < 2)
+            if (commandItems.Count < 2)
             {
                 mirrorLogPrint("Las file not created. No output file name given.");
                 return;
