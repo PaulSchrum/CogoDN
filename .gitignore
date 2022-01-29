@@ -427,3 +427,9 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# Paul's choice, still for Unity3d
+[Ll]ibrary/
+[Pp]rojectSettings/
+[Uu]serSettings/
+CogoDN Visualization/.vsconfig
