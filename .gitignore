@@ -433,3 +433,5 @@ crashlytics-build.properties
 [Pp]rojectSettings/
 [Uu]serSettings/
 CogoDN Visualization/.vsconfig
+CogoDN Visualization/Temp/
+
