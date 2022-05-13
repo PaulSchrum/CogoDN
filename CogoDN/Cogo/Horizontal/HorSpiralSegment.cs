@@ -361,7 +361,7 @@ namespace Cogo.Horizontal
 
             public HorSpiralSegment mySpiral { get; private set; }
             public Point targetPoint { get; private set; }
-            public List<SpiralIterationPoint> iterationList { get; private set; }
+            private List<SpiralIterationPoint> iterationList { get; set; }
             private SpiralIterator(HorSpiralSegment mySpi, Point aTargetPoint)
             {
                 this.mySpiral = mySpi;
@@ -370,7 +370,7 @@ namespace Cogo.Horizontal
                 mySpi.myIterator = this;
             }
 
-            public struct SpiralIterationPoint
+            private struct SpiralIterationPoint
             {
                 double station { get; set; }
                 Point pointOnStation { get; set; }
