@@ -353,6 +353,16 @@ namespace Unit_Tests
             Assert.IsNotNull(tinFromGeotiff);
         }
 
+        [TestMethod]
+        public void TinFromGeoTiff_ElevationSlopeAspect_correctForCertainPoint()
+        {
+            InitializeGeoTiffTests();
+            TinFromGeoTiff_isNotNull();
+            // 776297.7 1246760.7 1606.78
+            var ElSlopeAspect = this.tinFromGeotiff
+                .getElevationSlopeAzimuth(new TINpoint(1246760.7, 776297.7, 0.0));
+            ElSlopeAspect.AssertDerivedValuesAreEqual(1607.02, 4.8, 8.4457);
+        }
 
     }
 }
