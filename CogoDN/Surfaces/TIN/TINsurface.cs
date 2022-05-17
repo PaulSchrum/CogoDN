@@ -135,8 +135,10 @@ namespace Surfaces.TIN
         public static TINsurface CreateFromGeoTiff(string FilePathToOpen)
         {
             var raster = new Raster.Raster(FilePathToOpen);
+            var allPoints = raster.CellsAsPoints().Select(pt => new TINpoint(pt.x, pt.y, pt.z));
+            var returnData = CreateFromPoints(allPoints, FilePathToOpen);
 
-            throw new NotImplementedException();
+            return returnData;
         }
 
         public static TINsurface CreateFromLAS(string lidarFileName,
@@ -148,19 +150,30 @@ namespace Surfaces.TIN
             messagePump.BroadcastMessage($"Creating Tin in memory from {lidarFileName}.");
             LasFile lasFile = new LasFile(lidarFileName,
                 classificationFilter: classificationFilter);
+            IEnumerable<TINpoint> lasPoints = lasFile.AllPoints;
+
+            var returnData = CreateFromPoints(lasPoints, lidarFileName, skipPoints);
+
+            messagePump.BroadcastMessage
+                    ($"In {stopwatch.ElapsedMilliseconds / 1000.0:0.000} seconds" +
+                    $"( {stopwatch.ElapsedMilliseconds / 60000.0:0.000} minutes).");
+            return returnData;
+        }
+        protected static TINsurface CreateFromPoints(IEnumerable<TINpoint> pointDataset,
+            string sourceFileName, int skipPoints = 0)
+        { 
             TINsurface returnObject = new TINsurface();
-            returnObject.SourceData = lidarFileName;
+            returnObject.SourceData = sourceFileName;
             int pointCounter = -1;
             int runningPointCount = -1;
             int indexCount = 0;
             var gridIndexer = new Dictionary<Tuple<int, int>, int>();
             returnObject.createAllpointsCollection();
 
-            IEnumerable<TINpoint> lasPoints = lasFile.AllPoints;
-            if (null != trimBB)
-                 lasPoints = lasFile.AllPoints.Where(p => trimBB.isPointInsideBB2d(p));
+            //if (null != trimBB)
+            //     pointDataset = lasFile.AllPoints.Where(p => trimBB.isPointInsideBB2d(p));
 
-            foreach (var point in lasPoints)
+            foreach (var point in pointDataset)
             {
                 pointCounter++;
                 runningPointCount++;
@@ -183,8 +196,7 @@ namespace Surfaces.TIN
             }
 
             setBoundingBox(returnObject);
-            messagePump.BroadcastMessage($"{lasFile.AllPoints.Count:N0} LAS points loaded.");
-            lasFile.ClearAllPoints();  // Because I have them now.
+            messagePump.BroadcastMessage($"{pointCounter:N0} points loaded.");
 
             for (indexCount = 0; indexCount < returnObject.allUsedPoints.Count; indexCount++)
             {
@@ -213,9 +225,6 @@ namespace Surfaces.TIN
             messagePump.BroadcastMessage("Final processing complete. " +
                 $"{returnObject.allTriangles.Count:N0} Triangles, " +
                 $"{returnObject.allLines.Count:N0} Lines.");
-            messagePump.BroadcastMessage
-                ($"In {stopwatch.ElapsedMilliseconds / 1000.0:0.000} seconds" +
-                $"( {stopwatch.ElapsedMilliseconds / 60000.0:0.000} minutes).");
 
             setAffineTransformToZeroCenter(returnObject, false);
             return returnObject;

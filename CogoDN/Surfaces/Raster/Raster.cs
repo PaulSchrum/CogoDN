@@ -1,7 +1,9 @@
 ﻿using CadFoundation.Coordinates;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using gdal = OSGeo.GDAL.Gdal;
 
 
@@ -43,6 +45,35 @@ namespace Surfaces.Raster
                 band1.ReadRaster(0, 0, xColumns, yRows, cellArray, xColumns, yRows, 0, 0);
             }
 
+        }
+    
+    
+        public Point GetCenterPoint(int xIndex, int yIndex)
+        {
+            double x = cellXsize * xIndex + anchorPt.x + cellXsize / 2.0;
+            double y = cellYsize * xIndex + anchorPt.y + cellYsize / 2.0;
+            int localIdx = xIndex + (yIndex * xColumns);
+            double z = cellArray[localIdx];
+
+            return new Point(x, y, z);
+        }
+
+        public IReadOnlyCollection<Point> CellsAsPoints()
+        {
+            var returnCollection = new ConcurrentBag<Point>();
+            Parallel.For(0, cellCount, idx =>
+            {
+                double elevation = cellArray[idx];
+                int rowIndex = idx / xColumns;
+                int columnIndex = idx % xColumns;
+
+                double x = (columnIndex * cellXsize) + anchorPt.x;
+                double y = (rowIndex * cellYsize) + anchorPt.y;
+
+                returnCollection.Add(new Point(x, y, elevation));
+            });
+
+            return returnCollection;
         }
     }
 }
