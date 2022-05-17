@@ -434,4 +434,8 @@ crashlytics-build.properties
 [Uu]serSettings/
 CogoDN Visualization/.vsconfig
 CogoDN Visualization/Temp/
+CogoDN Visualization/Assets/Scripts/*.dll
+
+
+
 
