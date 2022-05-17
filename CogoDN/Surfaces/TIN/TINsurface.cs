@@ -23,6 +23,7 @@ using CadFoundation;
 using System.IO.Compression;
 using CadFoundation.Coordinates.Indexing;
 using Surfaces.TIN.Support;
+using Surfaces.Raster;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 [assembly: InternalsVisibleTo("Unit Tests")]
@@ -129,6 +130,13 @@ namespace Surfaces.TIN
             LasFile lasFile = new LasFile(lidarFileName,
                 classificationFilter: classificationFilter);
             return lasFile.AllPoints.Count;
+        }
+
+        public static TINsurface CreateFromGeoTiff(string FilePathToOpen)
+        {
+            var raster = new Raster.Raster(FilePathToOpen);
+
+            throw new NotImplementedException();
         }
 
         public static TINsurface CreateFromLAS(string lidarFileName,

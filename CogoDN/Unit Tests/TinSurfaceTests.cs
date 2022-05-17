@@ -50,34 +50,44 @@ namespace Unit_Tests
     public class TinTests
     {
         string lidarFileName;
+        string geotiffFileName;
 
         TINsurface tinFromLidar = null;
+        TINsurface tinFromGeotiff = null;
 
         private void setupDatasetFileNames()
         {
             var directory = new DirectoryManager();
             directory.CdUp(2).CdDown("Datasets").CdDown("Surfaces").CdDown("Lidar");
             this.lidarFileName = directory.GetPathAndAppendFilename("Raleigh WRAL Soccer.las");
+            directory.CdUp(1).CdDown("GeoTiff");
+            this.geotiffFileName = directory.GetPathAndAppendFilename("Rippetoe DEM03.tif");
         }
 
-        private void Initialize()
+        private void InitializeLidarTests()
         {
             setupDatasetFileNames();
             if (this.tinFromLidar == null)
                 tinFromLidar = TINsurface.CreateFromLAS(lidarFileName);
         }
 
+        private void InitializeGeoTiffTests()
+        {
+            setupDatasetFileNames();
+            tinFromGeotiff ??= TINsurface.CreateFromGeoTiff(geotiffFileName);
+        }
+
         [TestMethod]
         public void TinFromLidar_isNotNull()
         {
-            this.Initialize();
+            this.InitializeLidarTests();
             Assert.IsNotNull(this.tinFromLidar);
         }
 
         [TestMethod]
         public void TinFromLidar_ElevationSlopeAspect_correctForTriangleZero()
         {
-            this.Initialize();
+            this.InitializeLidarTests();
             TinFromLidar_isNotNull();
             var ElSlopeAspect = this.tinFromLidar
                 .getElevationSlopeAzimuth(new TINpoint(2133760.0, 775765.59, 0.0));
@@ -87,7 +97,7 @@ namespace Unit_Tests
         [TestMethod]
         public void TinFromLidar_ElevationSlopeAspect_OnSameTriangleOfAroadwayFillSlope()
         {
-            this.Initialize();
+            this.InitializeLidarTests();
             TinFromLidar_isNotNull();
             var ElSlopeAspect = this.tinFromLidar
                 .getElevationSlopeAzimuth(new TINpoint(2133835.08, 775629.79));
@@ -130,7 +140,7 @@ namespace Unit_Tests
         [TestMethod]
         public void TinFromLidar_ElevationSlopeAspect_OnSameTriangleOfAbridgeEndBentSlope()
         {
-            this.Initialize();
+            this.InitializeLidarTests();
             TinFromLidar_isNotNull();
             var ElSlopeAspect = this.tinFromLidar
                 .getElevationSlopeAzimuth(new TINpoint(2133952.01, 775539.31));
@@ -144,7 +154,7 @@ namespace Unit_Tests
         [TestMethod]
         public void TinFromLidar_GettingEdgePoint_Correct()
         {
-            this.Initialize();
+            this.InitializeLidarTests();
             var edgeLines = this.tinFromLidar.OuterEdgeLines.ToList();
             Assert.AreEqual(expected: 538, actual: edgeLines.Count);
             var perimeter = edgeLines.Select(L => L.Length2d).Sum();
@@ -155,7 +165,7 @@ namespace Unit_Tests
         [TestMethod]
         public void TinFromLidar_SavePointsAsDxf()
         {
-            this.Initialize();
+            this.InitializeLidarTests();
             TinFromLidar_isNotNull();
 
             var outDirectory = new DirectoryManager();
@@ -174,7 +184,7 @@ namespace Unit_Tests
         public void TinFromLidar_SaveAsWavefrontObj()
         {
             Trace.Write("Testing.\n");
-            this.Initialize();
+            this.InitializeLidarTests();
             TinFromLidar_isNotNull();
 
             var outDirectory = new DirectoryManager();
@@ -193,7 +203,7 @@ namespace Unit_Tests
         [TestMethod]
         public void TinFromLidar_SaveTinsAsDxfTriangleShapes()
         {
-            this.Initialize();
+            this.InitializeLidarTests();
             TinFromLidar_isNotNull();
 
             var outDirectory = new DirectoryManager();
@@ -241,7 +251,7 @@ namespace Unit_Tests
         [TestMethod]
         public void TinFromLidar_CompareTriangleCount()
         {
-            this.Initialize();
+            this.InitializeLidarTests();
             //getPrunedTin();
             var aTin = this.aTin;
             var triangleCount = this.tinFromLidar.TriangleCount;
@@ -334,6 +344,15 @@ namespace Unit_Tests
                 delta: 0.00001);
 
         }
+
+
+        [TestMethod]
+        public void TinFromGeoTiff_isNotNull()
+        {
+            InitializeGeoTiffTests();
+            Assert.IsNotNull(tinFromGeotiff);
+        }
+
 
     }
 }
