@@ -147,6 +147,8 @@ namespace TinConsole
                 ["set_bounding_box"] = ls => set_bounding_box(ls),
                 ["point_count"] = ls => point_count(ls),
                 ["load"] = ls => Load(ls),
+                ["load_las"] = ls => Load(ls),
+                ["load_tiff"] = ls => Load_tiff(ls),
                 ["to_las"] = ls => ToLas(ls),
                 ["to_xyz"] = ls => ToXYZ(ls),
                 ["summarize"] = ls => summarize(ls),
@@ -504,7 +506,8 @@ namespace TinConsole
         {
             var panelId = commandItems[1];
             var openFileStr = pwd.GetPathAndAppendFilename(panelId);
-            int pointCount = TINsurface.PointCountFromLAS(openFileStr, classificationFilter: classificationFilter);
+            int pointCount = TINsurface.PointCountFromLAS(openFileStr, 
+                classificationFilter: classificationFilter);
             mirrorLogPrint($"File {panelId} contains {pointCount:n0}.");
         }
 
@@ -519,6 +522,13 @@ namespace TinConsole
                     filterBB.lowerLeftPt.x, filterBB.lowerLeftPt.y,
                     filterBB.upperRightPt.x, filterBB.upperRightPt.y, 
                     classificationFilter: classificationFilter);
+        }
+
+        private static void Load_tiff(List<string> commandItems)
+        {
+            var openFileStr = pwd.GetPathAndAppendFilename(commandItems[1]);
+            mainSurface = TINsurface.CreateFromGeoTiff(openFileStr);
+
         }
 
         private static void ToLas(List<string> commandItems)
