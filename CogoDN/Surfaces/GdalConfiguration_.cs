@@ -27,9 +27,11 @@
  * DEALINGS IN THE SOFTWARE.
  *****************************************************************************/
 
+using CadFoundation;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Gdal = OSGeo.GDAL.Gdal;
@@ -68,13 +70,16 @@ namespace Surfaces
                     return;
                 }
 
+                var platform = GetPlatform();
                 string executingAssemblyFile =
                     new Uri(Assembly.GetExecutingAssembly().GetName().CodeBase).LocalPath;
-                if (executingAssemblyFile.ToLower().Contains("unit tests"))
-                {
-                    executingAssemblyFile = executingAssemblyFile.ToLower()
-                        .Replace("unit tests", "Surfaces");
-                }
+                DirectoryManager dm = DirectoryManager.FromPathString(executingAssemblyFile);
+                var CogoDNdir = dm.CdUpUntil(dirName => dirName.Contains("CogoDN"));
+                var surfacesDir = CogoDNdir.CdDown("Surfaces");
+                var gdalDllDirectory = surfacesDir.CdDownToFileName("gdal_wrap.dll")
+                    .Where(p => p.path.Contains(platform))
+                    .FirstOrDefault().CdUp(2).DirectoryPart;
+                executingAssemblyFile = gdalDllDirectory.ToString();
                 executingDirectory = Path.GetDirectoryName(executingAssemblyFile);
 
                 if (string.IsNullOrEmpty(executingDirectory))
