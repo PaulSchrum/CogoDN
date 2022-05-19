@@ -25,6 +25,9 @@ using CadFoundation.Coordinates.Indexing;
 using Surfaces.TIN.Support;
 using Surfaces.Raster;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Cogo;
+using Cogo.Horizontal;
+using CadFoundation.Coordinates.Curvilinear;
 
 [assembly: InternalsVisibleTo("Unit Tests")]
 
@@ -1814,6 +1817,64 @@ namespace Surfaces.TIN
                 getSlope(aPoint),
                 getAspect(aPoint)
                 );
+        }
+
+        public Profile getIntersectingProfile(HorizontalAlignment ha)
+        {
+            var returnProfile = new Profile();
+            if (!this.BoundingBox.Overlaps(ha.BoundingBox)) return returnProfile;
+
+            var candidateTriangleLines = this.allLines
+                .Where(L => L.Value.BoundingBox.Overlaps(ha.BoundingBox));
+            var lineCount = candidateTriangleLines.Count();
+
+            var firstStation = ha.BeginStation;
+            var firstCoords = ha.getXYZcoordinates(firstStation);
+            firstCoords.z = (double)this.getElevation(firstCoords);
+
+            var lastStation = ha.BeginStation;
+            var lastCoords = ha.getXYZcoordinates(lastStation);
+            lastCoords.z = (double)this.getElevation(lastCoords);
+
+            var stationList = new List<StationOffsetElevation>();
+            var idxList = new List<int>();
+            int idx = 0;
+            foreach (var segment in ha.ChildSegments)
+            {
+
+                var localTriangleLines = candidateTriangleLines
+                    .Where(L => L.Value.BoundingBox.Overlaps(segment.BoundingBox));
+                foreach(var triangleLine in localTriangleLines)
+                {
+                    idx++;
+                    var intersection = segment.LineIntersectSOE(
+                        triangleLine.Value.firstPoint, triangleLine.Value.secondPoint);
+                    if(null != intersection.point)
+                    {
+                        intersection.soe.elevation = intersection.soe.elevation;
+                        stationList.Add(intersection.soe);
+                    }
+                }
+            }
+
+            stationList = stationList.OrderBy(s => s.elevation.EL).ToList();
+
+            // There are duplicate stations in the list. Can't figure out why.
+            // Remove duplicate stations by keeping the first one encountered
+            var noDuplicatesDict = new Dictionary<int, StationOffsetElevation>();
+            foreach(var soe in stationList)
+            {
+                int key = (int) (10000 * soe.station);
+                if(!noDuplicatesDict.ContainsKey(key))
+                    noDuplicatesDict[key] = soe;
+            }
+
+            stationList = noDuplicatesDict.Values.ToList();
+            returnProfile = new Profile(stationList.OrderBy(s => s.station).ToList());
+            var el1 = returnProfile.getElevation(new CogoStation(100.0));
+            var el2 = returnProfile.getElevation(new CogoStation(300.0));
+
+            return returnProfile;
         }
 
         public void loadFromXYZtextFile(string fileToOpen)

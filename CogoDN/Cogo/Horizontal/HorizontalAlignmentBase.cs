@@ -153,7 +153,7 @@ namespace Cogo.Horizontal
             this.EndPoint = this.EndPoint + moveDistance;
         }
 
-        internal virtual (Point point, StationOffsetElevation soe) LineIntersectSOE(
+        public virtual (Point point, StationOffsetElevation soe) LineIntersectSOE(
             Point firstPoint, Point secondPoint, double offset = 0d)
         {
             throw new NotImplementedException();

@@ -120,7 +120,7 @@ namespace Cogo.Horizontal
             return returnPoint;
         }
 
-        internal override (Point point, StationOffsetElevation soe) LineIntersectSOE(
+        public override (Point point, StationOffsetElevation soe) LineIntersectSOE(
                     Point firstPoint, Point secondPoint, double offset = 0d)
         {
             Point candidatePoint = null;
@@ -133,25 +133,25 @@ namespace Cogo.Horizontal
             {
                 return (null, null);
             }
-            var distanceFirstToCandidate = (candidatePoint.minus2d(firstPoint)).Length;
-            if (distanceFirstToCandidate < 0.0 || distanceFirstToCandidate > crossLine.Length)
+            
+            var distanceAlongCrossLineToCandidate = (candidatePoint.minus2d(firstPoint)).BaseLength;
+            if (distanceAlongCrossLineToCandidate < 0.0 || 
+                    distanceAlongCrossLineToCandidate > crossLine.Length)
                 return (null, null);
 
             // Get the station of intersection point.
-            var newStation = this.BeginStation + distanceFirstToCandidate;
+            double distanceAlongAlignment = (candidatePoint - this.BeginPoint).BaseLength;
+            if (distanceAlongAlignment < 0.0 ||
+                    distanceAlongAlignment > this.Length)
+                return (null, null);
+            var newStation = this.BeginStation + distanceAlongAlignment;
 
             // Get the elevation at the intersection point.
-            //Vector lineAsVec = null;
-            HorLineSegment segmentToUse = null;
-            if (this.BeginPoint.z > 0d || this.EndPoint.z > 0d)
-                segmentToUse = this;
-            else
-                segmentToUse = crossLine;
-            var dx = segmentToUse.Length;
-            var dy = segmentToUse.EndPoint.z - segmentToUse.BeginPoint.z;
-            Slope slope = new Slope(run: dx, rise: dy);
-            var shortSegmentDx = (candidatePoint.minus2d(segmentToUse.BeginPoint)).Length;
-            var elevation = segmentToUse.BeginPoint.z + shortSegmentDx * (Double)slope;
+            var x = distanceAlongCrossLineToCandidate;
+            var dx = crossLine.Length;
+            var dz = crossLine.EndPoint.z - crossLine.BeginPoint.z;
+            Slope slope = new Slope(run: dx, rise: dz);
+            var elevation = crossLine.BeginPoint.z + (x * (Double)slope);
 
             return (point: candidatePoint,
                 soe: new StationOffsetElevation(newStation, 0d, elevation));
@@ -179,7 +179,6 @@ namespace Cogo.Horizontal
                 this.EndPoint.y, 0));
             dxfDoc.AddEntity(poly);
         }
-
 
     }
 }

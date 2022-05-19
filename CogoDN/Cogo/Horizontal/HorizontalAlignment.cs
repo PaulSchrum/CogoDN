@@ -50,6 +50,18 @@ namespace Cogo.Horizontal
         public new Point EndPoint
         { get { return this.allChildSegments.Last().EndPoint; } }
 
+        public override BoundingBox BoundingBox 
+        { 
+            get
+            {
+                if (null == this.boundingBox_)
+                {
+                    boundingBox_ = new BoundingBox(ChildSegments.Select(c => c.BoundingBox));
+                }
+                return boundingBox_;
+            }
+        }
+
         public HorizontalAlignment() { }
 
         public HorizontalAlignment(List<IFundamentalGeometry> fundamentalGeometryList,
@@ -743,6 +755,11 @@ namespace Cogo.Horizontal
 
             // closeout
             dxf.Save(outFile);
+        }
+
+        public IReadOnlyList<HorizontalAlignmentBase> ChildSegments
+        {
+            get { return this.allChildSegments; }
         }
 
     }
