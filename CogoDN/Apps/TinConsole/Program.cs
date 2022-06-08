@@ -9,6 +9,7 @@ using CadFoundation;
 using Surfaces.TIN;
 using System.IO;
 using System.Text;
+using Cogo.Horizontal;
 
 namespace TinConsole
 {
@@ -27,6 +28,8 @@ namespace TinConsole
         static TINsurface mainSurface = null;
         static TINsurface derivedSurface = null;
         static BoundingBox filterBB = null;
+
+        static HorizontalAlignment activeAlignment = null;
 
         static string StatisticsCsvFile = null;
         static MessageObserver msgObs = new MessageObserver();
@@ -147,6 +150,8 @@ namespace TinConsole
                 ["set_bounding_box"] = ls => set_bounding_box(ls),
                 ["point_count"] = ls => point_count(ls),
                 ["load"] = ls => Load(ls),
+                ["load_las"] = ls => Load(ls),
+                ["load_tiff"] = ls => Load_tiff(ls),
                 ["to_las"] = ls => ToLas(ls),
                 ["to_xyz"] = ls => ToXYZ(ls),
                 ["summarize"] = ls => summarize(ls),
@@ -165,6 +170,9 @@ namespace TinConsole
 
                 ["histogram"] = ls => histogram(ls),
                 ["set_sample_grid"] = ls => set_sample_grid(ls),
+
+                ["load_alignment"] = ls => load_alignment(ls),
+                ["profile_to_csv"] = ls => profile_to_csv(ls),
             };
 
             Action<List<String>> command = null;
@@ -300,6 +308,54 @@ namespace TinConsole
             mirrorLogPrint("Sample Grid creation in progress.");
             mainSurface.SetSampleGrid(desiredSamplePointDensity);
             mirrorLogPrint("Sample Grid Created.");
+        }
+
+        /// <summary>
+        /// Loads a horizontal alignment into memory for use in working with the terrain
+        /// surface.
+        /// 
+        /// 1 required Command line parameter: file name of the alignment to load.
+        /// </summary>
+        /// <param name="commandItems"></param>
+        private static void load_alignment(List<string> commandItems)
+        {
+            string openFileStr = commandItems[1];
+            if(!File.Exists(openFileStr))
+                openFileStr = pwd.GetPathAndAppendFilename(openFileStr);
+            activeAlignment = HorizontalAlignment.createFromCsvFile(openFileStr);
+
+            if (activeAlignment != null)
+                mirrorLogPrint("Alignment loaded.");
+            else
+                mirrorLogPrint("Alignment not loaded.");
+        }
+
+        private static void profile_to_csv(List<string> commandItems)
+        {
+            if (null == mainSurface)
+            {
+                mirrorLogPrint("Unable to create profile as no surface has been loaded.");
+                return;
+            }
+
+            if (null == activeAlignment)
+            {
+                mirrorLogPrint("Unable to create profile as no alignment has been loaded.");
+                return;
+            }
+
+            mirrorLogPrint("Creating profile from intersection of terrain and alignment.");
+            Cogo.Profile groundProfile = mainSurface.getIntersectingProfile(activeAlignment);
+            var outputCSVfileName = commandItems[1];
+            bool useTrueStations = false;
+            if(commandItems.Count > 2)
+            {
+                if (commandItems[2].ToLower().Contains("-truestation"))
+                    useTrueStations = true;
+            }
+            groundProfile.WriteToCSV(outputCSVfileName, useTrueStations);
+            mirrorLogPrint($"Created {outputCSVfileName}");
+
         }
 
         /// <summary>
@@ -504,7 +560,8 @@ namespace TinConsole
         {
             var panelId = commandItems[1];
             var openFileStr = pwd.GetPathAndAppendFilename(panelId);
-            int pointCount = TINsurface.PointCountFromLAS(openFileStr, classificationFilter: classificationFilter);
+            int pointCount = TINsurface.PointCountFromLAS(openFileStr, 
+                classificationFilter: classificationFilter);
             mirrorLogPrint($"File {panelId} contains {pointCount:n0}.");
         }
 
@@ -519,6 +576,13 @@ namespace TinConsole
                     filterBB.lowerLeftPt.x, filterBB.lowerLeftPt.y,
                     filterBB.upperRightPt.x, filterBB.upperRightPt.y, 
                     classificationFilter: classificationFilter);
+        }
+
+        private static void Load_tiff(List<string> commandItems)
+        {
+            var openFileStr = pwd.GetPathAndAppendFilename(commandItems[1]);
+            mainSurface = TINsurface.CreateFromGeoTiff(openFileStr);
+
         }
 
         private static void ToLas(List<string> commandItems)

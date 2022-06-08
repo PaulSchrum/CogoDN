@@ -40,6 +40,23 @@ namespace CadFoundation
             }
         }
 
+        public DirectoryManager DirectoryPart
+        {
+            get
+            {
+                FileAttributes attr = File.GetAttributes(this.path);
+                if ((attr & FileAttributes.Directory) != FileAttributes.Directory) // it's a file
+                {
+                    var lclPath = this.pathAsList.Take(depth);
+                    var newDM = DirectoryManager.
+                        FromPathString(string.Join(delim, lclPath) + delim);
+                    return newDM;
+                }
+                else
+                    return DirectoryManager.FromPathString(this.path);
+            }
+        }
+
         protected void setPathFromList(List<string> aList)
         {
             this.path = string.Join(delim, aList) + delim;
@@ -53,6 +70,13 @@ namespace CadFoundation
         public DirectoryManager(DriveInfo d)
         {
             this.path = d.RootDirectory.FullName;
+        }
+
+        protected DirectoryManager(DirectoryManager other)
+        {
+            this.path = other.path;
+            this.d = other.d;
+            this.AccessDenied = other.AccessDenied;
         }
 
         public int depth
@@ -80,6 +104,23 @@ namespace CadFoundation
             return this;
         }
 
+        public DirectoryManager CdUpUntil(Func<string, bool> condition)
+        {
+            DirectoryManager newOne = new DirectoryManager(this);
+
+            for(int i = this.pathAsList.Count-1; i >= 0; i--)
+            {
+                string dirName = this.pathAsList[i];
+                if(condition(dirName))
+                {
+                    newOne.setPathFromList(this.pathAsList.Take(i+1).ToList());
+                    return newOne;
+                }
+            }
+
+            return null;
+        }
+
         public int Depth
         {
             get { return this.pathAsList.Count - 1; }
@@ -93,6 +134,7 @@ namespace CadFoundation
         public DirectoryManager CdDown(string directoryName, bool createIfNeeded = false)
         {
             bool needToCreate = false;
+            var subdirs = this.ListSubDirectories;
             if (!this.ListSubDirectories.Contains(directoryName))
             {
                 if (!createIfNeeded)
@@ -106,6 +148,20 @@ namespace CadFoundation
             tempList.Add(directoryName);
             this.setPathFromList(tempList);
             return this;
+        }
+
+        public List<DirectoryManager> CdDownToFileName(string fileName)
+        {
+            var returnList = new List<DirectoryManager>();
+            string[] files = Directory.GetFiles(this.path, fileName, SearchOption.AllDirectories);
+            if (files.Length == 0)
+                return returnList;
+
+            foreach(var path in files)
+            {
+                returnList.Add(DirectoryManager.FromPathString(path));
+            }
+            return returnList;
         }
 
         /// <summary>

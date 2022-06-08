@@ -1,10 +1,12 @@
 ﻿using CadFoundation;
 using CadFoundation.Coordinates;
+using CadFoundation.Coordinates.Curvilinear;
 using Cogo.Utils;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -33,6 +35,7 @@ namespace Cogo
 
         public Profile()
         {
+            allVCs = new List<verticalCurve>();
             vpiList aVpiList = new vpiList();
             this.BeginIsUnconstrained = false;
             this.EndIsUnconstrained = false;
@@ -89,6 +92,41 @@ namespace Cogo
             BeginProfTrueStation = allVCs.First<verticalCurve>().BeginStation.trueStation;
             EndProfTrueStation = allVCs.Last<verticalCurve>().EndStation.trueStation;
             iHaveOneOrMoreVerticalCurves = allVCs.Any<verticalCurve>(memberVC => (false == memberVC.IsTangent));
+        }
+
+        public Profile(IReadOnlyList<StationOffsetElevation> soeList)
+        {
+            if (null == soeList)
+                throw new NullReferenceException();
+
+            if (soeList.Count < 2)
+                throw new NotImplementedException
+                    ("Can't create profile with less than two vertices.");
+
+            allVCs = new List<verticalCurve>();
+            var testVPI = soeList.First();
+            var vertCurve = new verticalCurve(testVPI.station, testVPI.elevation, 0.0);
+            foreach(var vpi in soeList)
+            {
+                var newVC = new verticalCurve(vpi.station, vpi.elevation, 0d);
+                allVCs.Add(newVC);
+            }
+
+            for(int i=1; i<allVCs.Count; i++)
+            {
+                CogoStation backSta = allVCs[i - 1].EndStation;
+                double backEL = allVCs[i - 1].BeginElevation;
+
+                CogoStation currStation = allVCs[i].BeginStation;
+                double currEL = allVCs[i].BeginElevation;
+
+                double slope = (currEL - backEL) / (currStation - backSta);
+                allVCs[i - 1].EndSlope = slope;
+                allVCs[i].BeginSlope = slope;
+            }
+
+            var endVC = allVCs.Last();
+            this.EndProfTrueStation = allVCs.Last().EndStation.trueStation;
         }
 
         private void buildThisFromRawVPIlist(vpiList rawVPIlist)
@@ -913,6 +951,26 @@ namespace Cogo
                 this.IsaProfileGap = false;
             }
 
+            public verticalCurve(double station, double elevation, double vcLength)
+            {
+                this.BeginStation = new CogoStation(station);
+                this.endStation_ = new CogoStation(station + vcLength);
+                this.BeginElevation = elevation;
+                this.length_ = vcLength;
+
+                if (vcLength == 0d)
+                {
+                    this.IsBeginPINC = false;
+                    this.IsEndPINC = false;
+                }
+                else
+                {
+                    this.IsBeginPINC = false;
+                    this.IsEndPINC = false;
+                }
+                this.IsaProfileGap = false;
+            }
+
             // currently untested code
             // candidate for deleting becuase it is not needed
             public verticalCurve(verticalCurve vc1, verticalCurve vc2, CogoStation beginStation, CogoStation endStation)
@@ -1293,6 +1351,11 @@ namespace Cogo
                         return false;
                 }
             }
+
+            public override string ToString()
+            {
+                return $"{this.BeginStation.ToString()},{this.BeginElevation},{this.Length}";
+            }
         }
 
         public static double intersect2SlopesInX(double sta1, double El1, double slope1, double sta2, double El2, double slope2)
@@ -1425,6 +1488,29 @@ namespace Cogo
                                select seg.BeginStation).ToList();
             returnList.Add((CogoStation)this.EndProfTrueStation);
             return returnList;
+        }
+
+        public void WriteToCSV(string outputFileName, bool useTrueStations=false)
+        {
+            using (var writer = new StreamWriter(outputFileName))
+            {
+                if(useTrueStations)
+                {
+                    foreach (var vc in allVCs)
+                    {
+                        string vcString =
+                            $"{vc.BeginStation.trueStation},{vc.BeginElevation},{vc.Length}";
+                        writer.WriteLine(vcString);
+                    }
+                }
+                else
+                {
+                    foreach (var vc in allVCs)
+                    {
+                        writer.WriteLine(vc.ToString());
+                    }
+                }
+            }
         }
     }
 

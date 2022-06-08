@@ -23,7 +23,11 @@ using CadFoundation;
 using System.IO.Compression;
 using CadFoundation.Coordinates.Indexing;
 using Surfaces.TIN.Support;
+using Surfaces.Raster;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Cogo;
+using Cogo.Horizontal;
+using CadFoundation.Coordinates.Curvilinear;
 
 [assembly: InternalsVisibleTo("Unit Tests")]
 
@@ -131,6 +135,15 @@ namespace Surfaces.TIN
             return lasFile.AllPoints.Count;
         }
 
+        public static TINsurface CreateFromGeoTiff(string FilePathToOpen)
+        {
+            var raster = new Raster.Raster(FilePathToOpen);
+            var allPoints = raster.CellsAsPoints().Select(pt => new TINpoint(pt.x, pt.y, pt.z));
+            var returnData = CreateFromPoints(allPoints, FilePathToOpen);
+
+            return returnData;
+        }
+
         public static TINsurface CreateFromLAS(string lidarFileName,
             int skipPoints = 0,
             BoundingBox trimBB = null,
@@ -140,19 +153,30 @@ namespace Surfaces.TIN
             messagePump.BroadcastMessage($"Creating Tin in memory from {lidarFileName}.");
             LasFile lasFile = new LasFile(lidarFileName,
                 classificationFilter: classificationFilter);
+            IEnumerable<TINpoint> lasPoints = lasFile.AllPoints;
+
+            var returnData = CreateFromPoints(lasPoints, lidarFileName, skipPoints);
+
+            messagePump.BroadcastMessage
+                    ($"In {stopwatch.ElapsedMilliseconds / 1000.0:0.000} seconds" +
+                    $"( {stopwatch.ElapsedMilliseconds / 60000.0:0.000} minutes).");
+            return returnData;
+        }
+        protected static TINsurface CreateFromPoints(IEnumerable<TINpoint> pointDataset,
+            string sourceFileName, int skipPoints = 0)
+        { 
             TINsurface returnObject = new TINsurface();
-            returnObject.SourceData = lidarFileName;
+            returnObject.SourceData = sourceFileName;
             int pointCounter = -1;
             int runningPointCount = -1;
             int indexCount = 0;
             var gridIndexer = new Dictionary<Tuple<int, int>, int>();
             returnObject.createAllpointsCollection();
 
-            IEnumerable<TINpoint> lasPoints = lasFile.AllPoints;
-            if (null != trimBB)
-                 lasPoints = lasFile.AllPoints.Where(p => trimBB.isPointInsideBB2d(p));
+            //if (null != trimBB)
+            //     pointDataset = lasFile.AllPoints.Where(p => trimBB.isPointInsideBB2d(p));
 
-            foreach (var point in lasPoints)
+            foreach (var point in pointDataset)
             {
                 pointCounter++;
                 runningPointCount++;
@@ -175,8 +199,7 @@ namespace Surfaces.TIN
             }
 
             setBoundingBox(returnObject);
-            messagePump.BroadcastMessage($"{lasFile.AllPoints.Count:N0} LAS points loaded.");
-            lasFile.ClearAllPoints();  // Because I have them now.
+            messagePump.BroadcastMessage($"{pointCounter:N0} points loaded.");
 
             for (indexCount = 0; indexCount < returnObject.allUsedPoints.Count; indexCount++)
             {
@@ -205,9 +228,6 @@ namespace Surfaces.TIN
             messagePump.BroadcastMessage("Final processing complete. " +
                 $"{returnObject.allTriangles.Count:N0} Triangles, " +
                 $"{returnObject.allLines.Count:N0} Lines.");
-            messagePump.BroadcastMessage
-                ($"In {stopwatch.ElapsedMilliseconds / 1000.0:0.000} seconds" +
-                $"( {stopwatch.ElapsedMilliseconds / 60000.0:0.000} minutes).");
 
             setAffineTransformToZeroCenter(returnObject, false);
             return returnObject;
@@ -1797,6 +1817,64 @@ namespace Surfaces.TIN
                 getSlope(aPoint),
                 getAspect(aPoint)
                 );
+        }
+
+        public Profile getIntersectingProfile(HorizontalAlignment ha)
+        {
+            var returnProfile = new Profile();
+            if (!this.BoundingBox.Overlaps(ha.BoundingBox)) return returnProfile;
+
+            var candidateTriangleLines = this.allLines
+                .Where(L => L.Value.BoundingBox.Overlaps(ha.BoundingBox));
+            var lineCount = candidateTriangleLines.Count();
+
+            var firstStation = ha.BeginStation;
+            var firstCoords = ha.getXYZcoordinates(firstStation);
+            firstCoords.z = (double)this.getElevation(firstCoords);
+
+            var lastStation = ha.BeginStation;
+            var lastCoords = ha.getXYZcoordinates(lastStation);
+            lastCoords.z = (double)this.getElevation(lastCoords);
+
+            var stationList = new List<StationOffsetElevation>();
+            var idxList = new List<int>();
+            int idx = 0;
+            foreach (var segment in ha.ChildSegments)
+            {
+
+                var localTriangleLines = candidateTriangleLines
+                    .Where(L => L.Value.BoundingBox.Overlaps(segment.BoundingBox));
+                foreach(var triangleLine in localTriangleLines)
+                {
+                    idx++;
+                    var intersection = segment.LineIntersectSOE(
+                        triangleLine.Value.firstPoint, triangleLine.Value.secondPoint);
+                    if(null != intersection.point)
+                    {
+                        intersection.soe.elevation = intersection.soe.elevation;
+                        stationList.Add(intersection.soe);
+                    }
+                }
+            }
+
+            stationList = stationList.OrderBy(s => s.elevation.EL).ToList();
+
+            // There are duplicate stations in the list. Can't figure out why.
+            // Remove duplicate stations by keeping the first one encountered
+            var noDuplicatesDict = new Dictionary<int, StationOffsetElevation>();
+            foreach(var soe in stationList)
+            {
+                int key = (int) (10000 * soe.station);
+                if(!noDuplicatesDict.ContainsKey(key))
+                    noDuplicatesDict[key] = soe;
+            }
+
+            stationList = noDuplicatesDict.Values.ToList();
+            returnProfile = new Profile(stationList.OrderBy(s => s.station).ToList());
+            var el1 = returnProfile.getElevation(new CogoStation(100.0));
+            var el2 = returnProfile.getElevation(new CogoStation(300.0));
+
+            return returnProfile;
         }
 
         public void loadFromXYZtextFile(string fileToOpen)

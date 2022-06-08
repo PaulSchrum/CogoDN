@@ -2,7 +2,7 @@
   "profiles": {
     "TinConsole": {
       "commandName": "Project",
-      "workingDirectory": "E:\\NCSU\\Ph D Program\\Comprehensive Exams\\Exams\\01 Findley\\GIS\\Data"
+      "workingDirectory": "E:\\Research\\Datasets\\Hyperbola Analysis"
     }
   }
 }

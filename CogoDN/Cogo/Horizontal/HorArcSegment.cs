@@ -231,7 +231,7 @@ namespace Cogo.Horizontal
             return false;
         }
 
-        internal override (Point point, StationOffsetElevation soe) LineIntersectSOE(
+        public override (Point point, StationOffsetElevation soe) LineIntersectSOE(
                     Point firstPoint, Point secondPoint, double offset = 0d)
         {
             return (null, null);

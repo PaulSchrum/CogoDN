@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace CadFoundation.Coordinates
@@ -21,6 +22,21 @@ namespace CadFoundation.Coordinates
             upperRightPt = new Point(URx, URy, URz);
         }
 
+        public BoundingBox(IEnumerable<BoundingBox> bboxes)
+        {
+            if (bboxes.Count() == 0) return;
+            var firstBB = bboxes.First();
+            lowerLeftPt = new Point(firstBB.lowerLeftPt.x, 
+                firstBB.lowerLeftPt.y, firstBB.lowerLeftPt.z);
+            upperRightPt = new Point(firstBB.upperRightPt.x,
+                firstBB.upperRightPt.y, firstBB.upperRightPt.z);
+
+            foreach(var bb in bboxes.Skip(1))
+            {
+                this.expandByOtherBB(bb);
+            }
+        }
+
         /// <summary>
         /// Returns a duplicate of the bounding box.
         /// </summary>
@@ -36,6 +52,12 @@ namespace CadFoundation.Coordinates
         {
             lowerLeftPt = new Point(aPoint);
             upperRightPt = new Point(aPoint);
+        }
+
+        public void expandByOtherBB(BoundingBox otherBB)
+        {
+            this.expandByPoint(otherBB.lowerLeftPt);
+            this.expandByPoint(otherBB.upperRightPt);
         }
 
         public void expandByPoint(Point aPoint)
