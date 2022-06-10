@@ -7,13 +7,13 @@ namespace Surfaces.Raster
 {
     public class RasterSurface
     {
-        private double cellSize { get; set; }
-        private int numColumns { get; set; }
-        private int numRows { get; set; }
-        private double leftXCoordinate { get; set; }
-        private double bottomYCoordinate { get; set; }
-        private string NoDataValue { get; set; }
-        private double[,] rasterGrid { get; set; }
+        public double cellSize { get; protected set; }
+        public int numColumns { get; protected set; }
+        public int numRows { get; protected set; }
+        public double leftXCoordinate { get; protected set; }
+        public double bottomYCoordinate { get; protected set; }
+        public string NoDataValue { get; protected set; }
+        public double[,] rasterGrid { get; protected set; }
 
         protected RasterSurface()
         {
@@ -59,7 +59,11 @@ namespace Surfaces.Raster
         public void WriteToFile(string PathToWriteTo, string fileName)
         {
             var filePath = PathToWriteTo + "\\" + fileName;
+            WriteToFile(filePath);
+        }
 
+        public void WriteToFile(string filePath)
+        { 
             using (StreamWriter writer = new StreamWriter(filePath))
             {
                 writer.WriteLine("ncols         " + numColumns);
@@ -79,7 +83,8 @@ namespace Surfaces.Raster
                         }
                         else
                         {
-                            writer.Write(rasterGrid[currentRow, currentColumn] + " ");
+                            string outValue = $"{rasterGrid[currentRow, currentColumn]:0.###} ";
+                            writer.Write(outValue);
                         }
                     }
                     writer.WriteLine("");

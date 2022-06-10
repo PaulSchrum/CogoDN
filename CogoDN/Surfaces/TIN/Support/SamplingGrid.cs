@@ -6,6 +6,7 @@ using System.Text;
 using MathNet.Numerics.LinearAlgebra;
 using CadFoundation;
 using System.Threading.Tasks;
+using Surfaces.Raster;
 
 namespace Surfaces.TIN.Support
 {
@@ -82,6 +83,29 @@ namespace Surfaces.TIN.Support
         public TINpoint GetXYofCell(int column, int row)
         {
             return new TINpoint(x[column, row], y[column, row]);
+        }
+
+        public RasterSurface GetAsRaster()
+        {
+            double xMargin = this.x_Spacing / 2.0;
+            var returnRaster = RasterSurface.Zeroes(this.x_Spacing, this.columns, this.rows,
+                myBB.lowerLeftPt.x - xMargin, 
+                myBB.lowerLeftPt.y - xMargin);
+
+            var gridArray = returnRaster.rasterGrid;
+
+            //Parallel.For(0, columns, i =>
+            for (int i = 0; i < columns; i++)
+            {
+                for (int j = 0; j < rows; j++)
+                {
+                    var elev = z[j, i];
+                    gridArray[i, j] = elev;
+                }
+            }
+            //);
+
+            return returnRaster;
         }
     }
 }

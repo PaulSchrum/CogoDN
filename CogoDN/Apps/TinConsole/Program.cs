@@ -170,6 +170,7 @@ namespace TinConsole
 
                 ["histogram"] = ls => histogram(ls),
                 ["set_sample_grid"] = ls => set_sample_grid(ls),
+                ["save_grid_to_raster"] = ls => save_grid_to_raster(ls),
 
                 ["load_alignment"] = ls => load_alignment(ls),
                 ["profile_to_csv"] = ls => profile_to_csv(ls),
@@ -306,8 +307,35 @@ namespace TinConsole
                 return;
 
             mirrorLogPrint("Sample Grid creation in progress.");
-            mainSurface.SetSampleGrid(desiredSamplePointDensity);
+            if(null == mainSurface.samplingGrid)
+                mainSurface.SetSampleGrid(desiredSamplePointDensity);
+            if (null != derivedSurface && null != derivedSurface.samplingGrid)
+                derivedSurface.SetSampleGrid(desiredSamplePointDensity);
             mirrorLogPrint("Sample Grid Created.");
+        }
+
+        private static void save_grid_to_raster(List<string> commandItems)
+        {
+            var outFileName = commandItems[1];
+            var writeFileName = GetCorrectOutputFilename(outFileName);
+
+            if(null == mainSurface)
+            {
+                mirrorLogPrint("Save Grid To Raster: No TIN Surface has been defined yet.");
+                mirrorLogPrint("   No raster has been written.");
+            }
+            var grid = mainSurface.samplingGrid;
+            if (null != derivedSurface && null != derivedSurface.samplingGrid)
+                grid = derivedSurface.samplingGrid;
+
+            mirrorLogPrint("Converting TIN model to Raster.");
+            var tinAsRaster = grid.GetAsRaster();
+            mirrorLogPrint($"Saving Raster as {outFileName}.");
+            tinAsRaster.WriteToFile(writeFileName);
+            if (File.Exists(writeFileName))
+                mirrorLogPrint("Raster file saved.");
+            else
+                mirrorLogPrint("Unable to save raster file.");
         }
 
         /// <summary>

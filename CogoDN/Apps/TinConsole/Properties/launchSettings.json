@@ -2,7 +2,7 @@
   "profiles": {
     "TinConsole": {
       "commandName": "Project",
-      "workingDirectory": "E:\\Research\\Datasets\\Hyperbola Analysis"
+      "workingDirectory": "E:\\Research\\My Papers\\Curvature Weighted Decimation\\Data and charts\\Rasters\\Tuttle"
     }
   }
 }

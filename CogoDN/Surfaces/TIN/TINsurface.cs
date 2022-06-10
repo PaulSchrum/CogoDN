@@ -285,7 +285,7 @@ namespace Surfaces.TIN
             }
         }
 
-        protected SamplingGrid samplingGrid { get; set; } = null;
+        public SamplingGrid samplingGrid { get; protected set; } = null;
         public void SetSampleGrid(double desiredSamplePointDensity)
         {
             if(desiredSamplePointDensity == 0.0)
