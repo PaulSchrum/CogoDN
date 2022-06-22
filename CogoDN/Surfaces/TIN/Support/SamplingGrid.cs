@@ -94,8 +94,8 @@ namespace Surfaces.TIN.Support
 
             var gridArray = returnRaster.rasterGrid;
 
-            //Parallel.For(0, columns, i =>
-            for (int i = 0; i < columns; i++)
+            Parallel.For(0, columns, i =>
+            //for (int i = 0; i < columns; i++)
             {
                 for (int j = 0; j < rows; j++)
                 {
@@ -103,7 +103,7 @@ namespace Surfaces.TIN.Support
                     gridArray[i, j] = elev;
                 }
             }
-            //);
+            );
 
             return returnRaster;
         }
