@@ -1839,9 +1839,9 @@ namespace Surfaces.TIN
             var stationList = new List<StationOffsetElevation>();
             var idxList = new List<int>();
             int idx = 0;
+            double station = 0d;
             foreach (var segment in ha.ChildSegments)
             {
-
                 var localTriangleLines = candidateTriangleLines
                     .Where(L => L.Value.BoundingBox.Overlaps(segment.BoundingBox));
                 foreach(var triangleLine in localTriangleLines)
@@ -1851,13 +1851,13 @@ namespace Surfaces.TIN
                         triangleLine.Value.firstPoint, triangleLine.Value.secondPoint);
                     if(null != intersection.point)
                     {
-                        intersection.soe.elevation = intersection.soe.elevation;
+                        station = intersection.soe.station;
                         stationList.Add(intersection.soe);
                     }
                 }
             }
 
-            stationList = stationList.OrderBy(s => s.elevation.EL).ToList();
+            stationList = stationList.OrderBy(s => s.station).ToList();
 
             // There are duplicate stations in the list. Can't figure out why.
             // Remove duplicate stations by keeping the first one encountered

@@ -134,9 +134,10 @@ namespace Cogo.Horizontal
                 return (null, null);
             }
             
-            var distanceAlongCrossLineToCandidate = (candidatePoint.minus2d(firstPoint)).BaseLength;
-            if (distanceAlongCrossLineToCandidate < 0.0 || 
-                    distanceAlongCrossLineToCandidate > crossLine.Length)
+            var distance1AlongCrossLineToCandidate = (candidatePoint.minus2d(firstPoint)).BaseLength;
+            var distance2AlongCrossLineToCandidate = (candidatePoint.minus2d(secondPoint)).BaseLength;
+            if (distance1AlongCrossLineToCandidate > crossLine.Length || 
+                    distance2AlongCrossLineToCandidate > crossLine.Length)
                 return (null, null);
 
             // Get the station of intersection point.
@@ -147,7 +148,7 @@ namespace Cogo.Horizontal
             var newStation = this.BeginStation + distanceAlongAlignment;
 
             // Get the elevation at the intersection point.
-            var x = distanceAlongCrossLineToCandidate;
+            var x = distance1AlongCrossLineToCandidate;
             var dx = crossLine.Length;
             var dz = crossLine.EndPoint.z - crossLine.BeginPoint.z;
             Slope slope = new Slope(run: dx, rise: dz);

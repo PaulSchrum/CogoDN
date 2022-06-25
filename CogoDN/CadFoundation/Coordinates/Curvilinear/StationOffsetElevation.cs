@@ -50,6 +50,13 @@ namespace CadFoundation.Coordinates.Curvilinear
             return first.station >= second.station;
         }
 
+        public static Vector operator -(StationOffsetElevation first, StationOffsetElevation second)
+        {
+            var dist = first.station - second.station;
+            var elChange = first.elevation - second.elevation;
+            return new Vector(dist, elChange);
+        }
+
         public override string ToString()
         {
             return station.ToString() + " " + offset.ToString() + "  (EL: " + elevation.ToString() + ")";
@@ -59,6 +66,11 @@ namespace CadFoundation.Coordinates.Curvilinear
         {
             var other = obj as StationOffsetElevation;
             return utilFunctions.tolerantCompare(this.station, other.station, tolerance: 0.00005);
+        }
+
+        public static int Subtract(StationOffsetElevation left, StationOffsetElevation right)
+        {
+            throw new NotImplementedException();
         }
     }
 
