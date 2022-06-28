@@ -30,6 +30,7 @@ namespace TinConsole
         static BoundingBox filterBB = null;
 
         static HorizontalAlignment activeAlignment = null;
+        static Cogo.Profile activeGroundProfile = null;
 
         static string StatisticsCsvFile = null;
         static MessageObserver msgObs = new MessageObserver();
@@ -174,6 +175,7 @@ namespace TinConsole
 
                 ["load_alignment"] = ls => load_alignment(ls),
                 ["profile_to_csv"] = ls => profile_to_csv(ls),
+                ["alignment_to_3d_dxf"] = ls => alignment_to_3d_dxf(ls),
             };
 
             Action<List<String>> command = null;
@@ -373,7 +375,7 @@ namespace TinConsole
             }
 
             mirrorLogPrint("Creating profile from intersection of terrain and alignment.");
-            Cogo.Profile groundProfile = mainSurface.getIntersectingProfile(activeAlignment);
+            activeGroundProfile = mainSurface.getIntersectingProfile(activeAlignment);
             var outputCSVfileName = commandItems[1];
             bool useTrueStations = false;
             if(commandItems.Count > 2)
@@ -381,7 +383,7 @@ namespace TinConsole
                 if (commandItems[2].ToLower().Contains("-truestation"))
                     useTrueStations = true;
             }
-            groundProfile.WriteToCSV(outputCSVfileName, useTrueStations);
+            activeGroundProfile.WriteToCSV(outputCSVfileName, useTrueStations);
             mirrorLogPrint($"Created {outputCSVfileName}");
 
         }
@@ -489,6 +491,11 @@ namespace TinConsole
             }
         }
 
+        private static void alignment_to_3d_dxf(List<string> commandItems)
+        {
+            throw new NotImplementedException();
+        }
+
         private static void ToXYZ(List<string> commandItems)
         {
             var outFilename = commandItems.Skip(1).Where(arg => arg.Contains(".xyz")).FirstOrDefault();
@@ -511,7 +518,11 @@ namespace TinConsole
         }
 
 
-
+        /// <summary>
+        /// Output the active TIN surface as a Wavefront Object. Example:
+        /// to_obj "c:\temp folder\my.obj"
+        /// </summary>
+        /// <param name="commandItems"></param>
         private static void to_obj(List<string> commandItems)
         {
             bool shouldZip = commandItems.Skip(1).Where(arg => arg.Equals("-zipped")).Any();
