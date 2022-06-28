@@ -375,7 +375,18 @@ namespace TinConsole
             }
 
             mirrorLogPrint("Creating profile from intersection of terrain and alignment.");
-            activeGroundProfile = mainSurface.getIntersectingProfile(activeAlignment);
+
+            double incrementDistance = 0d;
+            if(commandItems.Count > 2)
+            {
+                var parmString = commandItems.Where(s => s.ToLower().Contains("-inc")).FirstOrDefault();
+                if(null != parmString)
+                {
+                    incrementDistance = Convert.ToDouble(parmString.Split("=")[1]);
+                }
+            }
+
+            activeGroundProfile = mainSurface.getIntersectingProfile(activeAlignment, incrementDistance);
             var outputCSVfileName = commandItems[1];
             bool useTrueStations = false;
             if(commandItems.Count > 2)
@@ -383,6 +394,7 @@ namespace TinConsole
                 if (commandItems[2].ToLower().Contains("-truestation"))
                     useTrueStations = true;
             }
+
             activeGroundProfile.WriteToCSV(outputCSVfileName, useTrueStations);
             mirrorLogPrint($"Created {outputCSVfileName}");
 

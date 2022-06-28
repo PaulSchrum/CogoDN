@@ -1819,8 +1819,31 @@ namespace Surfaces.TIN
                 );
         }
 
-        public Profile getIntersectingProfile(HorizontalAlignment ha)
+        private Profile getIncrementalInterectingProfile(HorizontalAlignment ha, double increment)
         {
+            if (increment <= 0d)
+                throw new NotImplementedException("Generate Profile: Can't generate profile with non-positive increment.");
+
+            if (!this.BoundingBox.Overlaps(ha.BoundingBox)) return null;
+
+            var stationList = new List<StationOffsetElevation>();
+            var allPoints = ha.getXYZcoordinateList(increment);
+            foreach(var soe in allPoints.Keys.OrderBy(k => k))
+            {
+                var coordinates = allPoints[soe];
+                soe.elevation = getElevation(coordinates);
+                stationList.Add(soe);
+            }
+
+            var returnProfile = new Profile(stationList.OrderBy(s => s.station).ToList());
+            return returnProfile;
+        }
+
+        public Profile getIntersectingProfile(HorizontalAlignment ha, double increment=0d)
+        {
+            if (increment > 0d)
+                return getIncrementalInterectingProfile(ha, increment);
+
             var returnProfile = new Profile();
             if (!this.BoundingBox.Overlaps(ha.BoundingBox)) return returnProfile;
 
@@ -1871,8 +1894,6 @@ namespace Surfaces.TIN
 
             stationList = noDuplicatesDict.Values.ToList();
             returnProfile = new Profile(stationList.OrderBy(s => s.station).ToList());
-            var el1 = returnProfile.getElevation(new CogoStation(100.0));
-            var el2 = returnProfile.getElevation(new CogoStation(300.0));
 
             return returnProfile;
         }
