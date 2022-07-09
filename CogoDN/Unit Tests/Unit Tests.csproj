@@ -17,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\CadFoundation\CadFoundation.csproj" />
     <ProjectReference Include="..\Cogo\Cogo.csproj" />
+    <ProjectReference Include="..\NonLinearBestFit\NonLinearBestFit.csproj" />
     <ProjectReference Include="..\Surfaces\Surfaces.csproj" />
   </ItemGroup>
 

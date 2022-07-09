@@ -234,7 +234,7 @@ namespace Unit_Tests
             Assert.AreEqual(expected: 2, actual: PerryCreekAlignments.Count);
             var secondAlignment = PerryCreekAlignments[1];
 
-            Cogo.Profile groundProfile = secondAlignment.ProfileFromSurface(aTin);
+            //Cogo.Profile groundProfile = secondAlignment.ProfileFromSurface(aTin);
         }
 
         private TINsurface aTin = null;

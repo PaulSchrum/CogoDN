@@ -10,6 +10,7 @@ using CadFoundation;
 using CadFoundation.Coordinates.Curvilinear;
 using System.Linq;
 using System.IO;
+using NonLinearBestFit;
 
 namespace Unit_Tests
 {
@@ -1566,6 +1567,95 @@ namespace Unit_Tests
             // Not implemented at this time.
 
         }
+
+        ////////////////////////////////////////////////
+        /// Unit tests and support for Nonlinear Regression
+        ////////////////////////////////////////////////
+
+        private string hyperbolaData1string =
+@"0.000,0.000,
+1.501,-0.246,
+4.501,-1.249,
+7.501,-2.595,
+10.501,-4.122,
+13.501,-5.707,
+16.501,-7.538,
+19.501,-9.365,
+22.501,-11.382,
+25.501,-13.371,
+28.501,-15.471,
+31.501,-17.285,
+34.501,-19.280,
+37.501,-21.221,
+40.501,-23.046,
+43.501,-24.659,
+46.501,-26.261,
+49.501,-27.882,
+52.501,-29.458,
+55.501,-30.959,
+58.501,-32.311,
+";
+
+        List<double[]> HyperbolaData1 = new List<double[]>();
+        Func<double, double, double, double> HyperbolaFunction =
+            (a, aSlope, x) => aSlope * (Math.Sqrt((a * a) + (x * x)) - a);
+
+        bool setupHasBeenCalled = false;
+
+        private void setupLinearRegressionTests()
+        {
+            if (setupHasBeenCalled == true)
+                return;
+
+            var sumpin = hyperbolaData1string.Split(",").Select(t => t.Trim()).ToList();
+            for(int idx=0; idx<sumpin.Count()-1; idx+=2)
+            {
+                string xstr = sumpin[idx];
+                string ystr = sumpin[idx + 1];
+
+                double x = Convert.ToDouble(sumpin[idx]);
+                double y = Convert.ToDouble(sumpin[idx + 1]);
+
+                double[] newArray = new double[2] { x, y };
+                HyperbolaData1.Add(newArray);
+            }
+
+            setupHasBeenCalled = true;
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        [TestMethod]
+        public void NonlinearRegression_Test1()
+        {
+            setupLinearRegressionTests();
+
+            double aGuess = 6.25;
+            double SlopeGuess = -0.678;
+            double errorTolerance = 0.000001;
+            var solver = new NonLinearBestFitter(HyperbolaFunction,
+                HyperbolaData1.Take(15),
+                aGuess, SlopeGuess, errorTolerance);
+            solver.param1PercentRange = solver.param2PercentRange = 0.15;
+            solver.param1Partitions = solver.param2Partitions = 20;
+
+            Double[] bestFit = solver.solve();
+
+            Assert.IsTrue(true);
+        }
+
+        [Ignore]
+        [TestMethod]
+        public void NonlinearRegression_Test2()
+        {
+            var solver = new NonLinearBestFitter(HyperbolaFunction, HyperbolaData1);
+            var values = solver.getValuesOverRange(10d, 10, 0.1);
+            Assert.AreEqual(expected: 10, actual: values.Count);
+            Assert.AreEqual(expected: 9d, values[0], 0.00001);
+            Assert.AreEqual(expected: 9.2d, values[1], 0.00001);
+        }
+
     }
 
 
@@ -1574,6 +1664,7 @@ namespace Unit_Tests
         public Point point { get; set; }
         public Double radius { get; set; }
     }
+
 
 
 }
