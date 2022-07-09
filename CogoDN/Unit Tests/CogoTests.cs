@@ -1633,14 +1633,17 @@ namespace Unit_Tests
 
             double aGuess = 6.25;
             double SlopeGuess = -0.678;
-            double errorTolerance = 0.000001;
-            var solver = new NonLinearBestFitter(HyperbolaFunction,
+            double errorTolerance = 0.001;
+            var solver = new NonLinearGoodFitter(HyperbolaFunction,
                 HyperbolaData1.Take(15),
                 aGuess, SlopeGuess, errorTolerance);
-            solver.param1PercentRange = solver.param2PercentRange = 0.15;
-            solver.param1Partitions = solver.param2Partitions = 20;
+            solver.param1PercentRange = solver.param2PercentRange = 0.75;
+            solver.param1Partitions = solver.param2Partitions = 40;
 
             Double[] bestFit = solver.solve();
+            double a = bestFit[0];
+            double asymptoticSlope = bestFit[1];
+            double aveError = bestFit[2];
 
             Assert.IsTrue(true);
         }
@@ -1649,7 +1652,7 @@ namespace Unit_Tests
         [TestMethod]
         public void NonlinearRegression_Test2()
         {
-            var solver = new NonLinearBestFitter(HyperbolaFunction, HyperbolaData1);
+            var solver = new NonLinearGoodFitter(HyperbolaFunction, HyperbolaData1);
             var values = solver.getValuesOverRange(10d, 10, 0.1);
             Assert.AreEqual(expected: 10, actual: values.Count);
             Assert.AreEqual(expected: 9d, values[0], 0.00001);
