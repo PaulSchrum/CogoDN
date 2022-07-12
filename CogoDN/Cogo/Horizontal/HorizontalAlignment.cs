@@ -10,6 +10,8 @@ using System.Linq;
 using System.Text;
 
 using System.Runtime.CompilerServices;
+using System.Collections.Concurrent;
+
 [assembly: InternalsVisibleTo("Unit Tests")]
 
 namespace Cogo.Horizontal
@@ -219,6 +221,11 @@ namespace Cogo.Horizontal
 
 
             return retAlign;
+        }
+
+        public static ConcurrentBag<HorizontalAlignment> createMultipleFromGeojsonFile(string jsonFileName)
+        {
+            throw new NotImplementedException();
         }
 
 #if (FUTURE_WORK)

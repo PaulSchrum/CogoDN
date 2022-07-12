@@ -10,6 +10,7 @@ using Surfaces.TIN;
 using System.IO;
 using System.Text;
 using Cogo.Horizontal;
+using System.Collections.Concurrent;
 
 namespace TinConsole
 {
@@ -31,6 +32,8 @@ namespace TinConsole
 
         static HorizontalAlignment activeAlignment = null;
         static Cogo.Profile activeGroundProfile = null;
+        static ConcurrentBag<HorizontalAlignment> allHorAlignments =
+            new ConcurrentBag<HorizontalAlignment>();
 
         static string StatisticsCsvFile = null;
         static MessageObserver msgObs = new MessageObserver();
@@ -69,6 +72,7 @@ namespace TinConsole
                 ["save_grid_to_raster"] = ls => save_grid_to_raster(ls),
 
                 ["load_alignment"] = ls => load_alignment(ls),
+                ["load_alignments"] = ls => load_alignments(ls),
                 ["profile_to_csv"] = ls => profile_to_csv(ls),
                 ["alignment_to_3d_dxf"] = ls => alignment_to_3d_dxf(ls),
             };
@@ -358,6 +362,29 @@ namespace TinConsole
                 mirrorLogPrint("Alignment loaded.");
             else
                 mirrorLogPrint("Alignment not loaded.");
+        }
+
+
+        /// <summary>
+        /// Loads all alignments in a given ___ into memory for later use.
+        /// Implemented: ___ = geojson file
+        /// Future: ___ = directory
+        /// </summary>
+        /// <param name="commandItems"></param>
+        private static void load_alignments(List<string> commandItems)
+        {
+            string openFileStr = commandItems[1];
+            if (!File.Exists(openFileStr))
+                openFileStr = pwd.GetPathAndAppendFilename(openFileStr);
+            allHorAlignments = HorizontalAlignment.createMultipleFromGeojsonFile(openFileStr);
+
+            if (allHorAlignments == null)
+                mirrorLogPrint("Alignments not loaded.");
+            else if(allHorAlignments.Count == 0)
+                mirrorLogPrint("Alignments not loaded.");
+            else
+                mirrorLogPrint($"{allHorAlignments.Count} Alignments loaded.");
+
         }
 
         private static void profile_to_csv(List<string> commandItems)
