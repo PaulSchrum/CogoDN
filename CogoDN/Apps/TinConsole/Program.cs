@@ -35,6 +35,43 @@ namespace TinConsole
         static string StatisticsCsvFile = null;
         static MessageObserver msgObs = new MessageObserver();
         static Stopwatch overallSW = new Stopwatch();
+        static Dictionary<string, Action<List<string>>> commands = 
+            new Dictionary<string, Action<List<string>>>
+            {
+                ["exit"] = ls => System.Environment.Exit(0),
+                ["quit"] = ls => System.Environment.Exit(0),
+                ["log"] = ls => SetupLogging(ls),
+                ["set_dir"] = ls => SetDirectories(ls[1]),
+                ["set_outdir"] = ls => SetDirectories(outDr: ls[1]),
+                ["set_bounding_box"] = ls => set_bounding_box(ls),
+                ["point_count"] = ls => point_count(ls),
+                ["load"] = ls => Load(ls),
+                ["load_las"] = ls => Load(ls),
+                ["load_tiff"] = ls => Load_tiff(ls),
+                ["to_las"] = ls => ToLas(ls),
+                ["to_xyz"] = ls => ToXYZ(ls),
+                ["summarize"] = ls => summarize(ls),
+                ["reload"] = ls => reload(ls),
+                ["decimate_multiple"] = ls => decimate_multiple(), // must remove
+                ["performance_test"] = ls => performance_test(ls), // must remove
+                ["output_lines"] = ls => output_lines(ls),
+                ["set_filter"] = ls => set_filter(ls),
+                ["transform_to_zero"] = ls => transform_to_zero(ls),
+                ["points_to_dxf"] = ls => points_to_dxf(ls),
+                ["to_obj"] = ls => to_obj(ls),
+                ["save_stats"] = ls => save_stats(ls),
+                ["decimate_random"] = ls => decimate_random(ls),
+
+                ["decimate"] = ls => decimate(ls),
+
+                ["histogram"] = ls => histogram(ls),
+                ["set_sample_grid"] = ls => set_sample_grid(ls),
+                ["save_grid_to_raster"] = ls => save_grid_to_raster(ls),
+
+                ["load_alignment"] = ls => load_alignment(ls),
+                ["profile_to_csv"] = ls => profile_to_csv(ls),
+                ["alignment_to_3d_dxf"] = ls => alignment_to_3d_dxf(ls),
+            };
 
         static void Main(string[] args)
         {
@@ -141,43 +178,6 @@ namespace TinConsole
         /// </summary>
         private static void repl()
         {
-            var commands = new Dictionary<string, Action<List<string>>>
-            {
-                ["exit"] = ls => System.Environment.Exit(0),
-                ["quit"] = ls => System.Environment.Exit(0),
-                ["log"] = ls => SetupLogging(ls),
-                ["set_dir"] = ls => SetDirectories(ls[1]),
-                ["set_outdir"] = ls => SetDirectories(outDr: ls[1]),
-                ["set_bounding_box"] = ls => set_bounding_box(ls),
-                ["point_count"] = ls => point_count(ls),
-                ["load"] = ls => Load(ls),
-                ["load_las"] = ls => Load(ls),
-                ["load_tiff"] = ls => Load_tiff(ls),
-                ["to_las"] = ls => ToLas(ls),
-                ["to_xyz"] = ls => ToXYZ(ls),
-                ["summarize"] = ls => summarize(ls),
-                ["reload"] = ls => reload(ls),
-                ["decimate_multiple"] = ls => decimate_multiple(), // must remove
-                ["performance_test"] = ls => performance_test(ls), // must remove
-                ["output_lines"] = ls => output_lines(ls),
-                ["set_filter"] = ls => set_filter(ls),
-                ["transform_to_zero"] = ls => transform_to_zero(ls),
-                ["points_to_dxf"] = ls => points_to_dxf(ls),
-                ["to_obj"] = ls => to_obj(ls),
-                ["save_stats"] = ls => save_stats(ls),
-                ["decimate_random"] = ls => decimate_random(ls),
-
-                ["decimate"] = ls => decimate(ls),
-
-                ["histogram"] = ls => histogram(ls),
-                ["set_sample_grid"] = ls => set_sample_grid(ls),
-                ["save_grid_to_raster"] = ls => save_grid_to_raster(ls),
-
-                ["load_alignment"] = ls => load_alignment(ls),
-                ["profile_to_csv"] = ls => profile_to_csv(ls),
-                ["alignment_to_3d_dxf"] = ls => alignment_to_3d_dxf(ls),
-            };
-
             Action<List<String>> command = null;
             List<String> commandLine;
             while (true)
