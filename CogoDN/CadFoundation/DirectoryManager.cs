@@ -212,8 +212,16 @@ namespace CadFoundation
                 Directory.CreateDirectory(this.path);
         }
 
-        public IReadOnlyList<string> ListFiles()
+        public IReadOnlyList<string> ListFiles(bool prependPath = false)
         {
+            if(prependPath)
+            {
+                return (IReadOnlyList<string>)Directory.GetFiles(this.path)
+                    .Select(fn => fn)
+                    .ToList();
+
+            }
+            // else
             return (IReadOnlyList<string>)Directory.GetFiles(this.path)
                 .Select(fn => Path.GetFileName(fn))
                 .ToList();
