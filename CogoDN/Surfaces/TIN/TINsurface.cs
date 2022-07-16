@@ -135,11 +135,45 @@ namespace Surfaces.TIN
             return lasFile.AllPoints.Count;
         }
 
-        public static TINsurface CreateFromGeoTiff(string FilePathToOpen)
+        /// <summary>
+        /// Create a TIN surface model from an ascii format raster (.asc format)
+        /// </summary>
+        /// <param name="FilePathToOpen">.asc file to read</param>
+        /// <returns>a TIN surface</returns>
+        public static TINsurface CreateFromRaster(string FilePathToOpen)
         {
-            var raster = new Raster.Raster(FilePathToOpen);
+            var raster = new Raster.RasterSurface(FilePathToOpen);
             var allPoints = raster.CellsAsPoints().Select(pt => new TINpoint(pt.x, pt.y, pt.z));
             var returnData = CreateFromPoints(allPoints, FilePathToOpen);
+
+            return returnData;
+        }
+
+        /// <summary>
+        /// Load all raster files from the given directory with extension .asc
+        /// </summary>
+        /// <param name="DirectoryToRead">directory to search for .asc files to read</param>
+        /// <param name="bb">Bounding Box within which to read points</param>
+        /// <returns>a TIN surface</returns>
+        public static TINsurface CreateFromRasters(string DirectoryToRead, BoundingBox bb = null)
+        {
+            var filesToRead = DirectoryManager.FromPathString(DirectoryToRead)
+                .ListFiles(prependPath: true)
+                .Where(s => s.EndsWith(".asc"));
+
+            var allPoints = new ConcurrentBag<TINpoint>();
+            //foreach(var raster in rasters)
+            Parallel.ForEach(filesToRead, ftr =>
+            {
+                var raster = new Raster.RasterSurface(ftr);
+                var allPointsThisRaster = raster.CellsAsPoints().Select(pt => new TINpoint(pt.x, pt.y, pt.z))
+                    .Where(pt => BoundingBox.IsPointInsideBB2d(bb, pt))
+                    .Select(pt => pt);
+                foreach (var pt in allPointsThisRaster)
+                    allPoints.Add(pt);
+            } );
+                
+            var returnData = CreateFromPoints(allPoints, DirectoryToRead);
 
             return returnData;
         }
@@ -236,7 +270,7 @@ namespace Surfaces.TIN
         /// <summary>
         /// Decimates a given TINsurface using the Smart Decimation algorithm.
         /// 1. Retain all hull points.
-        /// 2. Retain points associated with lines of high rollover.
+        /// 2. Retain points associated with lines of high dihedral angle.
         /// 3. Retain randomly selected points via score based on curvature and sparsity.
         /// 4. Create a new TINsurface from the retained points.
         /// </summary>
