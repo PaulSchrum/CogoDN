@@ -128,6 +128,12 @@ namespace CadFoundation.Coordinates
         public double Depth { get { return this.upperRightPt.y - this.lowerLeftPt.y; } }
         public double Area { get { return this.Width * this.Depth; } }
 
+        /// <summary>
+        /// 2d bounding box test
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <returns>true if point is inside bb</returns>
         public bool isPointInsideBB2d(Double x, Double y)
         {
             if (x < lowerLeftPt.x)
@@ -185,5 +191,21 @@ namespace CadFoundation.Coordinates
 
             return true;
         }
+
+        /// <summary>
+        /// Bounding Box test which allows for the bb to be null
+        /// </summary>
+        /// <param name="bb"></param>
+        /// <param name="testPoint"></param>
+        /// <returns>true if bb is null or if point is inside the bb.</returns>
+        public static bool IsPointInsideBB2d(BoundingBox bb, Point testPoint)
+        {
+            if (null == bb)
+                return true;
+
+            return bb.isPointInsideBB2d(testPoint);
+        }
+
+
     }
 }
