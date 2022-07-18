@@ -133,6 +133,7 @@ namespace Surfaces.TIN
             }
             foreach (var aTriangle in dissolvedTriangles)
                 aTriangle.HasBeenVisited = false;
+
         }
 
         protected static TextMessagePump messagePump = new TextMessagePump();
@@ -1870,6 +1871,9 @@ namespace Surfaces.TIN
             if (null == aTriangle)
                 return null;
 
+            if (!aTriangle.IsValid)
+                return null;
+
             return aTriangle.givenXYgetSlopePercent(aPoint);
 
         }
@@ -1883,6 +1887,9 @@ namespace Surfaces.TIN
         {
             TINtriangle aTriangle = getTriangleContaining(aPoint);
             if (null == aTriangle)
+                return null;
+
+            if (!aTriangle.IsValid)
                 return null;
 
             return aTriangle.givenXYgetSlopeAzimuth(aPoint);
