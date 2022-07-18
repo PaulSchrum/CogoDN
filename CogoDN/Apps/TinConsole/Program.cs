@@ -34,6 +34,7 @@ namespace TinConsole
         static Cogo.Profile activeGroundProfile = null;
         static ConcurrentBag<HorizontalAlignment> allHorAlignments =
             new ConcurrentBag<HorizontalAlignment>();
+        static BoundingBox allHAsBB = null;
 
         static string StatisticsCsvFile = null;
         static MessageObserver msgObs = new MessageObserver();
@@ -50,7 +51,8 @@ namespace TinConsole
                 ["point_count"] = ls => point_count(ls),
                 ["load"] = ls => Load(ls),
                 ["load_las"] = ls => Load(ls),
-                ["load_tiff"] = ls => Load_tiff(ls),
+                ["load_raster"] = ls => Load_raster(ls),
+                ["load_rasters"] = ls => Load_rasters(ls),
                 ["to_las"] = ls => ToLas(ls),
                 ["to_xyz"] = ls => ToXYZ(ls),
                 ["summarize"] = ls => summarize(ls),
@@ -357,6 +359,15 @@ namespace TinConsole
             if(!File.Exists(openFileStr))
                 openFileStr = pwd.GetPathAndAppendFilename(openFileStr);
             activeAlignment = HorizontalAlignment.createFromCsvFile(openFileStr);
+            if(null == allHorAlignments)
+            {
+                allHorAlignments = new ConcurrentBag<HorizontalAlignment>();
+            }
+
+            if(!allHorAlignments.Contains(activeAlignment))
+            {
+                allHorAlignments.Add(activeAlignment);
+            }
 
             if (activeAlignment != null)
                 mirrorLogPrint("Alignment loaded.");
@@ -656,12 +667,47 @@ namespace TinConsole
                     classificationFilter: classificationFilter);
         }
 
-        private static void Load_tiff(List<string> commandItems)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="commandItems"></param>
+        private static void Load_raster(List<string> commandItems)
         {
             var openFileStr = pwd.GetPathAndAppendFilename(commandItems[1]);
-            mainSurface = TINsurface.CreateFromGeoTiff(openFileStr);
+            mainSurface = TINsurface.CreateFromRaster(openFileStr);
 
         }
+
+        private static void Load_rasters(List<string> commandItems)
+        {
+            var directoryToRead = commandItems[1];
+
+            var trimToBB = false;
+
+            // check to see if Trim parameter passed in commandItems
+            if (commandItems.Count > 2 && commandItems[2].ToLower() == "-bb")
+                trimToBB = true;
+
+            if(trimToBB && allHorAlignments != null)
+            {
+                allHAsBB = allHorAlignments.FirstOrDefault().BoundingBox;
+                foreach (var ha in allHorAlignments.Skip(1))
+                    allHAsBB.expandByOtherBB(ha.BoundingBox);
+            }
+
+            mainSurface = TINsurface.CreateFromRasters(directoryToRead); //, allHAsBB);
+
+            /* Test values for Plot Balsam rasters. * /
+            var el = mainSurface.getElevation(new Point(749150.0, 645500.0));
+            el = mainSurface.getElevation(new Point(750140.66, 644449.64));
+            el = mainSurface.getElevation(new Point(754975.04, 644971.36));
+            el = mainSurface.getElevation(new Point(750428.46, 640353.02));
+            el = mainSurface.getElevation(new Point(753706.71, 641483.01));
+            el = mainSurface.getElevation(new Point(754401.23, 640515.46));
+            el = mainSurface.getElevation(new Point(752501.47, 643149.84));
+            /* end of "Test values for Plot Balsam rasters" */
+        }
+
 
         private static void ToLas(List<string> commandItems)
         {
