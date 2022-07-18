@@ -44,7 +44,7 @@ namespace Surfaces.TIN
         public List<TINpoint> allUnusedPoints { get { return unused_points; } }
         private double decimationRemainingPercent { get; set; }
         public double runSpanMinutes { get; private set; }
-        
+
         private Dictionary<Tuple<int, int>, TINtriangleLine> allLines { get; set; }
             = new Dictionary<Tuple<int, int>, TINtriangleLine>();
         private List<TINtriangle> allTriangles;
@@ -94,6 +94,45 @@ namespace Surfaces.TIN
                         line.theOtherTriangle.IsValid))
                     .ToList();
             }
+        }
+
+        protected void DissolveOuterEdgesByLength(double maxLength)
+        {
+            var dissolvedTriangles = new List<TINtriangle>();
+            var exteriorTriangles = getExteriorTriangles();
+            var tooBigExteriorTriangles = exteriorTriangles
+                .Where(t => t.longestLine.Length2d > maxLength).ToList();
+
+            int myCount = 0;
+            foreach(var shouldDissolveTriangle in tooBigExteriorTriangles)
+            {
+                var trianglesToDissolve = new List<TINtriangle> { shouldDissolveTriangle };
+                while(trianglesToDissolve.Count > 0)
+                {
+                    myCount++;
+                    var nextGenTrianglesToDissolve = new List<TINtriangle>();
+                    foreach(var triangle in trianglesToDissolve)
+                    {
+                        triangle.IsValid = false;
+                        triangle.HasBeenVisited = true;
+                        dissolvedTriangles.Add(triangle);
+                        var nextGenTriangles = triangle
+                            .myLines.Where(L => L.Length2d > maxLength)
+                            .Where(L => 
+                            {
+                                var other = L.GetOtherTriangle(triangle);
+                                return other != null && !other.HasBeenVisited;
+                            }
+                            )
+                            .Select(L => L.GetOtherTriangle(triangle));
+                        nextGenTrianglesToDissolve.AddRange(nextGenTriangles);
+                    }
+                    trianglesToDissolve = nextGenTrianglesToDissolve;
+                    nextGenTrianglesToDissolve = null;
+                }
+            }
+            foreach (var aTriangle in dissolvedTriangles)
+                aTriangle.HasBeenVisited = false;
         }
 
         protected static TextMessagePump messagePump = new TextMessagePump();
@@ -161,21 +200,27 @@ namespace Surfaces.TIN
                 .ListFiles(prependPath: true)
                 .Where(s => s.EndsWith(".asc"));
 
+            ConcurrentBag<double> maxLengths = new ConcurrentBag<double>();
             var allPoints = new ConcurrentBag<TINpoint>();
-            //foreach(var raster in rasters)
+            //foreach(var ftr in filesToRead)
             Parallel.ForEach(filesToRead, ftr =>
             {
                 var raster = new Raster.RasterSurface(ftr);
-                var allPointsThisRaster = raster.CellsAsPoints().Select(pt => new TINpoint(pt.x, pt.y, pt.z))
+                maxLengths.Add(raster.cellSize);
+                messagePump.BroadcastMessage($"Raster loaded: {ftr}");
+                var allPointsThisRaster = raster.CellsAsPoints()
+                    .Select(pt => new TINpoint(pt.x, pt.y, pt.z))
                     .Where(pt => BoundingBox.IsPointInsideBB2d(bb, pt))
                     .Select(pt => pt);
                 foreach (var pt in allPointsThisRaster)
                     allPoints.Add(pt);
             } );
-                
-            var returnData = CreateFromPoints(allPoints, DirectoryToRead);
 
-            return returnData;
+            double maxCellSize = maxLengths.Max();
+            var returnTinSurface = CreateFromPoints(allPoints, DirectoryToRead);
+            returnTinSurface.DissolveOuterEdgesByLength(1.8 * maxCellSize);
+
+            return returnTinSurface;
         }
 
         public static TINsurface CreateFromLAS(string lidarFileName,
@@ -233,7 +278,7 @@ namespace Surfaces.TIN
             }
 
             setBoundingBox(returnObject);
-            messagePump.BroadcastMessage($"{pointCounter:N0} points loaded.");
+            messagePump.BroadcastMessage($"{(pointCounter + 1):N0} points loaded.");
 
             for (indexCount = 0; indexCount < returnObject.allUsedPoints.Count; indexCount++)
             {
@@ -1113,6 +1158,7 @@ namespace Surfaces.TIN
         internal void pruneTinHull(double maxInternalAngle = 157.0,
             double maxSlopeDegrees = 79.5, double maxLineCrossSlopeChange=175.0)
         {
+            int dissolvedTrianglesCount = 0;
             var markNotValided = this.getExteriorTriangles()
                 .Where(tr => tr.shouldRemove()).ToList();
 
@@ -1136,6 +1182,7 @@ namespace Surfaces.TIN
                     if(aTri.shouldRemove())
                     {
                         aTri.IsValid = false;
+                        dissolvedTrianglesCount++;
                         var nextTriangles = aTri.myLines
                             .Where(Line => Line.GetOtherTriangle(aTri) != null)
                             .Select(Line => Line.GetOtherTriangle(aTri))
@@ -1153,6 +1200,7 @@ namespace Surfaces.TIN
             foreach (var triangle in visitedList)
                 triangle.HasBeenVisited = false;
 
+            messagePump.BroadcastMessage($"   {dissolvedTrianglesCount:N0} hull triangles pruned.");
         }
 
         internal void WriteTinToDxf(string outFile)
@@ -1802,6 +1850,9 @@ namespace Surfaces.TIN
         {
             TINtriangle aTriangle = getTriangleContaining(aPoint);
             if (null == aTriangle)
+                return null;
+
+            if (!aTriangle.IsValid)
                 return null;
 
             return aTriangle.givenXYgetZ(aPoint);

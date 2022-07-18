@@ -246,6 +246,24 @@ namespace Surfaces.TIN
             }
         }
 
+        private TINtriangleLine longestLine_ = null;
+        public TINtriangleLine longestLine
+        {
+            get
+            {
+                if(null == longestLine_)
+                {
+                    longestLine_ = myLine1;
+                    if (myLine2.Length2d > longestLine_.Length2d)
+                        longestLine_ = myLine2;
+                    if (myLine3.Length2d > longestLine_.Length2d)
+                        longestLine_ = myLine3;
+                }
+
+                return longestLine_;
+            }
+        }
+
         public bool IsPointAVertex(TINpoint aPoint)
         {
             return this.myPoints.Where(p => p.myIndex == aPoint.myIndex).Any();
@@ -359,22 +377,26 @@ namespace Surfaces.TIN
 
         internal static double triangleInternalAngleThreshold = 157.0;
         internal static double slopeThreshold = 79.5; // degrees.
-        internal bool shouldRemove()
+        internal bool shouldRemove(Func<TINtriangle, bool> evaluationFunc = null)
         {
-            var normalTheta = this.normalVec.Theta.getAsDegreesDouble();
-            if (normalTheta > slopeThreshold)
-                return true;
-            // if max interior angle > threshold, true
-            var maxInteriorAngle =
-                Math.Max(this.angle1Proj, Math.Max(this.angle2Proj, this.angle3Proj));
-            if (maxInteriorAngle > triangleInternalAngleThreshold)
-                return true;
+            if(null == evaluationFunc)
+            {
+                var normalTheta = this.normalVec.Theta.getAsDegreesDouble();
+                if (normalTheta > slopeThreshold)
+                    return true;
+                // if max interior angle > threshold, true
+                var maxInteriorAngle =
+                    Math.Max(this.angle1Proj, Math.Max(this.angle2Proj, this.angle3Proj));
+                if (maxInteriorAngle > triangleInternalAngleThreshold)
+                    return true;
 
-            var maxXslope = lines.Select(Line => Line.DihedralAngleAsRad).OrderBy(x => x).Last();
-            if (maxXslope > 3.0)
-                return true;
+                var maxXslope = lines.Select(Line => Line.DihedralAngleAsRad).OrderBy(x => x).Last();
+                if (maxXslope > 3.0)
+                    return true;
 
-            return false;
+                return false;
+            }
+            return evaluationFunc(this);
         }
 
         private bool includesPointByGridCoord(int xInt, int yInt, int? zInt = null)
@@ -392,6 +414,11 @@ namespace Surfaces.TIN
                 return true;
 
             return false;
+        }
+
+        internal IEnumerable<TINtriangleLine> linesLongerthan(double minLength)
+        {
+            return lines.Where(L => L.Length2d > minLength);
         }
 
         public static long callDepth = 0;

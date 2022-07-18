@@ -92,7 +92,7 @@ namespace Surfaces.TIN.Support
                 myBB.lowerLeftPt.x - xMargin, 
                 myBB.lowerLeftPt.y - xMargin);
 
-            var gridArray = returnRaster.rasterGrid;
+            var gridArray = returnRaster.cellArray;
 
             Parallel.For(0, columns, i =>
             //for (int i = 0; i < columns; i++)
