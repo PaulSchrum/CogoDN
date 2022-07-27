@@ -172,10 +172,24 @@ namespace CadFoundation
         /// <returns>True if the subElement exists. False otherwise.</returns>
         public bool ConfirmExists(string subElement)
         {
-            var itemName = subElement.Split(delim).LastOrDefault();
-            if (ListFiles().Contains(itemName))
-                return true;
-            return this.ListSubDirectories.Contains(itemName);
+            var fullPath = System.IO.Path.GetFullPath(subElement);
+            if(fullPath.Contains(":"))
+            {
+                string tmpDirectory = Path.GetDirectoryName(fullPath);
+                var filesInDir = new List<string>(Directory.GetFiles(tmpDirectory));
+                filesInDir = filesInDir.Select(fn => fn.Split("\\").Last()).ToList();
+                string fileName = Path.GetFileName(fullPath);
+                var returnValue = filesInDir.Contains(fileName);
+                return filesInDir.Contains(fileName);
+            }
+            else
+            {
+                var itemName = subElement.Split(delim).LastOrDefault();
+                if (ListFiles().Contains(itemName))
+                    return true;
+                return this.ListSubDirectories.Contains(itemName);
+            }
+            return false;
         }
 
         public bool DeleteFile(string filename)
