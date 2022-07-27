@@ -4,6 +4,10 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <StartupObject>TinConsole.Program</StartupObject>
+    <Authors>Paul Schrum</Authors>
+    <Company>None</Company>
+    <Product>CogoDN-TINconsole</Product>
+    <Description>A command line application to work with TIN models for working with terrains.</Description>
   </PropertyGroup>
 
   <ItemGroup>
