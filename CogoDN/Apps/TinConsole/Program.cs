@@ -20,6 +20,7 @@ namespace TinConsole
         static DirectoryManager pwd = DirectoryManager.FromPwd();
         static DirectoryManager outDir = pwd;
         static string commandFileName = "TinConsoleCommands.txt";
+        static string replPrompt = "TinConsole REPL > ";
         static Queue<string> commandList = new Queue<string>();
         static string logFileName = "TinDN Processing Log.log";
         static StreamWriter logFile = null;
@@ -57,6 +58,8 @@ namespace TinConsole
                 ["to_xyz"] = ls => ToXYZ(ls),
                 ["summarize"] = ls => summarize(ls),
                 ["reload"] = ls => reload(ls),
+                ["repl"] = ls => repl_cmd(ls),
+                ["print"] = ls => print(ls),
                 ["decimate_multiple"] = ls => decimate_multiple(), // must remove
                 ["performance_test"] = ls => performance_test(ls), // must remove
                 ["output_lines"] = ls => output_lines(ls),
@@ -121,6 +124,20 @@ namespace TinConsole
                 }
 
                 repl();
+
+                Environment.Exit(0);
+            }
+
+            if (args.Length > 0)
+            {
+                commandFileName = args[0];
+                if (pwd.ConfirmExists(commandFileName))
+                {
+                    var fileToRead = pwd.GetPathAndAppendFilename(commandFileName);
+                    commandList = new Queue<string>(File.ReadAllLines(fileToRead));
+                    mirrorLogPrint($"Loaded commands from {fileToRead}.");
+                    repl();
+                }
 
                 Environment.Exit(0);
             }
@@ -200,7 +217,7 @@ namespace TinConsole
                 }
                 else
                 {
-                    System.Console.Write("> ");
+                    System.Console.Write(replPrompt);
                     commandLine = parseLine(Console.ReadLine());
                 }
                 try
@@ -213,6 +230,10 @@ namespace TinConsole
                         .WriteLine($"{commandLine[0]}: command not found");
 
                     continue;
+                }
+                catch (ArgumentOutOfRangeException aoore)
+                {
+                    System.Environment.Exit(0);
                 }
                 command(commandLine);
             }
@@ -695,7 +716,7 @@ namespace TinConsole
                     allHAsBB.expandByOtherBB(ha.BoundingBox);
             }
 
-            mainSurface = TINsurface.CreateFromRasters(directoryToRead); //, allHAsBB);
+            mainSurface = TINsurface.CreateFromRasters(directoryToRead, allHAsBB);
 
             /* Test values for Plot Balsam rasters. * /
             var el = mainSurface.getElevation(new Point(749150.0, 645500.0));
@@ -730,6 +751,19 @@ namespace TinConsole
             }
 
             sourceSurface.ExportToLas(outFileName, mainSurface);
+        }
+
+        private static void repl_cmd(List<string> commandItems)
+        {
+            repl();
+        }
+
+        private static void print(List<string> commandItems)
+        {
+            foreach (var item in commandItems.Skip(1))
+            {
+                mirrorLogPrint(item);
+            }
         }
 
         private static void SetupLogging(List<string> commandItems)
