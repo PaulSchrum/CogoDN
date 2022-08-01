@@ -60,6 +60,12 @@ namespace CadFoundation.Coordinates
             this.expandByPoint(otherBB.upperRightPt);
         }
 
+        public void ExpandByMargin(double margin)
+        {
+            lowerLeftPt = new Point(lowerLeftPt.x - margin, lowerLeftPt.y - margin);
+            upperRightPt = new Point(upperRightPt.x + margin, upperRightPt.y + margin);
+        }
+
         public void expandByPoint(Point aPoint)
         {
             expandByPoint(aPoint.x, aPoint.y, aPoint.z);

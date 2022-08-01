@@ -411,14 +411,78 @@ namespace TinConsole
             allHorAlignments = HorizontalAlignment.createMultipleFromGeojsonFile(openFileStr);
 
             if (allHorAlignments == null)
+            {
                 mirrorLogPrint("Alignments not loaded.");
+                return;
+            }
             else if(allHorAlignments.Count == 0)
+            {
                 mirrorLogPrint("Alignments not loaded.");
+                return;
+            }
             else
                 mirrorLogPrint($"{allHorAlignments.Count} Alignments loaded.");
 
+            if (commandItems.Count > 2)
+            {
+                if(commandItems.Skip(2).Contains("-list"))
+                {
+                    foreach(var alignment in allHorAlignments.OrderBy(a => a.Name))
+                    {
+                        mirrorLogPrint($"{alignment.Name}");
+                    }
+                }
+            }
+
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="commandItems"></param>
+        private static void profiles_to_csvs(List<string> commandItems)
+        {
+            if (null == mainSurface)
+            {
+                mirrorLogPrint("Unable to create profile as no surface has been loaded.");
+                return;
+            }
+
+            if (null == activeAlignment)
+            {
+                mirrorLogPrint("Unable to create profile as no alignment has been loaded.");
+                return;
+            }
+
+            mirrorLogPrint("Creating profile from intersection of terrain and alignment.");
+
+            double incrementDistance = 0d;
+            if (commandItems.Count > 2)
+            {
+                var parmString = commandItems.Where(s => s.ToLower().Contains("-inc")).FirstOrDefault();
+                if (null != parmString)
+                {
+                    incrementDistance = Convert.ToDouble(parmString.Split("=")[1]);
+                }
+            }
+            // code here.
+            activeGroundProfile = mainSurface.getIntersectingProfile(activeAlignment, incrementDistance);
+            var outputCSVfileName = commandItems[1];
+            bool useTrueStations = false;
+            if (commandItems.Count > 2)
+            {
+                if (commandItems[2].ToLower().Contains("-truestation"))
+                    useTrueStations = true;
+            }
+
+            activeGroundProfile.WriteToCSV(outputCSVfileName, useTrueStations);
+            mirrorLogPrint($"Created {outputCSVfileName}");
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="commandItems"></param>
         private static void profile_to_csv(List<string> commandItems)
         {
             if (null == mainSurface)
@@ -677,7 +741,7 @@ namespace TinConsole
 
         private static void Load(List<string> commandItems)
         {
-            var openFileStr = pwd.GetPathAndAppendFilename(commandItems[1]);
+            var openFileStr = pwd.PrependPWDifNotAlreadyFullPath(commandItems[1]);
             if(null == filterBB)
                 mainSurface = TINsurface.CreateFromLAS(openFileStr,
                 classificationFilter: classificationFilter);

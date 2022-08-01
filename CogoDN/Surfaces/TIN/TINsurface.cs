@@ -195,27 +195,42 @@ namespace Surfaces.TIN
         /// <param name="DirectoryToRead">directory to search for .asc files to read</param>
         /// <param name="bb">Bounding Box within which to read points</param>
         /// <returns>a TIN surface</returns>
-        public static TINsurface CreateFromRasters(string DirectoryToRead, BoundingBox bb = null)
+        public static TINsurface CreateFromRasters(string DirectoryToRead, BoundingBox trimToBB = null)
         {
             var filesToRead = DirectoryManager.FromPathString(DirectoryToRead)
                 .ListFiles(prependPath: true)
                 .Where(s => s.EndsWith(".asc"));
+            var filesActuallyRead = new ConcurrentBag<string>();
+
+            // Add a margin to the bounding box so profiles don't get cut off at the ends.
+            if(null != trimToBB)
+            {
+                double margin = RasterSurface.peakCellSize(filesToRead.FirstOrDefault());
+                trimToBB = trimToBB.Duplicate();
+                trimToBB.ExpandByMargin(margin);
+            }
 
             ConcurrentBag<double> maxLengths = new ConcurrentBag<double>();
             var allPoints = new ConcurrentBag<TINpoint>();
-            //foreach(var ftr in filesToRead)
-            Parallel.ForEach(filesToRead, ftr =>
+            foreach(var ftr in filesToRead)
+            //Parallel.ForEach(filesToRead, ftr =>
             {
+                var rasterBB = RasterSurface.GetRasterBoundingBox(ftr);
+                if (!rasterBB.Overlaps(trimToBB))
+                    continue;
+                    //return;
+
                 var raster = new Raster.RasterSurface(ftr);
+                filesActuallyRead.Add(ftr);
                 maxLengths.Add(raster.cellSize);
                 messagePump.BroadcastMessage($"Raster loaded: {ftr}");
                 var allPointsThisRaster = raster.CellsAsPoints()
                     .Select(pt => new TINpoint(pt.x, pt.y, pt.z))
-                    .Where(pt => BoundingBox.IsPointInsideBB2d(bb, pt))
+                    .Where(pt => BoundingBox.IsPointInsideBB2d(trimToBB, pt))
                     .Select(pt => pt);
                 foreach (var pt in allPointsThisRaster)
                     allPoints.Add(pt);
-            } );
+            } //);
 
             double maxCellSize = maxLengths.Max();
             var returnTinSurface = CreateFromPoints(allPoints, DirectoryToRead);
