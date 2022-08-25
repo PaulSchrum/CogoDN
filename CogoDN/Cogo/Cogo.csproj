@@ -5,7 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="netDxf.netstandard" Version="2.3.0" />
+    <PackageReference Include="netDxf.netstandard" Version="2.4.0" />
+    <PackageReference Include="PdfSharpCore" Version="1.3.32" />
   </ItemGroup>
 
   <ItemGroup>

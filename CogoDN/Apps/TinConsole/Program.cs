@@ -11,6 +11,7 @@ using System.IO;
 using System.Text;
 using Cogo.Horizontal;
 using System.Collections.Concurrent;
+using Cogo.Plotting;
 
 namespace TinConsole
 {
@@ -60,26 +61,29 @@ namespace TinConsole
                 ["reload"] = ls => reload(ls),
                 ["repl"] = ls => repl_cmd(ls),
                 ["print"] = ls => print(ls),
-                ["decimate_multiple"] = ls => decimate_multiple(), // must remove
-                ["performance_test"] = ls => performance_test(ls), // must remove
+                ["decimate_multiple"] = ls => decimate_multiple(), // must remove  // undocumented
+                ["performance_test"] = ls => performance_test(ls), // must remove  // undocumented
                 ["output_lines"] = ls => output_lines(ls),
                 ["set_filter"] = ls => set_filter(ls),
                 ["transform_to_zero"] = ls => transform_to_zero(ls),
                 ["points_to_dxf"] = ls => points_to_dxf(ls),
                 ["to_obj"] = ls => to_obj(ls),
-                ["save_stats"] = ls => save_stats(ls),
-                ["decimate_random"] = ls => decimate_random(ls),
+                ["save_stats"] = ls => save_stats(ls), // undocumented
+                ["decimate_random"] = ls => decimate_random(ls), // undocumented
 
                 ["decimate"] = ls => decimate(ls),
 
-                ["histogram"] = ls => histogram(ls),
+                ["histogram"] = ls => histogram(ls), // undocumented
                 ["set_sample_grid"] = ls => set_sample_grid(ls),
                 ["save_grid_to_raster"] = ls => save_grid_to_raster(ls),
 
+                ["polyline_to_geojson"] = ls => polyline_to_geojson(ls),
                 ["load_alignment"] = ls => load_alignment(ls),
                 ["load_alignments"] = ls => load_alignments(ls),
                 ["profile_to_csv"] = ls => profile_to_csv(ls),
-                ["alignment_to_3d_dxf"] = ls => alignment_to_3d_dxf(ls),
+                ["profiles_to_csvs"] = ls => profiles_to_csvs(ls),
+                ["plot_csv"] = ls => plot_csv(ls),
+                ["alignment_to_3d_dxf"] = ls => alignment_to_3d_dxf(ls), // undocumented
             };
 
         static void Main(string[] args)
@@ -367,6 +371,11 @@ namespace TinConsole
                 mirrorLogPrint("Unable to save raster file.");
         }
 
+        private static void polyline_to_geojson(List<string> commandItems)
+        {
+            mirrorLogPrint("The command polyline_to_geojson has not been implemented yet.");
+        }
+
         /// <summary>
         /// Loads a horizontal alignment into memory for use in working with the terrain
         /// surface.
@@ -442,19 +451,14 @@ namespace TinConsole
         /// <param name="commandItems"></param>
         private static void profiles_to_csvs(List<string> commandItems)
         {
+            var aSurface = mainSurface;
             if (null == mainSurface)
             {
                 mirrorLogPrint("Unable to create profile as no surface has been loaded.");
                 return;
             }
-
-            if (null == activeAlignment)
-            {
-                mirrorLogPrint("Unable to create profile as no alignment has been loaded.");
-                return;
-            }
-
-            mirrorLogPrint("Creating profile from intersection of terrain and alignment.");
+            if (derivedSurface != null)
+                aSurface = derivedSurface;
 
             double incrementDistance = 0d;
             if (commandItems.Count > 2)
@@ -465,18 +469,73 @@ namespace TinConsole
                     incrementDistance = Convert.ToDouble(parmString.Split("=")[1]);
                 }
             }
+            // Technical debt: Unimplemented: If a derived (decimated) surface exists, use that for
+            //      for the intersecting surface.
             // code here.
-            activeGroundProfile = mainSurface.getIntersectingProfile(activeAlignment, incrementDistance);
-            var outputCSVfileName = commandItems[1];
+
             bool useTrueStations = false;
-            if (commandItems.Count > 2)
+            int trueStationIndex = commandItems.FirstIndexMatchLeft("-truestation");
+            if (trueStationIndex > 0)
+                useTrueStations = true;
+
+            if (null == allHorAlignments)
             {
-                if (commandItems[2].ToLower().Contains("-truestation"))
-                    useTrueStations = true;
+                mirrorLogPrint("Unable to create profile as no alignments have been loaded.");
+                return;
             }
 
-            activeGroundProfile.WriteToCSV(outputCSVfileName, useTrueStations);
-            mirrorLogPrint($"Created {outputCSVfileName}");
+            foreach(var anAlignment in allHorAlignments)
+            {
+                mirrorLogPrint(
+                    $"Creating profile from intersection of terrain and alignment {anAlignment.Name}.");
+
+                try
+                {
+                    activeGroundProfile = aSurface.getIntersectingProfile(anAlignment, incrementDistance);
+                }
+                catch(ArgumentOutOfRangeException e)
+                {
+                    mirrorLogPrint(
+                        $"   Unable to create profile from intersection of terrain and alignment {anAlignment.Name}.");
+                    continue;
+                }
+                string nameInfix = string.Empty;
+                int infixIndex = commandItems.FirstIndexMatchLeft("-nameInfix");
+                if (infixIndex > 0)
+                {
+                    string infixValue = commandItems[infixIndex].Split("=")[1];
+                    nameInfix = " " + infixValue;
+                }
+
+                var outputCSVfileName = anAlignment.Name + nameInfix + " pfl.csv";
+
+                activeGroundProfile.WriteToCSV(outputCSVfileName, useTrueStations);
+                mirrorLogPrint($"   Created {outputCSVfileName}");
+            }
+        }
+
+        private static void plot_csv(List<string> commandItems)
+        {
+            var csvInputFile = "";
+            var parmString = commandItems.Where(s => s.ToLower().Contains(".csv")).FirstOrDefault();
+            if (null != parmString)
+            {
+                csvInputFile =parmString;
+            }
+            csvInputFile = GetCorrectOutputFilename(csvInputFile);
+
+            var pdfFileName = "";
+            parmString = commandItems.Where(s => s.ToLower().Contains(".pdf")).FirstOrDefault();
+            if (null != parmString)
+            {
+                pdfFileName = parmString;
+            }
+            pdfFileName = GetCorrectOutputFilename(pdfFileName);
+
+            var profileToPlot = Cogo.Profile.LoadFromCsv(csvInputFile);
+
+            PDFplotting.CreateSheetFromProfiles(pdfFileName);
+            mirrorLogPrint($"Create file {pdfFileName}.");
         }
 
         /// <summary>
@@ -1047,6 +1106,25 @@ namespace TinConsole
             double x = random.NextDouble(bb.lowerLeftPt.x, bb.upperRightPt.x);
             double y = random.NextDouble(bb.lowerLeftPt.y, bb.upperRightPt.y);
             return new Surfaces.TIN.TINpoint(x, y);
+        }
+
+        public static int FirstIndexMatchLeft(this IEnumerable<string> items, string matchString=null)
+        { // adapted from https://stackoverflow.com/a/4075382/1339950
+            if (null == matchString) return -1;
+            var strLen = matchString.Length;
+            matchString = matchString.ToLower();
+
+            var index = 0;
+            foreach (var item in items)
+            {
+                var testString = item.Substring(0, strLen);
+                if (testString.ToLower() == matchString)
+                {
+                    return index;
+                }
+                index++;
+            }
+            return -1;
         }
     }
 
