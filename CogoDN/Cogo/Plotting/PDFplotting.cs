@@ -26,6 +26,16 @@ namespace Cogo.Plotting
             var letter = pageSizes[24];
 
             gfx.DrawString("Hi.", font, XBrushes.Black, 72, 72*2);
+            XPen pen = new XPen(XColors.DarkSeaGreen, 6);
+            pen.LineCap = XLineCap.Round;
+            pen.LineJoin = XLineJoin.Bevel;
+            XPoint[] points = new XPoint[]
+            {
+                new XPoint(20, 30), new XPoint(60, 120),
+                new XPoint(90, 20), new XPoint(170, 90),
+                new XPoint(230, 40)
+            };
+            gfx.DrawLines(pen, points);
             
             document.Save(pdfFileName);
         }

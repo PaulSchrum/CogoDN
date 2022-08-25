@@ -9,6 +9,6 @@ namespace Cogo.Plotting
     public abstract class Sheet : BoundingBox
     {
         protected Margins Margins { get; set; }
-        protected PlotArea PlotArea { get; private set; }
+dddddd        //protected PlotArea PlotArea { get; private set; }
     }
 }
