@@ -197,6 +197,106 @@ namespace Surfaces.Raster
 
             return newRaster;
         }
+
+        public static double peakCellSize(string PathToOpen)
+        {
+            double cellSize = 0d;
+            using (StreamReader sr = new StreamReader(PathToOpen))
+            {
+                int rowCount = 0;
+                while (rowCount < 6)
+                {
+                    var lineArray = sr.ReadLine().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    switch (lineArray[0])
+                    {
+                        case "cellsize":
+                            {
+                                cellSize = Convert.ToDouble(lineArray[1]);
+                                rowCount++;
+                                break;
+                            }
+                        default:
+                            rowCount++;
+                            break;
+                    }
+                }
+
+            }
+
+            return cellSize;
+        }
+        public static BoundingBox GetRasterBoundingBox(string PathToOpen)
+        {
+            int numColumns = 0;
+            int numRows = 0;
+            double leftXCoordinate = 0d;
+            double bottomYCoordinate = 0d;
+            double cellSize = 0d;
+            string NoDataValue = String.Empty;
+
+            using (StreamReader sr = new StreamReader(PathToOpen))
+            {
+                int rowCount = 0;
+                while (rowCount < 6)
+                {
+                    var lineArray = sr.ReadLine().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    switch (lineArray[0])
+                    {
+                        case "ncols":
+                            {
+                                numColumns = Convert.ToInt32(lineArray[1]);
+                                rowCount++;
+                                break;
+                            }
+                        case "nrows":
+                            {
+                                numRows = Convert.ToInt32(lineArray[1]);
+                                rowCount++;
+                                break;
+                            }
+                        case "xllcorner":
+                            {
+                                leftXCoordinate = Convert.ToDouble(lineArray[1]);
+                                rowCount++;
+                                break;
+                            }
+                        case "yllcorner":
+                            {
+                                bottomYCoordinate = Convert.ToDouble(lineArray[1]);
+                                rowCount++;
+                                break;
+                            }
+                        case "cellsize":
+                            {
+                                cellSize = Convert.ToDouble(lineArray[1]);
+                                rowCount++;
+                                break;
+                            }
+                        case "NODATA_value":
+                            {
+                                NoDataValue = lineArray[1];
+                                rowCount++;
+                                break;
+                            }
+                        default:
+                            break;
+                    }
+                }
+
+                double topYCoordinate = bottomYCoordinate + cellSize * numRows;
+                double rightXCoordiante = leftXCoordinate + cellSize * numColumns;
+
+                // contract each by half-cell size
+                double halfCell = cellSize / 2d;
+                leftXCoordinate += halfCell;
+                rightXCoordiante -= halfCell;
+                bottomYCoordinate += halfCell;
+                topYCoordinate -= halfCell;
+
+                return new BoundingBox(
+                    leftXCoordinate, bottomYCoordinate, rightXCoordiante, topYCoordinate);
+            }
+        }
     }
 
 }
