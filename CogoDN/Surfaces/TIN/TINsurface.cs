@@ -344,7 +344,7 @@ namespace Surfaces.TIN
             double dihedral_CurvatureSplit=0.50)
         {
             messagePump.BroadcastMessage(
-                $"Smart Decimation to {decimationRemainingPercent * 100.0:F2}% -- Started.");
+                $"Curvature Weighted Decimation to {decimationRemainingPercent * 100.0:F2}% -- Started.");
             return CreateByReductionAlgorithm(sourceSurface, decimationRemainingPercent,
                 computeLikelihoodsSmart, dihedral_CurvatureSplit);
         }
