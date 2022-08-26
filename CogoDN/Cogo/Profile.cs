@@ -1512,6 +1512,40 @@ namespace Cogo
                 }
             }
         }
+
+        public static Profile LoadFromCsv(string inputFileName, int skipLines=0)
+        {
+            // using some ideas found at
+            // https://www.code4example.com/csharp/csharp-console-application/how-to-read-csv-file-in-c/
+
+            int stationIndex = 0;
+            int elevationIndex = 1;
+            int vcIndex = 2;
+            var allLines = File.ReadAllLines(inputFileName)
+                .Select(aLine => aLine.Split(","))
+                .ToList();
+
+            double station, elevation, vcLength = 0d;
+            vpiList aVpiList = new vpiList();
+            foreach(var item in allLines)
+            {
+                try
+                {
+                    station = Convert.ToDouble(item[0]);
+                    elevation = Convert.ToDouble(item[1]);
+                    if(item.Length > 2)
+                        vcLength = Convert.ToDouble(item[2]);
+                }
+                catch(Exception e)
+                {
+                    continue;
+                }
+                aVpiList.add(station, elevation, vcLength);
+            }
+
+
+            return new Profile(aVpiList);
+        }
     }
 
     /// <summary>
