@@ -225,6 +225,7 @@ namespace Surfaces.Raster
 
             return cellSize;
         }
+
         public static BoundingBox GetRasterBoundingBox(string PathToOpen)
         {
             int numColumns = 0;
