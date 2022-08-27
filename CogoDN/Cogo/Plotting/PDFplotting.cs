@@ -26,7 +26,7 @@ namespace Cogo.Plotting
             var letter = pageSizes[24];
 
             gfx.DrawString("Hi.", font, XBrushes.Black, 72, 72*2);
-            XPen pen = new XPen(XColors.DarkSeaGreen, 6);
+            XPen pen = new XPen(XColors.DarkSeaGreen, 1);
             pen.LineCap = XLineCap.Round;
             pen.LineJoin = XLineJoin.Bevel;
             XPoint[] points = new XPoint[]
