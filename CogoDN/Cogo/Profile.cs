@@ -820,6 +820,19 @@ namespace Cogo
             }
         }
 
+        /// <summary>
+        /// Converts the profile vpi's to points. Vertical curve length values are not
+        /// returned. Recommended use only for profiles with no vertical curves.
+        /// </summary>
+        /// <returns></returns>
+        public List<Point> GetVClistAsPoints()
+        {
+            List<Point> returnList = new List<Point>();
+            foreach (var vc in allVCs)
+                returnList.Add(new Point(vc.BeginStation.trueStation, vc.BeginElevation));
+            return returnList;
+        }
+
         public bool isOnPINC(CogoStation aStation)
         {
             var aVC = allVCs.FirstOrDefault(vc => utilFunctions.tolerantCompare(vc.BeginStation.trueStation, aStation.trueStation, stationEqualityTolerance) == 0);

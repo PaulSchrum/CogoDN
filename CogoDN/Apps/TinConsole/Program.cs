@@ -12,6 +12,7 @@ using System.Text;
 using Cogo.Horizontal;
 using System.Collections.Concurrent;
 using Cogo.Plotting;
+using Cogo.Plotting.Details;
 
 namespace TinConsole
 {
@@ -533,8 +534,12 @@ namespace TinConsole
             pdfFileName = GetCorrectOutputFilename(pdfFileName);
 
             var profileToPlot = Cogo.Profile.LoadFromCsv(csvInputFile);
+            var pflAsPoints = profileToPlot.GetVClistAsPoints();
+            DataSeries profileAsSeries = new DataSeries(pflAsPoints, pUnit.USfoot);
+            profileAsSeries.SetPenProperties(new ProfilePenLibrary(), "Existing Terrain");
 
-            PDFplotting.CreateSheetFromProfiles(pdfFileName);
+            PDFplotting.CreateSheetFromProfiles(new[] { profileAsSeries }.ToList(), 
+                pdfFileName, pUnit.USfoot);
             mirrorLogPrint($"Create file {pdfFileName}.");
         }
 

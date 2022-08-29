@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Cogo.Plotting.Details;
 using PdfSharpCore;
 using PdfSharpCore.Drawing;
 using PdfSharpCore.Pdf;
@@ -12,8 +13,10 @@ namespace Cogo.Plotting
 {
     public static class PDFplotting
     {
-        public static void CreateSheetFromProfiles(string pdfFileName)
+        public static void CreateSheetFromProfiles(List<DataSeries> pfls, 
+            string pdfFileName, pUnit workingUnits)
         {
+            var pfl = pfls[0];
             PdfDocument document = new PdfDocument();
             PdfPage page = document.AddPage();
             page.Orientation = PageOrientation.Landscape;
@@ -25,7 +28,8 @@ namespace Cogo.Plotting
             PageSize[] pageSizes = (PageSize[])Enum.GetValues(typeof(PageSize));
             var letter = pageSizes[24];
 
-            gfx.DrawString("Hi.", font, XBrushes.Black, 72, 72*2);
+            var theString = DateTime.Now.ToString("h:mm tt");
+            gfx.DrawString(theString, font, XBrushes.Black, 72, 72*2);
             XPen pen = new XPen(XColors.DarkSeaGreen, 1);
             pen.LineCap = XLineCap.Round;
             pen.LineJoin = XLineJoin.Bevel;

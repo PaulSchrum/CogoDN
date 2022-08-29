@@ -4,6 +4,11 @@ using System.Text;
 
 namespace Cogo.Plotting.Details
 {
+    /// <summary>
+    /// Represents a decimal number with associated length units. Decimal is used
+    /// instead of float or double because precision geospatial units can be very
+    /// large.
+    /// </summary>
     public struct DecimalUnits
     {
         public decimal value { get; set; }
