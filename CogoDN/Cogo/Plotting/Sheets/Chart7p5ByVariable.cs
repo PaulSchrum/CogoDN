@@ -17,6 +17,8 @@ namespace Cogo.Plotting.Sheets
             Chart7p5ByVariable sheet = new Chart7p5ByVariable();
             sheet.height = new DecimalUnits(0, pUnit.Inch);
             sheet.width = new DecimalUnits(7.5m, pUnit.Inch);
+            //sheet.scale = PlotScale
+            
 
             return sheet;
         }

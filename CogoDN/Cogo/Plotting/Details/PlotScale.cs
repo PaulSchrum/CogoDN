@@ -42,7 +42,7 @@ namespace Cogo.Plotting.Details
             }
         }
 
-        public decimal AsMultipleVertical
+        public decimal AsMultiplierVertical
         {
             get
             {

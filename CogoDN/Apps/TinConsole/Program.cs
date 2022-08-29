@@ -537,9 +537,11 @@ namespace TinConsole
             var pflAsPoints = profileToPlot.GetVClistAsPoints();
             DataSeries profileAsSeries = new DataSeries(pflAsPoints, pUnit.USfoot);
             profileAsSeries.SetPenProperties(new ProfilePenLibrary(), "Existing Terrain");
+            PlotScale plotScale = new PlotScale(new DecimalUnits(50, pUnit.USfoot),
+                new DecimalUnits(1, pUnit.Inch));
 
             PDFplotting.CreateSheetFromProfiles(new[] { profileAsSeries }.ToList(), 
-                pdfFileName, pUnit.USfoot);
+                pdfFileName, plotScale);
             mirrorLogPrint($"Create file {pdfFileName}.");
         }
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Cogo.Plotting.Details;
 using PdfSharpCore;
@@ -13,10 +14,10 @@ namespace Cogo.Plotting
 {
     public static class PDFplotting
     {
-        public static void CreateSheetFromProfiles(List<DataSeries> pfls, 
-            string pdfFileName, pUnit workingUnits)
+        public static void CreateSheetFromProfiles(List<DataSeries> allSeries, 
+            string pdfFileName, PlotScale plotScale)
         {
-            var pfl = pfls[0];
+            var pfl = allSeries[0];
             PdfDocument document = new PdfDocument();
             PdfPage page = document.AddPage();
             page.Orientation = PageOrientation.Landscape;
@@ -30,17 +31,22 @@ namespace Cogo.Plotting
 
             var theString = DateTime.Now.ToString("h:mm tt");
             gfx.DrawString(theString, font, XBrushes.Black, 72, 72*2);
-            XPen pen = new XPen(XColors.DarkSeaGreen, 1);
-            pen.LineCap = XLineCap.Round;
-            pen.LineJoin = XLineJoin.Bevel;
-            XPoint[] points = new XPoint[]
+            foreach(var series in allSeries)
             {
-                new XPoint(20, 30), new XPoint(60, 120),
-                new XPoint(90, 20), new XPoint(170, 90),
-                new XPoint(230, 40)
-            };
-            gfx.DrawLines(pen, points);
-            
+                // XPen pen = new XPen(XColors.DarkSeaGreen, 1);
+                XPen pen = series.PenProperties;
+                pen.LineCap = XLineCap.Round;
+                pen.LineJoin = XLineJoin.Bevel;
+                XPoint[] points = series.theData
+                    .Select(pt => new XPoint(pt.x, pt.y)).ToArray();
+                var scaleFactor = plotScale.AsMultiplierHorizontal;
+                points = points.Select(pt =>
+                    new XPoint(pt.X * (double)plotScale.AsMultiplierHorizontal,
+                        pt.Y * (double)plotScale.AsMultiplierVertical)
+                    ).ToArray();
+                gfx.DrawLines(pen, points);
+            }
+
             document.Save(pdfFileName);
         }
     }
