@@ -21,7 +21,7 @@ namespace CadFoundation.Coordinates.Transforms
 
         private Matrix<double> makeIdentityMatrix()
         {
-            MasArray = new double[4, 4];
+            MasArray = new double[3, 3];
             /*    {{ 1.0, 0.0, 0.0, 0.0},
                    { 0.0, 1.0, 0.0, 0.0},
                    { 0.0, 0.0, 1.0, 0.0},
@@ -31,7 +31,6 @@ namespace CadFoundation.Coordinates.Transforms
             MasArray[0, 0] = 1.0;
             MasArray[1, 1] = 1.0;
             MasArray[2, 2] = 1.0;
-            MasArray[3, 3] = 1.0;
             return Matrix<double>.Build.DenseOfArray(MasArray);
         }
 
@@ -113,7 +112,7 @@ namespace CadFoundation.Coordinates.Transforms
             ptVector[1, 0] = oldPoint.y;
             ptVector[2, 0] = 1.0;
             var ptMatrix = Matrix<double>.Build.DenseOfArray(ptVector);
-            var newPtMatrix = ptMatrix * M;
+            var newPtMatrix = M * ptMatrix;
             return new Point(newPtMatrix[0, 0], newPtMatrix[1, 0]);
         }
 
@@ -128,6 +127,7 @@ namespace CadFoundation.Coordinates.Transforms
             oldPoint.x = newPtMatrix[0, 0];
             oldPoint.y = newPtMatrix[1, 0];
         }
+
     }
 #pragma warning restore CA1814 // Prefer jagged arrays over multidimensional
 }
