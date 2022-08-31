@@ -29,6 +29,17 @@ namespace Cogo.Plotting.Details
         }
     }
 
+    public class GridPenLibrary: PenLibrary
+    {
+        public GridPenLibrary()
+        {
+            this["Major"] = new CogoDNPen(XColors.DarkGray, XDashStyle.Solid, 2.0);
+
+            this["Minor"] = new CogoDNPen(XColors.Gray, XDashStyle.Dot, 0.5);
+
+        }
+    }
+
     public class CogoDNPen
     {
         public XColor Color { get; set; }
