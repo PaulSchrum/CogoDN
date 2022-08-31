@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using CadFoundation.Coordinates;
+using CadFoundation.Coordinates.Transforms;
 using Cogo.Plotting.Details;
 using PdfSharpCore;
 using PdfSharpCore.Drawing;
@@ -33,18 +35,27 @@ namespace Cogo.Plotting
             gfx.DrawString(theString, font, XBrushes.Black, 72, 72*2);
             foreach(var series in allSeries)
             {
+                var points = series.theData;
                 // XPen pen = new XPen(XColors.DarkSeaGreen, 1);
                 XPen pen = series.PenProperties;
                 pen.LineCap = XLineCap.Round;
                 pen.LineJoin = XLineJoin.Bevel;
-                XPoint[] points = series.theData
-                    .Select(pt => new XPoint(pt.x, pt.y)).ToArray();
-                var scaleFactor = plotScale.AsMultiplierHorizontal;
+
+                var affineTransform = new AffineTransform2d();
+                affineTransform.AddScale(1.0, -1.0);
+                affineTransform.AddTranslation(-3.0, 4.0);
+                points = points.Select(pt => affineTransform.TransformToNewPoint(pt))
+                    .ToList();
+
+                var scaleFactor = plotScale.AsMultiplierHorizontal * PageUnits.inch;
+                
                 points = points.Select(pt =>
-                    new XPoint(pt.X * (double)plotScale.AsMultiplierHorizontal,
-                        pt.Y * (double)plotScale.AsMultiplierVertical)
-                    ).ToArray();
-                gfx.DrawLines(pen, points);
+                    new Point(pt.x * (double)scaleFactor, pt.y * (double)scaleFactor)
+                    ).ToList();
+
+                XPoint[] Xpoints = points
+                    .Select(pt => new XPoint(pt.x, pt.y)).ToArray();
+                gfx.DrawLines(pen, Xpoints);
             }
 
             document.Save(pdfFileName);
