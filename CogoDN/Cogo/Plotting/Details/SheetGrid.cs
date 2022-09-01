@@ -57,8 +57,8 @@ namespace Cogo.Plotting.Details
         {
             get
             {
-                //if (null != majorLines_)
-                //    return majorLines_;
+                if (null != majorLines_)
+                    return majorLines_;
                 double startX = LowerLeftCorner.x;
                 double startY = LowerLeftCorner.y;
                 double yVal, yBottom, yTop;
@@ -129,8 +129,8 @@ namespace Cogo.Plotting.Details
         {
             get
             {
-                if (null != minorLines_)
-                    return minorLines_;
+                //if (null != minorLines_)
+                //    return minorLines_;
                 double startX = LowerLeftCorner.x;
                 double startY = LowerLeftCorner.y;
                 double yVal, yBottom, yTop;
@@ -138,14 +138,18 @@ namespace Cogo.Plotting.Details
                 DataSeries gridLine = null;
                 minorLines_ = new List<DataSeries>();
                 List<Point> pointList = null;
+                yBottom = startY; yTop = yBottom + PanelDimensions.y;
+                xLeft = startX; xRight = startX + PanelDimensions.x;
 
                 #region plot horizontal grid lines
-                xLeft = startX; xRight = startX + PanelDimensions.x;
-                for (int rowIndex = 0; rowIndex < MajorGridWidth; rowIndex++)
+                int minorIndex;
+                int gridsCellsPerPanelX = (int)Math.Ceiling(PanelDimensions.x / MajorGridWidth);
+                for (int rowIndex = 0; rowIndex < gridsCellsPerPanelX-1; rowIndex++)
                 {
-                    for(int minorIndex=1; minorIndex< MinorPerMajor; minorIndex++)
+                    for(minorIndex=1; minorIndex< MinorPerMajor; minorIndex++)
                     {
-                        yVal = (minorIndex * MinorGridWidth) + (rowIndex * MajorGridWidth);
+                        yVal = (minorIndex * MinorGridWidth) + 
+                            (rowIndex * MajorGridWidth) + yBottom;
                         pointList = new List<Point>
                         {
                             new Point(xLeft, yVal),
@@ -155,6 +159,22 @@ namespace Cogo.Plotting.Details
                         minorLines_.Add(gridLine);
                     }
                 }
+
+                minorIndex = 1;
+                yVal = (minorIndex * MinorGridWidth) +
+                            ((gridsCellsPerPanelX-1) * MajorGridWidth) + yBottom;
+                while(yVal < yTop)
+                {
+                    pointList = new List<Point>
+                        {
+                            new Point(xLeft, yVal),
+                            new Point(xRight, yVal),
+                        };
+                    gridLine = new DataSeries(pointList, Unit, MinorGridPen);
+                    minorLines_.Add(gridLine);
+                    yVal += MinorGridWidth;
+                }
+
                 #endregion
 
                 #region plot vertical grid lines
@@ -163,12 +183,13 @@ namespace Cogo.Plotting.Details
                 yTop = LowerLeftCorner.y + PanelDimensions.y;
                 xLeft = startX; xRight = startX + PanelDimensions.x;
 
-                for (int columnIndex = 0; columnIndex < MajorGridWidth; columnIndex++)
+                int gridsCellsPerPanelY = (int)Math.Ceiling(PanelDimensions.y / MajorGridWidth);
+                for (int columnIndex = 0; columnIndex < gridsCellsPerPanelY - 1; columnIndex++)
                 {
-                    xVal = columnIndex * MajorGridWidth + LowerLeftCorner.x;
-                    for (int minorIndex = 1; minorIndex < MinorPerMajor; minorIndex++)
+                    for (minorIndex = 1; minorIndex < MinorPerMajor; minorIndex++)
                     {
-                        xVal = (minorIndex * MinorGridWidth) + (columnIndex * MajorGridWidth);
+                        xVal = (minorIndex * MinorGridWidth) +
+                            (columnIndex * MajorGridWidth) + xLeft;
                         pointList = new List<Point>
                         {
                             new Point(xVal, yBottom),
@@ -177,6 +198,21 @@ namespace Cogo.Plotting.Details
                         gridLine = new DataSeries(pointList, Unit, MinorGridPen);
                         minorLines_.Add(gridLine);
                     }
+                }
+
+                minorIndex = 1;
+                xVal = (minorIndex * MinorGridWidth) +
+                            ((gridsCellsPerPanelY - 1) * MajorGridWidth) + xLeft;
+                while (xVal < xRight)
+                {
+                    pointList = new List<Point>
+                        {
+                            new Point(xVal, yBottom),
+                            new Point(xVal, yTop),
+                        };
+                    gridLine = new DataSeries(pointList, Unit, MinorGridPen);
+                    minorLines_.Add(gridLine);
+                    xVal += MinorGridWidth;
                 }
                 #endregion
 
