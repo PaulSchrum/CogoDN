@@ -69,9 +69,9 @@ namespace Cogo.Plotting.Details
 
                 #region plot horizontal grid lines
                 xLeft = startX; xRight = startX + PanelDimensions.x;
-                int gridsCellsPerPanelX = (int)Math.Ceiling(PanelDimensions.x / MajorGridWidth);
+                int gridsCellsPerPanelY = (int)Math.Ceiling(PanelDimensions.y / MajorGridWidth);
                 yVal = yBottom = startY;
-                for (int rowIndex = 0; rowIndex < gridsCellsPerPanelX; rowIndex++)
+                for (int rowIndex = 0; rowIndex < gridsCellsPerPanelY; rowIndex++)
                 {
                     pointList = new List<Point>
                     {
@@ -98,9 +98,9 @@ namespace Cogo.Plotting.Details
                 yTop = LowerLeftCorner.y + PanelDimensions.y;
                 xLeft = startX; xRight = startX + PanelDimensions.x;
 
-                int gridCellsPerPanelY = (int)Math.Ceiling(PanelDimensions.y / MajorGridWidth);
+                int gridCellsPerPanelX = (int)Math.Ceiling(PanelDimensions.x / MajorGridWidth);
                 xVal = startX;
-                for (int columnIndex = 0; columnIndex < gridCellsPerPanelY; columnIndex++)
+                for (int columnIndex = 0; columnIndex < gridCellsPerPanelX; columnIndex++)
                 {
                     pointList = new List<Point>
                     {

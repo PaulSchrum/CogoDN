@@ -39,9 +39,9 @@ namespace Cogo.Plotting
             gridAT.AddTranslation(0, pageHeightInches);
             gridAT.AddScale(gridScaleToSheet, gridScaleToSheet);
 
-            var panelSize = new Vector(2.7, 2.7);
+            var panelSize = new Vector(6.9, 4.9);
             var profileGrid = new SheetGrid(panelSize: panelSize,
-                lowerLeftOffset: new Vector(0.35, 0.35), affineTrans: gridAT);
+                lowerLeftOffset: new Vector(0.05, 0.05), affineTrans: gridAT);
             profileGrid.DrawToGfx(gfx);
 
             var theString = DateTime.Now.ToString("h:mm tt");
