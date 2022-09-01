@@ -177,6 +177,16 @@ namespace CadFoundation.Coordinates
             return newVec;
         }
 
+        public static Vector operator *(Vector vec, double dbl)
+        {
+            Vector newVec = new Vector();
+            newVec.x = vec.x * dbl;
+            newVec.y = vec.y * dbl;
+            newVec.z = vec.z * dbl;
+
+            return newVec;
+        }
+
         public override String ToString()
         {
             return 

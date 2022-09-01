@@ -23,35 +23,45 @@ namespace Cogo.Plotting
             PdfDocument document = new PdfDocument();
             PdfPage page = document.AddPage();
             page.Orientation = PageOrientation.Landscape;
-            page.Height = 720/2;
+            var pageHeightInches = 5.0; var pageWidthInches = 7.0;
+            page.Height = DecimalUnits.MakeFromLength(pageHeightInches, pUnit.Inch);
+            page.Width = DecimalUnits.MakeFromLength(pageWidthInches, pUnit.Inch);
             XGraphics gfx = XGraphics.FromPdfPage(page);
-            XFont font = new XFont("Verdana", 20, XFontStyle.Bold);
 
 
-            PageSize[] pageSizes = (PageSize[])Enum.GetValues(typeof(PageSize));
-            var letter = pageSizes[24];
+            //PageSize[] pageSizes = (PageSize[])Enum.GetValues(typeof(PageSize));
+            //var letter = pageSizes[24];
+            var scaleFactor = (double)(plotScale.AsMultiplierHorizontal * PageUnits.inch);
+
+            var gridScaleToSheet = (double)pUnit.Inch;
+            var gridAT = new AffineTransform2d();
+            gridAT.AddScale(1.0, -1.0);
+            gridAT.AddTranslation(0, pageHeightInches);
+            gridAT.AddScale(gridScaleToSheet, gridScaleToSheet);
+
+            var panelSize = new Vector(2.7, 2.7);
+            var profileGrid = new SheetGrid(panelSize: panelSize,
+                lowerLeftOffset: new Vector(0.35, 0.35), affineTrans: gridAT);
+            profileGrid.DrawToGfx(gfx);
 
             var theString = DateTime.Now.ToString("h:mm tt");
-            gfx.DrawString(theString, font, XBrushes.Black, 72, 72*2);
+            XFont font = new XFont("Verdana", 24, XFontStyle.Bold);
+            gfx.DrawString(theString, font, XBrushes.Black, 72, 72 * 2);
+
+            var dataAT = new AffineTransform2d();  // Data Affine Transform
+            dataAT.AddScale(1.0, -1.0);
+            dataAT.AddTranslation(0.0, pageHeightInches);
+            dataAT.AddScale(scaleFactor, scaleFactor);
+
             foreach(var series in allSeries)
             {
                 var points = series.theData;
-                // XPen pen = new XPen(XColors.DarkSeaGreen, 1);
                 XPen pen = series.PenProperties;
                 pen.LineCap = XLineCap.Round;
                 pen.LineJoin = XLineJoin.Bevel;
 
-                var affineTransform = new AffineTransform2d();
-                affineTransform.AddScale(1.0, -1.0);
-                affineTransform.AddTranslation(-3.0, 4.0);
-                points = points.Select(pt => affineTransform.TransformToNewPoint(pt))
+                points = points.Select(pt => dataAT.TransformToNewPoint(pt))
                     .ToList();
-
-                var scaleFactor = plotScale.AsMultiplierHorizontal * PageUnits.inch;
-                
-                points = points.Select(pt =>
-                    new Point(pt.x * (double)scaleFactor, pt.y * (double)scaleFactor)
-                    ).ToList();
 
                 XPoint[] Xpoints = points
                     .Select(pt => new XPoint(pt.x, pt.y)).ToArray();

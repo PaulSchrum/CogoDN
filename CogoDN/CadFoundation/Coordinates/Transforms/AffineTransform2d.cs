@@ -128,6 +128,14 @@ namespace CadFoundation.Coordinates.Transforms
             oldPoint.y = newPtMatrix[1, 0];
         }
 
+        public override string ToString()
+        {
+            return $"{M[0, 0]:f2} {M[0, 1]:f2} {M[0, 2]:f2}  +  " +
+                $"{M[1, 0]:f2} {M[1, 1]:f2} {M[1, 2]:f2}  +  " +
+                $"{M[2, 0]:f2} {M[2, 1]:f2} {M[2, 2]:f2}" +
+                "";
+        }
+
     }
 #pragma warning restore CA1814 // Prefer jagged arrays over multidimensional
 }

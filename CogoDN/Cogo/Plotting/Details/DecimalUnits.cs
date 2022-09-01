@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PdfSharpCore.Drawing;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -54,6 +55,12 @@ namespace Cogo.Plotting.Details
             decimal addon = b.GetValueAs(a.Units);
             newOne.value = a.value + b.value;
             return newOne;
+        }
+
+        public static XUnit MakeFromLength(double newVal, pUnit unit)
+        {
+            var aUnit = new DecimalUnits((decimal) newVal, unit);
+            return (XUnit)aUnit.GetValueAs(pUnit.Pixel);
         }
     }
 }
