@@ -16,18 +16,20 @@ namespace Cogo.Plotting
 {
     public static class PDFplotting
     {
-        public static void CreateSheetFromProfiles(List<DataSeries> allSeries, 
+        public static void PlotSheetFromProfiles(List<DataSeries> allSeries, 
+            Sheet sheet,
             string pdfFileName, PlotScale plotScale)
         {
             var pfl = allSeries[0];
-            PdfDocument document = new PdfDocument();
-            PdfPage page = document.AddPage();
+            PdfDocument document = sheet.document; // new PdfDocument();
+            PdfPage page = sheet.page; //document.AddPage();
             page.Orientation = PageOrientation.Landscape;
             var pageHeightInches = 5.0; var pageWidthInches = 7.0;
-            page.Height = DecimalUnits.MakeFromLength(pageHeightInches, pUnit.Inch);
+            page.Height = DecimalUnits.MakeFromLength(5.0, pUnit.Inch);
             page.Width = DecimalUnits.MakeFromLength(pageWidthInches, pUnit.Inch);
-            XGraphics gfx = XGraphics.FromPdfPage(page);
+            XGraphics gfx = sheet.gfx;
 
+            // sheet.PlotSheetToPdfFile(pdfFileName);
 
             //PageSize[] pageSizes = (PageSize[])Enum.GetValues(typeof(PageSize));
             //var letter = pageSizes[24];

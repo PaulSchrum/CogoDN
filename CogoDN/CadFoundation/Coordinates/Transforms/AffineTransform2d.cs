@@ -43,6 +43,11 @@ namespace CadFoundation.Coordinates.Transforms
             M = localMatrix * M;
         }
 
+        public void AddScale(decimal scaleX, decimal scaleY)
+        {
+            AddScale((double)scaleX, (double)scaleY);
+        }
+
         public void AddScale(double scaleX, double scaleY)
         {
             var localMatrix = makeIdentityMatrix();

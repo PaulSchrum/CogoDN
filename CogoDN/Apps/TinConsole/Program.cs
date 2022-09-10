@@ -13,6 +13,7 @@ using Cogo.Horizontal;
 using System.Collections.Concurrent;
 using Cogo.Plotting;
 using Cogo.Plotting.Details;
+using Cogo.Plotting.Sheets;
 
 namespace TinConsole
 {
@@ -537,11 +538,24 @@ namespace TinConsole
             var pflAsPoints = profileToPlot.GetVClistAsPoints();
             DataSeries profileAsSeries = new DataSeries(pflAsPoints, pUnit.USfoot);
             profileAsSeries.SetPenProperties(new ProfilePenLibrary(), "Existing Terrain");
-            PlotScale plotScale = new PlotScale(new DecimalUnits(50, pUnit.USfoot),
+            PlotScale plotScale = new PlotScale(new DecimalUnits(50, pUnit.Foot),
                 new DecimalUnits(1, pUnit.Inch));
 
-            PDFplotting.CreateSheetFromProfiles(new[] { profileAsSeries }.ToList(), 
-                pdfFileName, plotScale);
+            var simpleList = new List<Point>
+            {
+                new Point(-50.0, -10.0),
+                new Point(0.0, 0.0),
+                new Point(5, 1.1),
+                new Point(0.9, 0.65),
+                new Point(2.5, 1)
+            };
+            DataSeries testSeries = new DataSeries(simpleList, pUnit.USfoot);
+
+            //PDFplotting.CreateSheetFromProfiles(new[] { profileAsSeries }.ToList(), 
+            //    pdfFileName, plotScale);
+            var sheetType = Chart7p5ByVariable.Create();
+            sheetType.PlotSheetToPdfFile(new[] { testSeries }.ToList(), pdfFileName, 0.0);
+            //PDFplotting.PlotSheetFromProfiles(new[] { testSeries }.ToList(), sheetType,pdfFileName, plotScale);
             mirrorLogPrint($"Create file {pdfFileName}.");
         }
 

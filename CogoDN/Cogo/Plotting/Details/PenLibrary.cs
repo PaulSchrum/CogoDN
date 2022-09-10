@@ -20,7 +20,7 @@ namespace Cogo.Plotting.Details
         public ProfilePenLibrary()
         {
             var existingTerrainPen = 
-                new CogoDNPen(XColors.Black, XDashStyle.Dash, 3.0);
+                new CogoDNPen(XColors.Gray, XDashStyle.Dash, 3.0);
             this["Existing Terrain"] = existingTerrainPen;
 
             var hyperbolaTerrainPen = 
@@ -33,10 +33,12 @@ namespace Cogo.Plotting.Details
     {
         public GridPenLibrary()
         {
-            this["Major"] = new CogoDNPen(XColors.DarkGray, XDashStyle.Solid, 2.0);
+            var darkGrey = XColor.FromArgb(255, 64, 64, 64);
+            //aColor = XColors.Gray;
+            this["Major"] = new CogoDNPen(darkGrey, XDashStyle.Solid, 1.0);
 
-            this["Minor"] = new CogoDNPen(XColors.Gray, XDashStyle.Dot, 0.5);
-
+            var lightGray = XColor.FromArgb(255, 256 - 32, 256 - 32, 256 - 32);
+            this["Minor"] = new CogoDNPen(lightGray, XDashStyle.Dot, 0.05);
         }
     }
 

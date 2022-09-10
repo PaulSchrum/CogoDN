@@ -249,5 +249,157 @@ namespace Cogo.Plotting.Details
             }
         }
 
+        /////////////////////////////////////////////////////////////////////
+
+        public enum HorizontalJustification
+        {
+            NotSet = 0, Left = 1, Center = 2, Right = 3
+        }
+
+        public enum VerticalJustification
+        {
+            NotSet = 10, Bottom = 20, Center = 30, Top = 40
+        }
+
+        public class PointUnits
+        {
+            public PointUnits(Point aPoint, pUnit unit)
+            {
+                Point = aPoint;
+                Unit = unit;
+            }
+
+            public Point Point { get; private set; }
+            public pUnit Unit { get; private set; }
+
+            public DecimalUnits getX()
+            {
+                return new DecimalUnits((Decimal) Point.x, Unit);
+            }
+
+            public DecimalUnits getY()
+            {
+                return new DecimalUnits((Decimal)Point.y, Unit);
+            }
+
+            public DecimalUnits getZ()
+            {
+                return new DecimalUnits((Decimal)Point.z, Unit);
+            }
+        }
+
+
+
+//////// class AnchorPoint handles converting from world coordinates to panel coordinates.
+
+        public class AnchorPoint
+        {
+            protected Vector PanelDimensions { get; set; }
+            public HorizontalJustification HorizontalJustification { get; private set; }
+            public VerticalJustification VerticalJustification { get; private set; }
+
+            public PointUnits AnchorWorldCoordinates { get; private set; }
+            public PointUnits AnchorPanelCoordinates { get; private set; }
+
+            public AffineTransform2d WorldToPanelAT { get; private set; }
+            public AffineTransform2d PanelToWorldAT { get; private set; }
+
+            AnchorPoint(Vector panelDimensions,
+                Point worldAnchor, pUnit worldUnit,
+                Point panelAnchor, pUnit panelUnit,
+                HorizontalJustification HorizontalJustification, 
+                VerticalJustification VerticalJustification)
+            {
+                PanelDimensions = panelDimensions;
+                AnchorWorldCoordinates = new PointUnits(worldAnchor, worldUnit);
+                AnchorPanelCoordinates = new PointUnits(panelAnchor, panelUnit);
+
+                this.HorizontalJustification = HorizontalJustification;
+                this.VerticalJustification = VerticalJustification;
+
+
+                recomputeTransforms();
+            }
+
+            public void recomputeTransforms()
+            {
+                double panelAnchorX = 0; double panelAnchorY = 0;
+                switch (HorizontalJustification)
+                {
+                    case HorizontalJustification.Left:
+                        {
+                            panelAnchorX = 0;
+                            break;
+                        }
+                    case HorizontalJustification.Center:
+                        {
+                            panelAnchorX = PanelDimensions.x / 2.0;
+                            break;
+                        }
+                    case HorizontalJustification.Right:
+                        {
+                            panelAnchorX = PanelDimensions.x;
+                            break;
+                        }
+                    case HorizontalJustification.NotSet:
+                        {
+                            panelAnchorX = 0;
+                            break;
+                        }
+                    default:
+                        break;
+                }
+
+                switch (VerticalJustification)
+                {
+                    case VerticalJustification.Bottom:
+                        {
+                            panelAnchorY = 0;
+                            break;
+                        }
+                    case VerticalJustification.Center:
+                        {
+                            panelAnchorY = PanelDimensions.y / 2.0;
+                            break;
+                        }
+                    case VerticalJustification.Top:
+                        {
+                            panelAnchorY = PanelDimensions.y;
+                            break;
+                        }
+                    case VerticalJustification.NotSet:
+                        {
+                            panelAnchorY = 0;
+                            break;
+                        }
+                    default:
+                        break;
+                }
+
+                WorldToPanelAT = new AffineTransform2d();
+
+                WorldToPanelAT   // Move to 0, 0, world.
+                    .AddTranslation(-AnchorWorldCoordinates.Point.x,
+                    -AnchorWorldCoordinates.Point.y);
+
+                WorldToPanelAT   // scale down to XPoint (aka Pixel, aka 1/72 inch)
+                    .AddScale(1 / AnchorWorldCoordinates.Unit.GetAsPixels(),
+                    1 / AnchorWorldCoordinates.Unit.GetAsPixels());
+
+                WorldToPanelAT   // scale up to panel unit
+                    .AddScale(AnchorPanelCoordinates.Unit.GetAsPixels(),
+                    AnchorPanelCoordinates.Unit.GetAsPixels());
+
+                WorldToPanelAT   // move to panel anchor point
+                    .AddTranslation(AnchorPanelCoordinates.Point.x,
+                    AnchorPanelCoordinates.Point.y);
+
+                WorldToPanelAT   // move anchor point to justification point
+                    .AddTranslation(panelAnchorX, panelAnchorY);
+
+                PanelToWorldAT = WorldToPanelAT.NewFromInverse();
+            }
+        }
+
     }
 }

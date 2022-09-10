@@ -6,14 +6,21 @@ namespace Cogo.Plotting.Details
 {
     public class PlotScale
     {
-        public DecimalUnits LeftSide { get; set; }
-        public DecimalUnits RightSide { get; set; }
+        public DecimalUnits WorldScale { get; set; }
+        public DecimalUnits PanelScale { get; set; }
         public decimal VerticalExaggeration { get; set; }
 
-        public PlotScale(DecimalUnits leftSide, DecimalUnits rightSide)
+        /// <summary>
+        /// Left "worldScale" / "panelScale" refers to the plot ratio. And example would be
+        /// 50 USfeet per inch or 100 m per centimeter. 100 m is the left side. 
+        /// One centimeter is the right side.
+        /// </summary>
+        /// <param name="worldScale">World distance for the plot ratio.</param>
+        /// <param name="panelScale">Panel (Paper) distance for the plot ratio.</param>
+        public PlotScale(DecimalUnits worldScale, DecimalUnits panelScale)
         {
-            LeftSide = leftSide;
-            RightSide = rightSide;
+            WorldScale = worldScale;
+            PanelScale = panelScale;
             VerticalExaggeration = 1m;
         }
 
@@ -21,8 +28,8 @@ namespace Cogo.Plotting.Details
             decimal verticalExaggeration) :
             this(leftSide, rightSide)
         {
-            LeftSide = leftSide;
-            RightSide = rightSide;
+            WorldScale = leftSide;
+            PanelScale = rightSide;
             VerticalExaggeration = verticalExaggeration;
         }
 
@@ -37,8 +44,8 @@ namespace Cogo.Plotting.Details
         {
             get
             {
-                return LeftSide.GetValueAs(pUnit.Pixel) / 
-                    RightSide.GetValueAs(pUnit.Pixel);
+                return WorldScale.GetValueAs(pUnit.Pixel) / 
+                    PanelScale.GetValueAs(pUnit.Pixel);
             }
         }
 
@@ -52,7 +59,7 @@ namespace Cogo.Plotting.Details
 
         public override string ToString()
         {
-            return $"{LeftSide}:{RightSide}";
+            return $"{WorldScale}:{PanelScale}";
         }
     }
 }
