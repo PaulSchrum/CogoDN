@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
+// This effort, Cogo.Plotting, is suspended indefinitely pending 
+// any future need to restart it, which may never happen.
 namespace Cogo.Plotting.Details
 {
     public class DataSeries

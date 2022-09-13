@@ -12,6 +12,8 @@ using CadFoundation.Coordinates.Transforms;
 // until the very end via the affine transform.  In other words, work in inches, etc, and
 // don't worry about the XPoint conversion.
 
+// This effort, Cogo.Plotting, is suspended indefinitely pending 
+// any future need to restart it, which may never happen.
 namespace Cogo.Plotting.Details
 {
     public class SheetGrid

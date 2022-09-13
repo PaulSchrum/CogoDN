@@ -84,7 +84,7 @@ namespace TinConsole
                 ["load_alignments"] = ls => load_alignments(ls),
                 ["profile_to_csv"] = ls => profile_to_csv(ls),
                 ["profiles_to_csvs"] = ls => profiles_to_csvs(ls),
-                ["plot_csv"] = ls => plot_csv(ls),
+                ["plot_csv"] = ls => plot_csv(ls),  // to be suspended after this git commit.
                 ["alignment_to_3d_dxf"] = ls => alignment_to_3d_dxf(ls), // undocumented
             };
 
@@ -518,6 +518,8 @@ namespace TinConsole
 
         private static void plot_csv(List<string> commandItems)
         {
+            // This effort, Cogo.Plotting, is suspended indefinitely pending 
+            // any future need to restart it, which may never happen.
             var csvInputFile = "";
             var parmString = commandItems.Where(s => s.ToLower().Contains(".csv")).FirstOrDefault();
             if (null != parmString)

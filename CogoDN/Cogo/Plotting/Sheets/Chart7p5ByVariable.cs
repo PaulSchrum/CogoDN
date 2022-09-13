@@ -8,6 +8,8 @@ using CadFoundation.Coordinates.Transforms;
 using PdfSharpCore.Drawing;
 using System.Linq;
 
+// This effort, Cogo.Plotting, is suspended indefinitely pending 
+// any future need to restart it, which may never happen.
 namespace Cogo.Plotting.Sheets
 {
     public class Chart7p5ByVariable : Sheet
