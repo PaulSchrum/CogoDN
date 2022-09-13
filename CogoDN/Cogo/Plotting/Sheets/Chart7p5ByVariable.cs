@@ -52,10 +52,10 @@ namespace Cogo.Plotting.Sheets
             var gridAT = new AffineTransform2d();
             gridAT.AddScale(1.0, -1.0);
             gridAT.AddTranslation(0, (double) this.height.GetValueAs(pUnit.Inch));
-            //gridAT.AddTranslation(ChartArea.LowerLeftPoint.x, ChartArea.LowerLeftPoint.y);
+            gridAT.AddTranslation(ChartArea.LowerLeftPoint.x, ChartArea.LowerLeftPoint.y);
             gridAT.AddScale(gridScaleToSheet, gridScaleToSheet);
 
-            var panelSize = new Vector(6.9, 4.9);
+            var panelSize = this.ChartArea;
             var profileGrid = new SheetGrid(panelSize: panelSize,
                 lowerLeftOffset: new Vector(0.05, 0.05), affineTrans: gridAT);
             profileGrid.DrawToGfx(gfx);
@@ -68,16 +68,23 @@ namespace Cogo.Plotting.Sheets
         public static Chart7p5ByVariable Create()
         {
             Chart7p5ByVariable sheet = new Chart7p5ByVariable();
-            sheet.height = new DecimalUnits(7.5m, pUnit.Inch);
-            sheet.variableVertical = true;
-            sheet.width = new DecimalUnits(7.5m, pUnit.Inch);
-            sheet.page.Height = DecimalUnits.MakeFromLength(7.5, pUnit.Inch);
-            sheet.page.Width = DecimalUnits.MakeFromLength(7.5, pUnit.Inch);
+            sheet.sheetUnit = pUnit.Inch;
+
+            var sheetHeight = 4.5m; var sheetWidth = 7.5m;
+            sheet.height = new DecimalUnits(sheetHeight, sheet.sheetUnit);
+            //sheet.variableVertical = true;
+            sheet.width = new DecimalUnits(sheetWidth, sheet.sheetUnit);
             double widthLeftAxis = 0.5; double heightBottomAxis = 0.5;
-            sheet.LeftYAxis = PlotArea.Create(sheet, pUnit.Inch, widthLeftAxis, 7.0, 0, 0.5);
-            sheet.BottomXAxis = PlotArea.Create(sheet, pUnit.Inch, 7.5, heightBottomAxis, 0, 0.0);
-            sheet.ChartArea = PlotArea.Create(sheet, pUnit.Inch, 7.0, 
-                heightBottomAxis, widthLeftAxis, 7.0);
+            sheet.LeftYAxis = PlotArea.Create(sheet, sheet.sheetUnit, widthLeftAxis, 7.0, 0, 0.5);
+            sheet.BottomXAxis = PlotArea.Create(sheet, sheet.sheetUnit, 
+                width: 7.5, height: heightBottomAxis, offsetX: 0, offsetY: 0.0);
+            //var chartPanelHeight = sheet.page.Height.Value - sheet.BottomXAxis.y;
+            var w = (double)sheetHeight - heightBottomAxis; 
+            var h = (double)sheetWidth - widthLeftAxis;
+            sheet.ChartArea = PlotArea.Create(sheet, sheet.sheetUnit, 
+                width: w, 
+                height: h,
+                offsetX: 0.5, offsetY: 0.5);
 
 
 

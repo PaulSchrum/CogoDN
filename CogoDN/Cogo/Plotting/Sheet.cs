@@ -17,9 +17,33 @@ namespace Cogo.Plotting
         public XFont font { get; private set; }
         public SheetPanel sheetPanel { get; private set; }
 
+        public pUnit sheetUnit { get; set; }
+
         protected Margins Margins { get; set; }
-        public virtual DecimalUnits height { get; set; }
-        public virtual DecimalUnits width { get; set; }
+
+        private DecimalUnits height_;
+        public virtual DecimalUnits height 
+        { 
+            get { return height_; }
+            set 
+            { 
+                height_ = value;
+                page.Height = (XUnit) value.GetValueAs(pUnit.Pixel);
+            }
+        }
+
+        private DecimalUnits width_;
+        public virtual DecimalUnits width
+        {
+            get { return width_; }
+            set
+            {
+                width_ = value;
+                page.Height = (XUnit)value.GetValueAs(pUnit.Pixel);
+            }
+
+        }
+
         public PlotScale scale { get; set; }
         //protected PlotArea PlotArea { get; private set; }
         protected bool variableVertical {get; set;} = false;
@@ -82,7 +106,7 @@ namespace Cogo.Plotting
 
             PlotArea pa = new PlotArea();
             pa.topParent = parent;
-            pa.LowerLeftPoint = new Vector(offsetX, offsetY);
+            pa.LowerLeftPoint = new Vector(offsetX, -offsetY);
             pa.x = width; pa.y = height;
 
             return pa;
