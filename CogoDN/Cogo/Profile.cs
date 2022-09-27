@@ -1507,6 +1507,7 @@ namespace Cogo
         {
             using (var writer = new StreamWriter(outputFileName))
             {
+                writer.WriteLine("station,elevation,vcLength");
                 if(useTrueStations)
                 {
                     foreach (var vc in allVCs)
