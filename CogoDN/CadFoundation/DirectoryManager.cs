@@ -204,6 +204,13 @@ namespace CadFoundation
             return true;
         }
 
+        public bool Exists()
+        {
+            if (Directory.Exists(path))
+                return true;
+            return File.Exists(path);
+        }
+
         public IReadOnlyList<string> ListSubDirectories
         {
             get
