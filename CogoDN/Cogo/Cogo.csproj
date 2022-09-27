@@ -6,11 +6,14 @@
 
   <ItemGroup>
     <PackageReference Include="netDxf.netstandard" Version="2.4.0" />
-    <PackageReference Include="PdfSharpCore" Version="1.3.32" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CadFoundation\CadFoundation.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Python\" />
   </ItemGroup>
 
 </Project>
