@@ -11,9 +11,6 @@ using System.IO;
 using System.Text;
 using Cogo.Horizontal;
 using System.Collections.Concurrent;
-using Cogo.Plotting;
-using Cogo.Plotting.Details;
-using Cogo.Plotting.Sheets;
 
 namespace TinConsole
 {
@@ -43,11 +40,11 @@ namespace TinConsole
         static string StatisticsCsvFile = null;
         static MessageObserver msgObs = new MessageObserver();
         static Stopwatch overallSW = new Stopwatch();
-        static Dictionary<string, Action<List<string>>> commands = 
+        static Dictionary<string, Action<List<string>>> commands =
             new Dictionary<string, Action<List<string>>>
             {
-                ["exit"] = ls => System.Environment.Exit(0),
-                ["quit"] = ls => System.Environment.Exit(0),
+                ["exit"] = ls => exit(ls),
+                ["quit"] = ls => exit(ls),
                 ["log"] = ls => SetupLogging(ls),
                 ["set_dir"] = ls => SetDirectories(ls[1]),
                 ["set_outdir"] = ls => SetDirectories(outDr: ls[1]),
@@ -84,7 +81,7 @@ namespace TinConsole
                 ["load_alignments"] = ls => load_alignments(ls),
                 ["profile_to_csv"] = ls => profile_to_csv(ls),
                 ["profiles_to_csvs"] = ls => profiles_to_csvs(ls),
-                ["plot_csv"] = ls => plot_csv(ls),  // to be suspended after this git commit.
+                ["plot_csv"] = ls => plot_csv(ls),  // major revision, changing approach
                 ["alignment_to_3d_dxf"] = ls => alignment_to_3d_dxf(ls), // undocumented
             };
 
@@ -139,7 +136,7 @@ namespace TinConsole
                 commandFileName = args[0];
                 if (pwd.ConfirmExists(commandFileName))
                 {
-                    var fileToRead = pwd.GetPathAndAppendFilename(commandFileName);
+                    var fileToRead = pwd.PrependPWDifNotAlreadyFullPath(commandFileName);
                     commandList = new Queue<string>(File.ReadAllLines(fileToRead));
                     mirrorLogPrint($"Loaded commands from {fileToRead}.");
                     repl();
@@ -510,12 +507,19 @@ namespace TinConsole
                 }
 
                 var outputCSVfileName = anAlignment.Name + nameInfix + " pfl.csv";
+                outputCSVfileName = outDir.ToString() + "\\" + outputCSVfileName;
 
                 activeGroundProfile.WriteToCSV(outputCSVfileName, useTrueStations);
                 mirrorLogPrint($"   Created {outputCSVfileName}");
             }
         }
 
+        /// <summary>
+        /// Arguments:
+        ///     .csv -- csv file to load profile info from
+        ///     .pdf -- pdf file to output profile to
+        /// </summary>
+        /// <param name="commandItems"></param>
         private static void plot_csv(List<string> commandItems)
         {
             // This effort, Cogo.Plotting, is suspended indefinitely pending 
@@ -536,29 +540,64 @@ namespace TinConsole
             }
             pdfFileName = GetCorrectOutputFilename(pdfFileName);
 
-            var profileToPlot = Cogo.Profile.LoadFromCsv(csvInputFile);
-            var pflAsPoints = profileToPlot.GetVClistAsPoints();
-            DataSeries profileAsSeries = new DataSeries(pflAsPoints, pUnit.USfoot);
-            profileAsSeries.SetPenProperties(new ProfilePenLibrary(), "Existing Terrain");
-            PlotScale plotScale = new PlotScale(new DecimalUnits(50, pUnit.Foot),
-                new DecimalUnits(1, pUnit.Inch));
+            // Invoke plotter.py
 
-            var simpleList = new List<Point>
+            // From https://www.youtube.com/watch?v=g1VWGdHRkHs&t=172s
+            var psi = new ProcessStartInfo();
+            psi.FileName = @"C:\Users\pauls\AppData\Local\Programs\Python\Python38\python.exe";
+            var script = @"E:\Research\My Papers\Hyperbola Analysis of Terrain\GIS\Studies\daysBetweenDates.py";
+            var v = DirectoryManager.FromPathString(script);
+            var x = v.Exists();
+            var startDate = "2019-1-1";
+            var endDate = "2019-1-22"; 
+            psi.Arguments = $"\"{script}\" \"{startDate}\" \"{endDate}\"";
+            mirrorLogPrint(psi.Arguments);
+
+            psi.UseShellExecute = false;
+            psi.CreateNoWindow = true;
+            psi.RedirectStandardOutput = true;
+            psi.RedirectStandardError = true;
+
+            var errors = "";
+            var results = "";
+            using (var process = Process.Start(psi))
             {
-                new Point(-50.0, -10.0),
-                new Point(0.0, 0.0),
-                new Point(5, 1.1),
-                new Point(0.9, 0.65),
-                new Point(2.5, 1)
-            };
-            DataSeries testSeries = new DataSeries(simpleList, pUnit.USfoot);
+                errors = process.StandardError.ReadToEnd();
+                results = process.StandardOutput.ReadToEnd();
 
-            //PDFplotting.CreateSheetFromProfiles(new[] { profileAsSeries }.ToList(), 
-            //    pdfFileName, plotScale);
-            var sheetType = Chart7p5ByVariable.Create();
-            sheetType.PlotSheetToPdfFile(new[] { testSeries }.ToList(), pdfFileName, 0.0);
-            //PDFplotting.PlotSheetFromProfiles(new[] { testSeries }.ToList(), sheetType,pdfFileName, plotScale);
-            mirrorLogPrint($"Create file {pdfFileName}.");
+            }
+
+            mirrorLogPrint("");
+            mirrorLogPrint("Errors: " + errors);
+            mirrorLogPrint("Results: " + results);
+            mirrorLogPrint("");
+            int i = 99;
+
+            // ////////////////////////////////////////////////////////////////////////////////////////////////
+
+            //var profileToPlot = Cogo.Profile.LoadFromCsv(csvInputFile);
+            //var pflAsPoints = profileToPlot.GetVClistAsPoints();
+            //DataSeries profileAsSeries = new DataSeries(pflAsPoints, pUnit.USfoot);
+            //profileAsSeries.SetPenProperties(new ProfilePenLibrary(), "Existing Terrain");
+            //PlotScale plotScale = new PlotScale(new DecimalUnits(50, pUnit.Foot),
+            //    new DecimalUnits(1, pUnit.Inch));
+
+            //var simpleList = new List<Point>
+            //{
+            //    new Point(-50.0, -10.0),
+            //    new Point(0.0, 0.0),
+            //    new Point(5, 1.1),
+            //    new Point(0.9, 0.65),
+            //    new Point(2.5, 1)
+            //};
+            //DataSeries testSeries = new DataSeries(simpleList, pUnit.USfoot);
+
+            ////PDFplotting.CreateSheetFromProfiles(new[] { profileAsSeries }.ToList(), 
+            ////    pdfFileName, plotScale);
+            //var sheetType = Chart7p5ByVariable.Create();
+            //sheetType.PlotSheetToPdfFile(new[] { testSeries }.ToList(), pdfFileName, 0.0);
+            ////PDFplotting.PlotSheetFromProfiles(new[] { testSeries }.ToList(), sheetType,pdfFileName, plotScale);
+            //mirrorLogPrint($"Create file {pdfFileName}.");
         }
 
         /// <summary>
@@ -1088,6 +1127,13 @@ namespace TinConsole
             Console.Write("Saved.   ");
             mainSurface.ComputeErrorStatistics(researchOutpath + summaryFile);
             Console.WriteLine("Stats computed, written.");
+        }
+
+        public static void exit(List<string> commandItems)
+        {
+            overallSW.Stop();
+            Console.WriteLine($"Exiting normally.  {overallSW.Elapsed} time ellapsed.");
+            System.Environment.Exit(0);
         }
 
         /// <summary>
