@@ -11,6 +11,7 @@ using System.IO;
 using System.Text;
 using Cogo.Horizontal;
 using System.Collections.Concurrent;
+using NonLinearBestFit.CsvManager;
 
 namespace TinConsole
 {
@@ -81,7 +82,8 @@ namespace TinConsole
                 ["load_alignments"] = ls => load_alignments(ls),
                 ["profile_to_csv"] = ls => profile_to_csv(ls),
                 ["profiles_to_csvs"] = ls => profiles_to_csvs(ls),
-                ["plot_csv"] = ls => plot_csv(ls),  // major revision, changing approach
+                ["good_fit_hyperbolas"] = ls => good_fit_hyperbolas(ls),
+                ["plot_csv"] = ls => plot_csv(ls),  // Currently inoperable.
                 ["alignment_to_3d_dxf"] = ls => alignment_to_3d_dxf(ls), // undocumented
             };
 
@@ -445,7 +447,25 @@ namespace TinConsole
         }
 
         /// <summary>
+        /// For all profiles in memory (really all alignments in allHorAlignments), create a new
+        /// csv file of the profile. Example usage:
         /// 
+        /// > set_dir "E:\Research\My Papers\Hyperbola Analysis of Terrain\GIS\Studies\Plot Balsams North Slope"
+        /// > set_outdir "E:\Research\My Papers\Hyperbola Analysis of Terrain\GIS\Studies\Plot Balsams North Slope\Outputs\XS"
+        /// >
+        /// > load_alignments "Plot Balsams XS HAs.json" -list
+        /// > load_rasters "E:\Research\My Papers\Hyperbola Analysis of Terrain\GIS\Studies\Plot Balsams North Slope" -bb
+        /// > profiles_to_csvs -truestation
+        /// > 
+        /// > exit
+        ///
+        /// Outputs go to outdir. No output arguments are accepted.
+        /// 
+        /// Arguments:
+        /// : -inc=value : only sample terrain at inc distance increments along alignment. If not set, compute elevation at
+        ///                at every alignment-triangle line intersection.
+        /// : -truestation : Set x-values to true stations. Recommended for cross section profiles.
+        /// : -nameInInfix=value : insert string "value" in the generated csv file name.
         /// </summary>
         /// <param name="commandItems"></param>
         private static void profiles_to_csvs(List<string> commandItems)
@@ -515,6 +535,60 @@ namespace TinConsole
         }
 
         /// <summary>
+        /// For all csv files in a directory, loads the csv, reads station and elevation, computes a good fit hyperbola
+        /// for the left and the right, then writes the hyperbola elevation values to column "hyperbola".
+        /// Example usage:
+        /// 
+        /// > set_dir "E:\Research\My Papers\Hyperbola Analysis of Terrain\GIS\Studies\Plot Balsams North Slope"
+        /// > set_outdir "E:\Research\My Papers\Hyperbola Analysis of Terrain\GIS\Studies\Plot Balsams North Slope\Outputs\XS"
+        /// >
+        /// > load_alignments "Plot Balsams XS HAs.json" -list
+        /// > load_rasters "E:\Research\My Papers\Hyperbola Analysis of Terrain\GIS\Studies\Plot Balsams North Slope" -bb
+        /// > profiles_to_csvs -truestation
+        /// > good_fit_hyperbolas "E:\Research\My Papers\Hyperbola Analysis of Terrain\GIS\Studies\Plot Balsams North Slope\Outputs\XS"
+        /// > 
+        /// > exit
+        ///
+        /// The input directory is a required input parameter.
+        /// 
+        /// Another file is added to the directory (or updated if it exists) recording the a-value and Sa-value for each
+        ///    
+        /// 
+        /// Arguments:
+        /// : path : the path to read csv files from (and write revised csv files to, name unchanged). Required.
+        /// 
+        /// </summary>
+        /// <param name="commandItems"></param>
+        private static void good_fit_hyperbolas(List<string> commandItems)
+        {
+            DirectoryManager workDir = null;
+            // Get the path to find csv files. Refuse to process anything if not provided.
+            if (commandItems.Count == 2)
+            {
+                workDir = DirectoryManager.FromPathString(commandItems[1]);
+                var well = workDir.Exists();
+                if(!workDir.Exists())
+                {
+                    mirrorLogPrint($"good_fit_hyperbola command not processed as the path does not exist:");
+                    mirrorLogPrint(workDir.ToString());
+                    mirrorLogPrint("");
+                    return;
+                }
+            }
+            else
+            {
+                mirrorLogPrint("Format error for good_fit_hyperbola. Unable to process this command.");
+                return;
+            }
+
+            var allFileInDir = workDir.ListFiles(prependPath: true);
+            foreach(var aFile in allFileInDir)
+            {
+                var df = GoodFitDataFrame.Create(aFile);
+            }
+        }
+
+        /// <summary>
         /// Arguments:
         ///     .csv -- csv file to load profile info from
         ///     .pdf -- pdf file to output profile to
@@ -524,6 +598,7 @@ namespace TinConsole
         {
             // This effort, Cogo.Plotting, is suspended indefinitely pending 
             // any future need to restart it, which may never happen.
+            throw new NotImplementedException();
             var csvInputFile = "";
             var parmString = commandItems.Where(s => s.ToLower().Contains(".csv")).FirstOrDefault();
             if (null != parmString)
@@ -1101,6 +1176,7 @@ namespace TinConsole
 
         static string researchOutpath = @"D:\Research\Datasets\Lidar\Tilley Creek\decimation research\simpleResults\";
         static string summaryFile = "summary.csv";
+
         public static void decimate_multiple(int start = 1, int count = 21, int step = 1)
         {
             Stopwatch sw = Stopwatch.StartNew();
