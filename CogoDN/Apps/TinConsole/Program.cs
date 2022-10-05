@@ -600,7 +600,7 @@ namespace TinConsole
 
                 var xValues = dfRightSide.Select(row => row.getX()).ToArray();
                 var yValues = dfRightSide.Select(row => row.getY()).ToArray();
-                var hyperbolaColumn = NonLinearGoodFitter.GetGoodFit(xValues, yValues, zeroElevation, )
+                //var hyperbolaColumn = NonLinearGoodFitter.GetGoodFit(xValues, yValues, zeroElevation, )
                 foreach(var entry in dfRightSide)
                 {
                     double x = HyperbolaFunction(zeroElevation, aRight, SaRight, entry.station);
