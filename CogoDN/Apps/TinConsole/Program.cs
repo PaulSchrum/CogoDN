@@ -12,6 +12,7 @@ using System.Text;
 using Cogo.Horizontal;
 using System.Collections.Concurrent;
 using NonLinearBestFit.CsvManager;
+using NonLinearBestFit;
 
 namespace TinConsole
 {
@@ -581,10 +582,57 @@ namespace TinConsole
                 return;
             }
 
+            Func<double, double, double, double, double> HyperbolaFunction =
+                (zeroElevation, a, aSlope, x) => zeroElevation + (aSlope * (Math.Sqrt((a * a) + (x * x)) - a));
+
             var allFileInDir = workDir.ListFiles(prependPath: true);
-            foreach(var aFile in allFileInDir)
+            var errorTolerance = 0.001d;
+            var seedGuess_a = 10.0d; var seedGuess_Sa = 0.50;
+            foreach (var aFile in allFileInDir)
             {
                 var df = GoodFitDataFrame.Create(aFile);
+
+                var dfRightSide = df.Where(entry => entry.station >= 0.0).ToList();
+                var dfLeftSide = df.Where(entry => entry.station <= 0.0).ToList();
+
+                var zeroElevation = dfRightSide[0].elevation;
+                var aRight = 10.0; var SaRight = -0.25;
+
+                var xValues = dfRightSide.Select(row => row.getX()).ToArray();
+                var yValues = dfRightSide.Select(row => row.getY()).ToArray();
+                var hyperbolaColumn = NonLinearGoodFitter.GetGoodFit(xValues, yValues, zeroElevation, )
+                foreach(var entry in dfRightSide)
+                {
+                    double x = HyperbolaFunction(zeroElevation, aRight, SaRight, entry.station);
+                    entry.hyperbolaValue = x;
+                }
+
+                var aLeft = 8.0; var SaLeft = -0.15;
+                foreach(var entry in dfLeftSide)
+                {
+                    double x = HyperbolaFunction(zeroElevation, aLeft, SaLeft, entry.station);
+                    entry.hyperbolaValue = x;
+                }
+
+                df.write();
+
+
+
+                //var solver = new NonLinearGoodFitter(HyperbolaFunction,
+                //        df, seedGuess_a, seedGuess_Sa, errorTolerance);
+                //solver.param1PercentRange = solver.param2PercentRange = 0.5;
+                //solver.param1Partitions = solver.param2Partitions = 100;
+
+                ////GoodFitParameters bestFit = solver.solve();
+                //double a = 8.0; // bestFit.parameter1;
+                //double asymptoticSlope = -0.65; // bestFit.parameter2;
+                //// double aveError = bestFit.averageError;  
+
+                //foreach(var entry in df)
+                //{
+                //    var x = entry.getX();
+                //    entry.hyperbolaValue = HyperbolaFunction(a, asymptoticSlope, x);
+                //}
             }
         }
 

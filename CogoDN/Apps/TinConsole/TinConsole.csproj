@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\NonLinearBestFit\NonLinearBestFit.csproj" />
     <ProjectReference Include="..\..\Surfaces\Surfaces.csproj" />
   </ItemGroup>
 

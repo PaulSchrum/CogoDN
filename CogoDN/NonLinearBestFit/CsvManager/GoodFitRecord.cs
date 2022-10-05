@@ -4,7 +4,7 @@ using System.Text;
 
 namespace NonLinearBestFit.CsvManager
 {
-    public class GoodFitRecord
+    public class GoodFitRecord : IxyPair
     {
         public double station { get; private set; }
         public double elevation { get; private set; }
@@ -44,12 +44,40 @@ namespace NonLinearBestFit.CsvManager
         {
             var str = new StringBuilder($"{station},{elevation},{vcLength}");
             if (hyperbolaColumnIndex > -1)
-                str.Append($",{hyperbolaValue}");
+            {
+                if (null != hyperbolaValue)
+                    str.Append($",{hyperbolaValue}");
+                else
+                    str.Append(",");
+            }
+
             if (cosineColumnIndex > -1)
-                str.Append($",{cosineValue}");
+            {
+                if (null != cosineValue)
+                    str.Append($",{cosineValue}");
+                else
+                    str.Append(",");
+            }
+            
             if (rationalColumnIndex > -1)
-                str.Append($",{rationalValue}");
+            {
+                if(null != rationalValue)
+                    str.Append($",{rationalValue}");
+                else
+                    str.Append(",");
+            }
             return str.ToString();
         }
+
+        public double getX()
+        {
+            return this.station;
+        }
+
+        public double getY()
+        {
+            return this.elevation;
+        }
+
     }
 }
