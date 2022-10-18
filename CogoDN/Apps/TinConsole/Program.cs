@@ -13,6 +13,7 @@ using Cogo.Horizontal;
 using System.Collections.Concurrent;
 using NonLinearBestFit.CsvManager;
 using NonLinearBestFit;
+using NonLinearBestFit.ParameterEstimates;
 
 namespace TinConsole
 {
@@ -588,25 +589,37 @@ namespace TinConsole
             var allFileInDir = workDir.ListFiles(prependPath: true);
             var errorTolerance = 0.001d;
             var seedGuess_a = 10.0d; var seedGuess_Sa = 0.50;
+            int counter = 0;
             foreach (var aFile in allFileInDir)
             {
                 var df = GoodFitDataFrame.Create(aFile);
 
                 var dfRightSide = df.Where(entry => entry.station >= 0.0).ToList();
                 var dfLeftSide = df.Where(entry => entry.station <= 0.0).ToList();
+                dfLeftSide.Reverse();
 
                 var zeroElevation = dfRightSide[0].elevation;
-                var aRight = 10.0; var SaRight = -0.25;
+                var aRight = 10.0; var SaRight = -0.25; var distanceRight = 100.0;
 
                 var xValues = dfRightSide.Select(row => row.getX()).ToArray();
                 var yValues = dfRightSide.Select(row => row.getY()).ToArray();
+                var hyperbolaParameterEstimator = new HyperbolaEstimator(xValues, yValues);
+                hyperbolaParameterEstimator.EstimateHyperbolaParameters(out aRight, out SaRight, out distanceRight);
+                var rightSide = aFile.Substring(aFile.Length - 24);
+                counter++;
+                if(aFile.Contains("V1A"))
+                {
+                    int stopHere = 44;
+                }
                 //var hyperbolaColumn = NonLinearGoodFitter.GetGoodFit(xValues, yValues, zeroElevation, )
-                foreach(var entry in dfRightSide)
+                foreach (var entry in dfRightSide)
                 {
                     double x = HyperbolaFunction(zeroElevation, aRight, SaRight, entry.station);
                     entry.hyperbolaValue = x;
                 }
 
+                xValues = dfLeftSide.Select(row => -1 * row.getX()).ToArray();
+                yValues = dfLeftSide.Select(row => row.getY()).ToArray();
                 var aLeft = 8.0; var SaLeft = -0.15;
                 foreach(var entry in dfLeftSide)
                 {

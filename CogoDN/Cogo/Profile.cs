@@ -674,6 +674,12 @@ namespace Cogo
             return retVal;
         }
 
+        public double? getElevation(double stat)
+        {
+            CogoStation station = (CogoStation)stat;
+            return getElevation(station);
+        }
+
         public void getElevation(CogoStation station, out tupleNullableDoubles theElevation)
         {
             verticalCurve.getSwitchForProfiles callFunction = new verticalCurve.getSwitchForProfiles(verticalCurve.getElevation);
@@ -698,6 +704,12 @@ namespace Cogo
         {
             verticalCurve.getSwitchForProfiles callFunction = new verticalCurve.getSwitchForProfiles(verticalCurve.getSlope);
             getValueByDelegate(station, out theSlope, callFunction);
+        }
+
+        public void getSlope(double sta, out tupleNullableDoubles theSlope)
+        {
+            CogoStation station = (CogoStation)sta;
+            getSlope(station, out theSlope);
         }
 
         public double? getKValueFromTheRight(CogoStation station)
@@ -1554,6 +1566,30 @@ namespace Cogo
                 {
                     continue;
                 }
+                aVpiList.add(station, elevation, vcLength);
+            }
+
+
+            return new Profile(aVpiList);
+        }
+
+        public static Profile CreateFromXYlists(IReadOnlyList<double> xDim, IReadOnlyList<double> yDim,
+            IReadOnlyList<double> vcLengths=null)
+        {
+            int stationIndex = 0;
+            int elevationIndex = 1;
+            int vcIndex = 2;
+
+            double station, elevation, vcLength = 0d;
+            vpiList aVpiList = new vpiList();
+            for(int i=0; i<xDim.Count(); i++)
+            {
+                station = xDim[i];
+                elevation = yDim[i];
+                if (vcLengths != null)
+                    vcLength = vcLengths[i];
+                else
+                    vcLength = 0;
                 aVpiList.add(station, elevation, vcLength);
             }
 

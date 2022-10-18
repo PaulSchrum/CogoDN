@@ -85,6 +85,10 @@ namespace Cogo
             station = aStationDbl; trueStation = aStationDbl;
         }
 
+        public static explicit operator Double(CogoStation sta)
+        {
+            return sta.trueStation;
+        }
 
         internal CogoStation(GenericAlignment anAlignment) { myAlignment = anAlignment; }
         public CogoStation(CogoStation other)
