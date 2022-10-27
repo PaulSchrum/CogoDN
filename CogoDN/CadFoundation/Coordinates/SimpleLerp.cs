@@ -17,7 +17,9 @@ namespace CadFoundation.Coordinates
         /// <returns></returns>
         public static double LERP(double x1, double y1, double x2, double y2, double givenX)
         {
-            double yInterp = y1 - (x2 - givenX) * (y2 - y1) / (x2 - x1);
+            double slope = (y2 - y1) / (x2 - x1);
+            double deltaY = slope * (givenX - x1);
+            double yInterp = y1 + deltaY;
             return yInterp;
         }
     }
