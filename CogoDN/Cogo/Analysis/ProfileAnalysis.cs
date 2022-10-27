@@ -10,6 +10,7 @@ namespace Cogo.Analysis
     {
         public static int GetStartingTrend(Profile pfl)
         {
+            double zeroElevation = (double) pfl.getElevation(pfl.BeginProfTrueStation);
             double quarterWidth = (pfl.EndProfTrueStation - pfl.BeginProfTrueStation) / 4.0;
             double increment = quarterWidth / 10;
             var elevations = new List<double>();
@@ -33,10 +34,11 @@ namespace Cogo.Analysis
             //if (soe1.elevation < soe2.elevation)
             //    return -1;
 
-            if (averageElevationFirstQuarter > 0.0)  // valley
-                return -1;
+            double deltaElevationZeroToAverage = averageElevationFirstQuarter - zeroElevation;
+            if (deltaElevationZeroToAverage > 0.0)  // valley
+                return +1;
 
-            return 1;  // else ridge
+            return -1;  // else ridge
         }
 
         /// <summary>
