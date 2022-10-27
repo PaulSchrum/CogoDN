@@ -589,7 +589,7 @@ namespace TinConsole
             var allFileInDir = workDir.ListFiles(prependPath: true);
             var errorTolerance = 0.001d;
             var seedGuess_a = 10.0d; var seedGuess_Sa = 0.50;
-            int counter = 0;
+            int counter = 0;  // For diagnostic purposes. Remove for better efficiency.
             foreach (var aFile in allFileInDir)
             {
                 var df = GoodFitDataFrame.Create(aFile);
@@ -604,13 +604,22 @@ namespace TinConsole
                 var xValues = dfRightSide.Select(row => row.getX()).ToArray();
                 var yValues = dfRightSide.Select(row => row.getY()).ToArray();
                 var hyperbolaParameterEstimator = new HyperbolaEstimator(xValues, yValues);
-                hyperbolaParameterEstimator.EstimateHyperbolaParameters(out aRight, out SaRight, out distanceRight);
-                var rightSide = aFile.Substring(aFile.Length - 24);
-                counter++;
-                if(aFile.Contains("V1A"))
+                if (aFile.Contains("V1A"))
                 {
                     int stopHere = 44;
                 }
+                hyperbolaParameterEstimator.EstimateHyperbolaParameters(out aRight, out SaRight, out distanceRight);
+                var rightSide = aFile.Substring(aFile.Length - 24);
+                counter++;
+                var goodFitterInstance = new NonLinearGoodFitter(HyperbolaFunction, xValues, yValues, aRight, SaRight,
+                    distanceRight);
+                goodFitterInstance.profileName = Path.GetFileName(aFile);
+                if (aFile.Contains("V1A"))
+                {
+                    var goodFitParams2 = goodFitterInstance.solve2(0.90);
+                }
+                var goodFitParams = goodFitterInstance.solve();
+
                 //var hyperbolaColumn = NonLinearGoodFitter.GetGoodFit(xValues, yValues, zeroElevation, )
                 foreach (var entry in dfRightSide)
                 {
