@@ -51,11 +51,6 @@ namespace NonLinearBestFit.ParameterEstimates
             var startElevation = allLocalExtrema[0].elevation;
             double endStation = 0.0;
 
-            if (tmpCounter == 4)
-            {
-                int stopHere = 100;
-            }
-
             var extremeSoe = new StationOffsetElevation(startStation, startElevation, 0.0);
             if(allLocalExtrema.Count == 2)
             {
@@ -72,7 +67,7 @@ namespace NonLinearBestFit.ParameterEstimates
                         if(vpi.Elevation < extremeSoe.elevation)
                         {
                             extremeSoe.station = (double) vpi.Station;
-                            extremeSoe.elevation = vpi.Elevation;   ////  ?????
+                            extremeSoe.elevation = vpi.Elevation;
                         }
                     }
                 }
@@ -113,7 +108,7 @@ namespace NonLinearBestFit.ParameterEstimates
 
             // 3. Get steeptest slope and its location
             localStationSlope maxSlopeAndStation = null;
-            if(startingSlopeTrend <= 1) // ridge
+            if(startingSlopeTrend <= -1) // ridge
             {
                 maxSlopeAndStation = slopes.OrderBy(val => val.slope).First();
             }
@@ -127,6 +122,7 @@ namespace NonLinearBestFit.ParameterEstimates
 
             // 4. Set a as being the approximate station where slope = Sa / sqrt(2).
             var slopeAtA = Sa * 0.707106781;
+            // need to account for startingSlopeTrend in this next part.
 
             prevStation = startStation;  double nextStation = 0;
             double prevSlope = 0;  // By definition, slope is 0% at x = 0
@@ -135,7 +131,7 @@ namespace NonLinearBestFit.ParameterEstimates
             {
                 nextStation = segment.station;
                 nextSlope = segment.slope;
-                if (startingSlopeTrend >= 1) // ridge
+                if (startingSlopeTrend <= -1) // ridge
                 {
                     if (nextSlope <= slopeAtA)
                         break;
