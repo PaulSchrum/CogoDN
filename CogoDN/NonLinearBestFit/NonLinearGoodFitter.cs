@@ -142,7 +142,7 @@ namespace NonLinearBestFit
         List<Point> points = new List<Point>();
         StreamWriter writer = null;
 
-        public GoodFitParameters solve2(double minWidthPercent)
+        public GoodFitParameters solve(double minWidthPercent)
         {
             GoodFitParameters returnValue = null;
             double p1Guess = param1Guess;
@@ -224,35 +224,6 @@ namespace NonLinearBestFit
                 averageError = bestCombination.averageError,
                 dilatedCummulativeError = bestCombination.dilatedCummulativeError
             };
-
-            return returnValue;
-        }
-
-        /// <summary>
-        /// Find the two parameter values which result in the lowest 
-        /// </summary>
-        /// <param name="zTolerance"></param>
-        /// <param name="param1Start"></param>
-        /// <param name="param2Start"></param>
-        /// <returns></returns>
-        public GoodFitParameters solve()
-        {
-            GoodFitParameters returnValue = null;
-
-            int depth = 0;
-            double p1Guess = param1Guess;
-            double p2Guess = param2Guess;
-            Dictionary<int, double> depthVsError = new Dictionary<int, double>();  // diagnostic only
-
-            //using (writer = new StreamWriter(@"E:\Research\Scratch\surface.csv"))
-            //{
-            var p1Range = new List<double> { (1 - param1Guess) * p1Guess, 2.0 * p1Guess };
-            var p2Range = new List<double> { 0.25 * p2Guess, 2.0 * p2Guess };
-            foreach(var turn in Enumerable.Range(0,2))
-            {
-                returnValue = solveAnIteration(p1Range, p2Range, datasetY.First());
-            }
-            //}
 
             return returnValue;
         }
