@@ -593,6 +593,7 @@ namespace TinConsole
             foreach (var aFile in allFileInDir)
             {
                 var df = GoodFitDataFrame.Create(aFile);
+                Console.WriteLine($"Processing {df.fileName.pathAsList.Last()}");
 
                 var dfRightSide = df.Where(entry => entry.station >= 0.0).ToList();
                 var dfLeftSide = df.Where(entry => entry.station <= 0.0).ToList();
@@ -603,58 +604,55 @@ namespace TinConsole
 
                 var xValues = dfRightSide.Select(row => row.getX()).ToArray();
                 var yValues = dfRightSide.Select(row => row.getY()).ToArray();
+
                 var hyperbolaParameterEstimator = new HyperbolaEstimator(xValues, yValues);
-                if (aFile.Contains("V1A"))
-                {
-                    int stopHere = 44;
-                }
                 hyperbolaParameterEstimator.EstimateHyperbolaParameters(out aRight, out SaRight, out distanceRight);
+
                 var rightSide = aFile.Substring(aFile.Length - 24);
-                counter++;
                 var goodFitterInstance = new NonLinearGoodFitter(HyperbolaFunction, xValues, yValues, aRight, SaRight,
                     distanceRight);
                 goodFitterInstance.profileName = Path.GetFileName(aFile);
-                if (aFile.Contains("V1A"))
-                {
-                    var goodFitParams2 = goodFitterInstance.solve2(0.90);
-                }
-                var goodFitParams = goodFitterInstance.solve();
 
-                //var hyperbolaColumn = NonLinearGoodFitter.GetGoodFit(xValues, yValues, zeroElevation, )
+                var goodFitParamsRight = goodFitterInstance.solve(0.90);
+                aRight = goodFitParamsRight.parameter1;
+                SaRight = goodFitParamsRight.parameter2;
+                var widthRight = goodFitParamsRight.widthExtent;
+
                 foreach (var entry in dfRightSide)
                 {
-                    double x = HyperbolaFunction(zeroElevation, aRight, SaRight, entry.station);
-                    entry.hyperbolaValue = x;
+                    if(entry.station <= widthRight)
+                        entry.hyperbolaValue = HyperbolaFunction(zeroElevation, aRight, SaRight, entry.station);
+                    else
+                        entry.hyperbolaValue = double.NaN;
                 }
+
+                var aLeft = 10.0; var SaLeft = -0.25; var distanceLeft = 100.0;
 
                 xValues = dfLeftSide.Select(row => -1 * row.getX()).ToArray();
                 yValues = dfLeftSide.Select(row => row.getY()).ToArray();
-                var aLeft = 8.0; var SaLeft = -0.15;
+                hyperbolaParameterEstimator = new HyperbolaEstimator(xValues, yValues);
+                hyperbolaParameterEstimator.EstimateHyperbolaParameters(out aLeft, out SaLeft, out distanceRight);
+
+                goodFitterInstance = new NonLinearGoodFitter(HyperbolaFunction, xValues, yValues, aLeft, SaLeft,
+                    distanceLeft);
+                goodFitterInstance.profileName = Path.GetFileName(aFile);
+
+                goodFitParamsRight = goodFitterInstance.solve(0.90);
+                aLeft = goodFitParamsRight.parameter1;
+                SaLeft = goodFitParamsRight.parameter2;
+                var widthLeft = -goodFitParamsRight.widthExtent;
                 foreach(var entry in dfLeftSide)
                 {
-                    double x = HyperbolaFunction(zeroElevation, aLeft, SaLeft, entry.station);
-                    entry.hyperbolaValue = x;
+                    if (entry.station >= widthLeft)
+                        entry.hyperbolaValue = HyperbolaFunction(zeroElevation, aLeft, SaLeft, entry.station);
+                    else
+                        entry.hyperbolaValue = double.NaN;
                 }
+                widthLeft *= -1.0;
 
                 df.write();
 
-
-
-                //var solver = new NonLinearGoodFitter(HyperbolaFunction,
-                //        df, seedGuess_a, seedGuess_Sa, errorTolerance);
-                //solver.param1PercentRange = solver.param2PercentRange = 0.5;
-                //solver.param1Partitions = solver.param2Partitions = 100;
-
-                ////GoodFitParameters bestFit = solver.solve();
-                //double a = 8.0; // bestFit.parameter1;
-                //double asymptoticSlope = -0.65; // bestFit.parameter2;
-                //// double aveError = bestFit.averageError;  
-
-                //foreach(var entry in df)
-                //{
-                //    var x = entry.getX();
-                //    entry.hyperbolaValue = HyperbolaFunction(a, asymptoticSlope, x);
-                //}
+                // Also, write good fit parameters to a text file in the same directory.
             }
         }
 
