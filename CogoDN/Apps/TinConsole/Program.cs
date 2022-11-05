@@ -586,7 +586,7 @@ namespace TinConsole
             Func<double, double, double, double, double> HyperbolaFunction =
                 (zeroElevation, a, aSlope, x) => zeroElevation + (aSlope * (Math.Sqrt((a * a) + (x * x)) - a));
 
-            var allFileInDir = workDir.ListFiles(prependPath: true);
+            var allFileInDir = workDir.ListFiles(filterStr: "*.csv", prependPath: true);
             var errorTolerance = 0.001d;
             var seedGuess_a = 10.0d; var seedGuess_Sa = 0.50;
             int counter = 0;  // For diagnostic purposes. Remove for better efficiency.
@@ -652,7 +652,12 @@ namespace TinConsole
 
                 df.write();
 
-                // Also, write good fit parameters to a text file in the same directory.
+                // Write good fit parameters to a text file in the same directory.
+                var summaryTextFilename = df.fileName.NewSwapExtension("txt");
+                var writeString = 
+                    NonLinearGoodFitter.GetStringForTextFile_Hyperbola(
+                        aRight, SaRight, widthRight, aLeft, SaLeft, widthLeft);
+                File.WriteAllText(summaryTextFilename.path, writeString);
             }
         }
 
