@@ -57,6 +57,13 @@ namespace CadFoundation
             }
         }
 
+        public DirectoryManager NewSwapExtension(string newExtension)
+        {
+            DirectoryManager newDM = new DirectoryManager(this);
+            newDM.path = DirectoryPart + delim +(string)Path.GetFileNameWithoutExtension(this.path) + "." + newExtension;
+            return newDM;
+        }
+
         protected void setPathFromList(List<string> aList)
         {
             this.path = string.Join(delim, aList) + delim;
@@ -233,17 +240,17 @@ namespace CadFoundation
                 Directory.CreateDirectory(this.path);
         }
 
-        public IReadOnlyList<string> ListFiles(bool prependPath = false)
+        public IReadOnlyList<string> ListFiles(string filterStr = null, bool prependPath = false)
         {
             if(prependPath)
             {
-                return (IReadOnlyList<string>)Directory.GetFiles(this.path)
+                return (IReadOnlyList<string>)Directory.GetFiles(this.path, filterStr)
                     .Select(fn => fn)
                     .ToList();
 
             }
             // else
-            return (IReadOnlyList<string>)Directory.GetFiles(this.path)
+            return (IReadOnlyList<string>)Directory.GetFiles(this.path, filterStr)
                 .Select(fn => Path.GetFileName(fn))
                 .ToList();
         }
