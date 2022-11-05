@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace NonLinearBestFit
@@ -421,6 +422,19 @@ namespace NonLinearBestFit
             return averageError;
         }
 
+        public static string GetStringForTextFile_Hyperbola(double aRt, double SaRt, double widthRt,
+            double aLt, double SaLt, double widthLt)
+        {
+            StringBuilder retStr = new StringBuilder();
+            retStr.Append($"aRt={aRt:0.##}\n");
+            retStr.Append($"SaRt={SaRt*100.0:0.00}%\n");
+            retStr.Append($"widthRt={widthRt:0.0}\n");
+            retStr.Append($"aLt={aLt:0.##}\n");
+            retStr.Append($"SaLt={SaLt * 100.0:0.00}%\n");
+            retStr.Append($"widthLt={widthLt:0.0}\n");
+            return retStr.ToString();
+        }
+
     }
 
     public class GoodFitParameters
@@ -431,6 +445,14 @@ namespace NonLinearBestFit
         public double widthExtent { get; set; }   // Width of the current measured patch. Higher is better.
         public double errorPerDistance { get; set; }  // average error over width. Lower is better.
         public double dilatedCummulativeError { get; set; }  // Lower is better.
-        // public IReadOnlyList<double> hyperbolaValues { get; set; }
+
+        public string param1Name { get; set; }
+        public string param2Name { get; set; }
+
+        public static void ToFile(string filename, GoodFitParameters leftParams, GoodFitParameters rightParams, 
+            string curveType = null)
+        {
+            // todo: make this method save a txt file to store the good fit parameters.
+        }
     }
 }
