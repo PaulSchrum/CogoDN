@@ -7,6 +7,7 @@ import warnings
 warnings.filterwarnings("ignore")
 import pandas as pd
 from matplotlib import pyplot as plt
+import matplotlib.backends.backend_pdf
 import sys
 from pathlib import Path
 
@@ -21,7 +22,26 @@ plt.style.use('ggplot')
 x: Path
 csv_files = [x for x in csv_path.iterdir() if x.is_file() and x.suffix == '.csv']
 
-for a_file in csv_files[:3]:
+class paramStuffs:
+    def __init__(self, file_name: Path):
+        file_to_open = file_name.with_suffix('.txt')
+        with open(file_to_open) as a_file:
+            self.all_lines = [line.rstrip() for line in a_file]
+
+    def get_formatted_left_text(self):
+        start_idx = 4
+        return f'{self.all_lines[start_idx]}\n{self.all_lines[start_idx+1]}\n{self.all_lines[start_idx+2]}\n{self.all_lines[start_idx+3]}\n'
+
+    def get_formatted_right_text(self):
+        start_idx = 0
+        return f'{self.all_lines[start_idx]}\n{self.all_lines[start_idx+1]}\n{self.all_lines[start_idx+2]}\n{self.all_lines[start_idx+3]}\n'
+
+
+outfile = str(pdf_path.resolve()) + '\\' + 'hyperbola plots.pdf'
+pdf = matplotlib.backends.backend_pdf.PdfPages(outfile)
+for a_file in csv_files:
+    params = paramStuffs(a_file)
+
     # Set the figure size
     plt.rcParams["figure.figsize"] = [7.00, 3.50]
     plt.rcParams["figure.autolayout"] = True
@@ -46,6 +66,14 @@ for a_file in csv_files[:3]:
     df_hyperbola.plot.line(linewidth=1, color="red", linestyle='solid')
 
     plt.legend()
+    title = Path(a_file).stem[:-4]
+    plt.title(title)
+    left_text = params.get_formatted_left_text()
+    right_text = params.get_formatted_right_text()
+    plt.figtext(0.1, 0.01, left_text, horizontalalignment='left', fontsize=12)
+    plt.figtext(0.7, 0.01, right_text, horizontalalignment='left', fontsize=12)
+
+    plt.gca().set_aspect('equal')
 
 
     # plot = df.plot(linewidth=2, color="dimgrey", linestyle='dashed', title=a_file.stem)
@@ -53,11 +81,18 @@ for a_file in csv_files[:3]:
     # color blind palettes at https://yoshke.org/blog/colorblind-friendly-diagrams
 
     # fig = df.plot.get_figure()
-    pdf_file_name = a_file.name[:-4] + '.pdf'
-    new_file_name = str(pdf_path.resolve()) + '\\' + pdf_file_name
-    plt.savefig(new_file_name, format="pdf") #, bbox_inches="tight")
-    print(pdf_file_name)
+    # pdf_file_name = a_file.name[:-4] + '.pdf'
+    # new_file_name = str(pdf_path.resolve()) + '\\' + pdf_file_name
+    # plt.savefig(new_file_name, format="pdf") #, bbox_inches="tight")
+    # print(pdf_file_name)
+    pdf.savefig()
 
     # plt.show()
 
     dbg = 1
+
+pdf.close()
+
+
+
+
