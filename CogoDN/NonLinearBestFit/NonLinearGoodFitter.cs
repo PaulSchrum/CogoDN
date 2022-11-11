@@ -183,7 +183,7 @@ namespace NonLinearBestFit
                     double priorError = accumulatingList[0].functionElevation - priorY;
                     double minDCE = Double.PositiveInfinity; double stationOfMindDCE = 0;
 
-                    // process accumulated values to find lowest Dilated Cummulative Error.
+                    // process accumulated values to find lowest Dilated Cumulative Error.
                     for (int idx = 1; idx < datasetX.Count; idx++)
                     {
                         var aRecord = accumulatingList[idx];
@@ -422,16 +422,18 @@ namespace NonLinearBestFit
             return averageError;
         }
 
-        public static string GetStringForTextFile_Hyperbola(double aRt, double SaRt, double widthRt,
-            double aLt, double SaLt, double widthLt)
+        public static string GetStringForTextFile_Hyperbola(GoodFitParameters leftParams, 
+            GoodFitParameters rightParams)
         {
             StringBuilder retStr = new StringBuilder();
-            retStr.Append($"aRt={aRt:0.##}\n");
-            retStr.Append($"SaRt={SaRt*100.0:0.00}%\n");
-            retStr.Append($"widthRt={widthRt:0.0}\n");
-            retStr.Append($"aLt={aLt:0.##}\n");
-            retStr.Append($"SaLt={SaLt * 100.0:0.00}%\n");
-            retStr.Append($"widthLt={widthLt:0.0}\n");
+            retStr.Append($"aRt={rightParams.parameter1:0.##}\n");
+            retStr.Append($"SaRt={rightParams.parameter2 * 100.0:0.00}%\n");
+            retStr.Append($"widthRt={rightParams.widthExtent:0.0}\n");
+            retStr.Append($"AveErrorRt={rightParams.averageError:0.0}\n");
+            retStr.Append($"aLt={leftParams.parameter1:0.##}\n");
+            retStr.Append($"SaLt={leftParams.parameter2 * 100.0:0.00}%\n");
+            retStr.Append($"widthLt={leftParams.widthExtent:0.0}\n");
+            retStr.Append($"AveErrorLt={leftParams.averageError:0.0}\n");
             return retStr.ToString();
         }
 
