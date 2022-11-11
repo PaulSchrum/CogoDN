@@ -617,6 +617,7 @@ namespace TinConsole
                 aRight = goodFitParamsRight.parameter1;
                 SaRight = goodFitParamsRight.parameter2;
                 var widthRight = goodFitParamsRight.widthExtent;
+                var averageErrorRt = goodFitParamsRight.averageError;
 
                 foreach (var entry in dfRightSide)
                 {
@@ -637,10 +638,11 @@ namespace TinConsole
                     distanceLeft);
                 goodFitterInstance.profileName = Path.GetFileName(aFile);
 
-                goodFitParamsRight = goodFitterInstance.solve(0.90);
-                aLeft = goodFitParamsRight.parameter1;
-                SaLeft = goodFitParamsRight.parameter2;
-                var widthLeft = -goodFitParamsRight.widthExtent;
+                var goodFitParamsLeft = goodFitterInstance.solve(0.90);
+                aLeft = goodFitParamsLeft.parameter1;
+                SaLeft = goodFitParamsLeft.parameter2;
+                var widthLeft = -goodFitParamsLeft.widthExtent;
+                var averageErrorLt = goodFitParamsLeft.averageError;
                 foreach(var entry in dfLeftSide)
                 {
                     if (entry.station >= widthLeft)
@@ -655,8 +657,7 @@ namespace TinConsole
                 // Write good fit parameters to a text file in the same directory.
                 var summaryTextFilename = df.fileName.NewSwapExtension("txt");
                 var writeString = 
-                    NonLinearGoodFitter.GetStringForTextFile_Hyperbola(
-                        aRight, SaRight, widthRight, aLeft, SaLeft, widthLeft);
+                    NonLinearGoodFitter.GetStringForTextFile_Hyperbola(goodFitParamsLeft, goodFitParamsRight);
                 File.WriteAllText(summaryTextFilename.path, writeString);
             }
         }
