@@ -302,10 +302,6 @@ namespace NonLinearBestFit
 
             foreach (var p1 in param1RangeOfValues)
             {
-                if(p1 > 48)
-                {
-                    int stopHeretoo = 444;
-                }
                 var widthRange = getValuesOverRange(p1, datasetX.Last(), 10);
                 foreach (var p2 in param2Values)
                 {
@@ -318,13 +314,6 @@ namespace NonLinearBestFit
                     }
                 }
             }
-            //if (null != writer)
-            //{
-            //    foreach (var row in allValues)
-            //    {
-            //        writer.WriteLine(row.ToString());
-            //    }
-            //}
 
             var someGoodEns = allValues.OrderBy(row => row.errorOverD).Take(33).ToList();
             var bestOne = allValues.OrderBy(row => row.error).FirstOrDefault();
