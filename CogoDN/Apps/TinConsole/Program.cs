@@ -85,6 +85,7 @@ namespace TinConsole
                 ["profile_to_csv"] = ls => profile_to_csv(ls),
                 ["profiles_to_csvs"] = ls => profiles_to_csvs(ls),
                 ["good_fit_hyperbolas"] = ls => good_fit_hyperbolas(ls),
+                ["good_fit_cosines"] = ls => good_fit_cosines(ls),
                 ["plot_csv"] = ls => plot_csv(ls),  // Currently inoperable.
                 ["alignment_to_3d_dxf"] = ls => alignment_to_3d_dxf(ls), // undocumented
             };
@@ -569,9 +570,9 @@ namespace TinConsole
             {
                 workDir = DirectoryManager.FromPathString(commandItems[1]);
                 var well = workDir.Exists();
-                if(!workDir.Exists())
+                if (!workDir.Exists())
                 {
-                    mirrorLogPrint($"good_fit_hyperbola command not processed as the path does not exist:");
+                    mirrorLogPrint($"good_fit_hyperbolas command not processed as the path does not exist:");
                     mirrorLogPrint(workDir.ToString());
                     mirrorLogPrint("");
                     return;
@@ -579,7 +580,7 @@ namespace TinConsole
             }
             else
             {
-                mirrorLogPrint("Format error for good_fit_hyperbola. Unable to process this command.");
+                mirrorLogPrint("Format error for good_fit_hyperbolas. Unable to process this command.");
                 return;
             }
 
@@ -589,7 +590,7 @@ namespace TinConsole
             var allFileInDir = workDir.ListFiles(filterStr: "*.csv", prependPath: true);
             var errorTolerance = 0.001d;
             var seedGuess_a = 10.0d; var seedGuess_Sa = 0.50;
-            int counter = 0;  // For diagnostic purposes. Remove for better efficiency.
+            int counter = 0;
             foreach (var aFile in allFileInDir)
             {
                 var df = GoodFitDataFrame.Create(aFile);
@@ -621,7 +622,7 @@ namespace TinConsole
 
                 foreach (var entry in dfRightSide)
                 {
-                    if(entry.station <= widthRight)
+                    if (entry.station <= widthRight)
                         entry.hyperbolaValue = HyperbolaFunction(zeroElevation, aRight, SaRight, entry.station);
                     else
                         entry.hyperbolaValue = double.NaN;
@@ -632,7 +633,7 @@ namespace TinConsole
                 xValues = dfLeftSide.Select(row => -1 * row.getX()).ToArray();
                 yValues = dfLeftSide.Select(row => row.getY()).ToArray();
                 hyperbolaParameterEstimator = new HyperbolaEstimator(xValues, yValues);
-                hyperbolaParameterEstimator.EstimateHyperbolaParameters(out aLeft, out SaLeft, out distanceRight);
+                hyperbolaParameterEstimator.EstimateHyperbolaParameters(out aLeft, out SaLeft, out distanceLeft);
 
                 goodFitterInstance = new NonLinearGoodFitter(HyperbolaFunction, xValues, yValues, aLeft, SaLeft,
                     distanceLeft);
@@ -643,7 +644,7 @@ namespace TinConsole
                 SaLeft = goodFitParamsLeft.parameter2;
                 var widthLeft = -goodFitParamsLeft.widthExtent;
                 var averageErrorLt = goodFitParamsLeft.averageError;
-                foreach(var entry in dfLeftSide)
+                foreach (var entry in dfLeftSide)
                 {
                     if (entry.station >= widthLeft)
                         entry.hyperbolaValue = HyperbolaFunction(zeroElevation, aLeft, SaLeft, entry.station);
@@ -656,7 +657,135 @@ namespace TinConsole
 
                 // Write good fit parameters to a text file in the same directory.
                 var summaryTextFilename = df.fileName.NewSwapExtension("txt");
-                var writeString = 
+                var writeString =
+                    NonLinearGoodFitter.GetStringForTextFile_Hyperbola(goodFitParamsLeft, goodFitParamsRight);
+                File.WriteAllText(summaryTextFilename.path, writeString);
+            }
+        }
+
+        /// <summary>
+        /// For all csv files in a directory, loads the csv, reads station and elevation, computes a good fit cosine
+        /// quarter wave for the left and the right, then writes the cosine elevation values to column "cosine".
+        /// Example usage:
+        /// 
+        /// > set_dir "E:\Research\My Papers\Hyperbola Analysis of Terrain\GIS\Studies\Plot Balsams North Slope"
+        /// > set_outdir "E:\Research\My Papers\Hyperbola Analysis of Terrain\GIS\Studies\Plot Balsams North Slope\Outputs\XS"
+        /// >
+        /// > load_alignments "Plot Balsams XS HAs.json" -list
+        /// > load_rasters "E:\Research\My Papers\Hyperbola Analysis of Terrain\GIS\Studies\Plot Balsams North Slope" -bb
+        /// > profiles_to_csvs -truestation
+        /// > good_fit_good_fit_cosines "E:\Research\My Papers\Hyperbola Analysis of Terrain\GIS\Studies\Plot Balsams North Slope\Outputs\XS"
+        /// > 
+        /// > exit
+        ///
+        /// The input directory is a required input parameter.
+        /// 
+        /// Another file is added to the directory (or updated if it exists) recording the a-value and Sa-value for each
+        ///    
+        /// 
+        /// Arguments:
+        /// : path : the path to read csv files from (and write revised csv files to, name unchanged). Required.
+        /// 
+        /// </summary>
+        /// <param name="commandItems"></param>
+        private static void good_fit_cosines(List<string> commandItems)
+        {
+            DirectoryManager workDir = null;
+            // Get the path to find csv files. Refuse to process anything if not provided.
+            if (commandItems.Count == 2)
+            {
+                workDir = DirectoryManager.FromPathString(commandItems[1]);
+                var well = workDir.Exists();
+                if (!workDir.Exists())
+                {
+                    mirrorLogPrint($"good_fit_cosines command not processed as the path does not exist:");
+                    mirrorLogPrint(workDir.ToString());
+                    mirrorLogPrint("");
+                    return;
+                }
+            }
+            else
+            {
+                mirrorLogPrint("Format error for good_fit_cosines. Unable to process this command.");
+                return;
+            }
+
+            Func<double, double, double, double, double> CosineFunction =
+                (zeroElevation, amplitude, quarterWavelength, x) => zeroElevation + amplitude * Math.Cos(Math.PI*x / (quarterWavelength/2));
+
+            var allFileInDir = workDir.ListFiles(filterStr: "*.csv", prependPath: true);
+            var errorTolerance = 0.001d;
+            var seedGuess_a = 10.0d; var seedGuess_Sa = 0.50;
+            int counter = 0;  // For diagnostic purposes. Remove for better efficiency.
+            foreach (var aFile in allFileInDir)
+            {
+                var df = GoodFitDataFrame.Create(aFile);
+                Console.WriteLine($"Good Fit Cosine Processing {df.fileName.pathAsList.Last()}");
+
+                var dfRightSide = df.Where(entry => entry.station >= 0.0).ToList();
+                var dfLeftSide = df.Where(entry => entry.station <= 0.0).ToList();
+                dfLeftSide.Reverse();
+
+                var zeroElevation = dfRightSide[0].elevation;
+                var amplitudeRight = 10.0; 
+                var minWidth = 0.0; var maxWidth = 0.0;
+
+                var xValues = dfRightSide.Select(row => row.getX()).ToArray();
+                var yValues = dfRightSide.Select(row => row.getY()).ToArray();
+
+                var CosineParameterEstimator = new CosineEstimator(xValues, yValues);
+                Tuple<double, double> rangeTuple = null;
+                CosineParameterEstimator.EstimateCosineParameterRanges(0.9, out rangeTuple);
+
+                var rightSide = aFile.Substring(aFile.Length - 24);
+                var goodFitterInstance = new NonLinearGoodFitter(CosineFunction, xValues, yValues, amplitudeRight, minWidth,
+                    maxWidth);
+                goodFitterInstance.profileName = Path.GetFileName(aFile);
+
+                var goodFitParamsRight = goodFitterInstance.solve(0.90);
+                amplitudeRight = goodFitParamsRight.parameter1;
+                //slopeRight = goodFitParamsRight.parameter2;
+                var widthRight = goodFitParamsRight.widthExtent;
+                var averageErrorRt = goodFitParamsRight.averageError;
+
+                foreach (var entry in dfRightSide)
+                {
+                    if (entry.station <= widthRight)
+                        entry.hyperbolaValue = CosineFunction(zeroElevation, amplitudeRight, minWidth, entry.station);
+                    else
+                        entry.hyperbolaValue = double.NaN;
+                }
+
+                var amplitudeLeft = 10.0; var slopeLeft = -0.25; var distanceLeft = 100.0;
+
+                xValues = dfLeftSide.Select(row => -1 * row.getX()).ToArray();
+                yValues = dfLeftSide.Select(row => row.getY()).ToArray();
+                CosineParameterEstimator = new CosineEstimator(xValues, yValues);
+                CosineParameterEstimator.EstimateCosineParameterRanges(0.9, out rangeTuple);
+
+                goodFitterInstance = new NonLinearGoodFitter(CosineFunction, xValues, yValues, amplitudeLeft, slopeLeft,
+                    distanceLeft);
+                goodFitterInstance.profileName = Path.GetFileName(aFile);
+
+                var goodFitParamsLeft = goodFitterInstance.solve(0.90);
+                amplitudeLeft = goodFitParamsLeft.parameter1;
+                slopeLeft = goodFitParamsLeft.parameter2;
+                var widthLeft = -goodFitParamsLeft.widthExtent;
+                var averageErrorLt = goodFitParamsLeft.averageError;
+                foreach (var entry in dfLeftSide)
+                {
+                    if (entry.station >= widthLeft)
+                        entry.hyperbolaValue = CosineFunction(zeroElevation, amplitudeLeft, slopeLeft, entry.station);
+                    else
+                        entry.hyperbolaValue = double.NaN;
+                }
+                widthLeft *= -1.0;
+
+                df.write();
+
+                // Write good fit parameters to a text file in the same directory.
+                var summaryTextFilename = df.fileName.NewSwapExtension("txt");
+                var writeString =
                     NonLinearGoodFitter.GetStringForTextFile_Hyperbola(goodFitParamsLeft, goodFitParamsRight);
                 File.WriteAllText(summaryTextFilename.path, writeString);
             }

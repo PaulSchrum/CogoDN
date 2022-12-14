@@ -295,10 +295,6 @@ namespace NonLinearBestFit
             List<paramsAndError> allValues = new List<paramsAndError>();
             var param1RangeOfValues = getValuesOverRange(param1Values, param1Partitions);
             var param2RangeOfValues = getValuesOverRange(param2Values, param2Partitions);
-            if (profileName.Contains("V1A"))
-            {
-                int stopHere = 44;
-            }
 
             foreach (var p1 in param1RangeOfValues)
             {
@@ -323,7 +319,7 @@ namespace NonLinearBestFit
             return returnValue;
         }
 
-        private GoodFitParameters solveOneIteration(  // start here, but rework the approach.
+        private GoodFitParameters solveOneIteration(
             double param1Start,
             double param2Start,
             int depth)

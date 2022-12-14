@@ -36,4 +36,8 @@ namespace NonLinearBestFit.ParameterEstimates
         Crest = -1,
         Sag = 1
     };
+    public class DataTooIrregularException : NotImplementedException
+    {
+
+    }
 }

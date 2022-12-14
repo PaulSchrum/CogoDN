@@ -2,7 +2,8 @@
   "profiles": {
     "TinConsole": {
       "commandName": "Project",
-      "workingDirectory": "E:\\Research\\My Papers\\Curvature Weighted Decimation\\Data and charts\\Rasters\\Tuttle"
+      "commandLineArgs": "\"E:\\Research\\My Papers\\Hyperbola Analysis of Terrain\\GIS\\Studies\\Plot Balsams North Slope\\CreateXSBestFitCosines.tcc.txt\"",
+      "workingDirectory": "E:\\Research\\My Papers\\Hyperbola Analysis of Terrain\\GIS\\Studies\\Plot Balsams North Slope"
     }
   }
 }

@@ -10,6 +10,7 @@ from matplotlib import pyplot as plt
 import matplotlib.backends.backend_pdf
 import sys
 from pathlib import Path
+import Pillow
 
 csv_directory = sys.argv[1]
 
@@ -90,6 +91,7 @@ for a_file in csv_files:
     # plt.show()
 
     dbg = 1
+
 
 pdf.close()
 
