@@ -71,12 +71,6 @@ namespace Unit_Tests
                 tinFromLidar = TINsurface.CreateFromLAS(lidarFileName);
         }
 
-        //private void InitializeGeoTiffTests()
-        //{
-        //    setupDatasetFileNames();
-        //    tinFromGeotiff ??= TINsurface.CreateFromGeoTiff(geotiffFileName);
-        //}
-
         [TestMethod]
         public void TinFromLidar_isNotNull()
         {
