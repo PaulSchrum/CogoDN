@@ -244,6 +244,8 @@ namespace Cogo.Horizontal
 
         public static ConcurrentBag<HorizontalAlignment> createMultipleFromGeojsonFile(string jsonFileName)
         {
+            // Tech debt: This function no longer reads multi-point features. It should be restored to work
+            // in this way again soon.
             ConcurrentBag<HorizontalAlignment> returnBag = new ConcurrentBag<HorizontalAlignment>();
             string levelName;
             int epsg;
@@ -253,83 +255,32 @@ namespace Cogo.Horizontal
             using (var jsonDoc = JsonDocument.Parse(jsonAsString))
             {
                 var root = jsonDoc.RootElement;
-                
-                dynamic GetValueDynamic(JsonElement elem, string property, 
-                    string expectedType)
+
+                // The following is with help from Chat-GPT 4.
+                JsonElement crs = root.GetProperty("crs").GetProperty("properties").GetProperty("name");
+
+                JsonElement features = root.GetProperty("features");
+
+                foreach(JsonElement feature in features.EnumerateArray()) 
                 {
-                    JsonElement jsonElement;
-                    bool success = elem.TryGetProperty(property, out jsonElement);
-                    var eType = jsonElement.GetType();
-                    switch(expectedType)
+                    string thisName = feature.GetProperty("properties").GetProperty("Name").GetString();
+                    double cldist = feature.GetProperty("properties").GetProperty("cldist").GetDouble();
+                    double beginStation = cldist * -1d;
+
+                    JsonElement coordinates = feature.GetProperty("geometry").GetProperty("coordinates");
+                    JsonElement startPoint = coordinates[0][0];
+                    JsonElement endPoint = coordinates[0][1];
+
+                    List<Point> coordinateList = new List<Point>();
+
+                    foreach (JsonElement segment in coordinates.EnumerateArray())
                     {
-                        case "string":
+                        foreach (JsonElement point in segment.EnumerateArray())
                         {
-                            return jsonElement.GetString();
-                        }
-                        case "int":
-                        {
-                            return jsonElement.GetInt32();
-                        }
-                        case "double":
-                        {
-                            return jsonElement.GetDouble();
-                        }
-                        case "jsonElement":
-                        {
-                            return jsonElement;
-                        }
-
-                        default:
-                            return jsonElement;
-                    }
-                    return null;
-                }
-                
-                string geometryType = (string)GetValueDynamic(root, "geometryType", "string");
-                var srs = (JsonElement) GetValueDynamic(root, "spatialReference", "jsonElement");
-                epsg = (int)GetValueDynamic(srs, "latestWkid", "int");
-
-                string nameString = null;
-                var fields = new List<string>();
-                var fieldsElement = (JsonElement)GetValueDynamic(root, "fields", "jsonElement");
-                foreach(var aField in fieldsElement.EnumerateArray())
-                {
-                    var item = (string)GetValueDynamic(aField, "name", "string");
-                    fields.Add(item);
-                }
-                nameString = fields.Where(f => f.ToLower() == "name").FirstOrDefault();
-                var beginStationStr = fields.Where(f => f.ToLower() == "cldist").FirstOrDefault();
-
-                foreach (var feature in root.GetProperty("features").EnumerateArray())
-                {
-                    var attributes = (JsonElement)GetValueDynamic(feature, "attributes", "jsonElement");
-                    string thisName = null;
-                    if (nameString != null)
-                        thisName = (string)GetValueDynamic(attributes, nameString, "string");
-                    else
-                        thisName = Guid.NewGuid().ToString().Substring(0,9);
-
-                    double beginStation = 0d;
-                    if(beginStationStr != null)
-                        beginStation = (double)GetValueDynamic(attributes, beginStationStr, "double");
-                    beginStation *= -1d;
-
-
-                    var itemGeometry = feature.GetProperty("geometry");
-                    var geometryPoints = itemGeometry.GetProperty("paths");
-                    var coordinateList = new List<Point>();
-                    foreach (var coordinates in geometryPoints.EnumerateArray())
-                    {
-                        var asString = coordinates.ToString();
-                        asString = asString.Replace("[[", "").Replace("]]", "");
-                        var asStringArray = asString.Split(",")
-                            .Select(n => n.Replace("[", "").Replace("]", "")).ToArray();
-
-                        for(int i=0; i< asStringArray.Length; i+=2)
-                        {
-                            var x = Convert.ToDouble(asStringArray[i]);
-                            var y = Convert.ToDouble(asStringArray[i+1]);
-                            coordinateList.Add(new Point(x, y));
+                            double x = point[0].GetDouble();
+                            double y = point[1].GetDouble();
+                            var pointN = new Point(x, y);
+                            coordinateList.Add(pointN);
                         }
                     }
 
