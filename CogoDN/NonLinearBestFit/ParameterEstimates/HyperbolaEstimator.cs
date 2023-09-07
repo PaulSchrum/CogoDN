@@ -87,7 +87,7 @@ namespace NonLinearBestFit.ParameterEstimates
 
 
             // 2. Get slopes at intervals
-            double increment = 12;
+            double increment = 12 * 0.3048; // 12 feet in meters
             double prevStation = startStation;
             double prevElevation = startElevation;
             List<localStationSlope> slopes = new List<localStationSlope>();
@@ -108,13 +108,22 @@ namespace NonLinearBestFit.ParameterEstimates
 
             // 3. Get steeptest slope and its location
             localStationSlope maxSlopeAndStation = null;
-            if(startingSlopeTrend <= -1) // ridge
-            {
-                maxSlopeAndStation = slopes.OrderBy(val => val.slope).First();
+            try {
+                if(startingSlopeTrend <= -1) // ridge
+                {
+                    maxSlopeAndStation = slopes.OrderBy(val => val.slope).First();
+                }
+                else // valley
+                {
+                    maxSlopeAndStation = slopes.OrderByDescending(val => val.slope).First();
+                }
             }
-            else // valley
+            catch (InvalidOperationException ioe) 
             {
-                maxSlopeAndStation = slopes.OrderByDescending(val => val.slope).First();
+                System.Console.WriteLine($"    Unable to estimate hyperbola for this profile.");
+                System.Console.WriteLine("    Skipping this profile for hyperbola fitting.");
+                a = Sa = xDistance = -1.0;
+                return;
             }
 
             Sa = maxSlopeAndStation.slope;
