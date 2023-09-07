@@ -151,7 +151,7 @@ namespace NonLinearBestFit
             double baseElevation = datasetY[0];
             double startStation = datasetX[0];
 
-            var allCominations = new List<bestValues>();
+            var allCombinations = new List<bestValues>();
             var param1ValueList = getValuesOverRange(p1Guess, 40, param1PercentRange);
             // param1ValueList.Insert(0, 86.0);
             foreach (double param1 in param1ValueList)
@@ -198,7 +198,7 @@ namespace NonLinearBestFit
                     }
 
                     var best = accumulatingList
-                    .Where(r => null != r)
+                        .Where(r => null != r)
                         .Where(r => r.station > param1 * minWidthPercent)
                         .OrderBy(r => r.dilatedCummulativeError).First();
 
@@ -210,13 +210,13 @@ namespace NonLinearBestFit
                         averageError = best.cummulativeError / best.accumulatedDistance,
                         dilatedCummulativeError = best.dilatedCummulativeError
                     };
-                    allCominations.Add(bestVal);
+                    allCombinations.Add(bestVal);
 
                 }
             }
             //);
 
-            var bestCombination = allCominations.OrderBy(rec => rec.dilatedCummulativeError).First();
+            var bestCombination = allCombinations.OrderBy(rec => rec.dilatedCummulativeError).First();
             returnValue = new GoodFitParameters
             {
                 parameter1 = bestCombination.param1,
