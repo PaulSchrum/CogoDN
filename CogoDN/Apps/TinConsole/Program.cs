@@ -116,7 +116,7 @@ namespace TinConsole
                 Environment.Exit(0);
             }
 
-            mirrorLogPrint($"Source: {args}");
+            mirrorLogPrint($"Source: {args[0]}");
             //mirrorLogPrint($"Source: {args[1]}");
             //mirrorLogPrint($"Source: {args[2]}");
             bool useHardCodes = false;
@@ -532,6 +532,12 @@ namespace TinConsole
                 var outputCSVfileName = anAlignment.Name + nameInfix + " pfl.csv";
                 outputCSVfileName = outDir.ToString() + "\\" + outputCSVfileName;
 
+                if(activeGroundProfile.SegmentCount < 1)
+                {
+                    mirrorLogPrint($"   No intersecting points found. {outputCSVfileName} not created.");
+                    continue;
+                }
+
                 activeGroundProfile.WriteToCSV(outputCSVfileName, useTrueStations);
                 mirrorLogPrint($"   Created {outputCSVfileName}");
             }
@@ -607,7 +613,12 @@ namespace TinConsole
                 var yValues = dfRightSide.Select(row => row.getY()).ToArray();
 
                 var hyperbolaParameterEstimator = new HyperbolaEstimator(xValues, yValues);
-                hyperbolaParameterEstimator.EstimateHyperbolaParameters(out aRight, out SaRight, out distanceRight);
+                hyperbolaParameterEstimator.EstimateHyperbolaParameters(
+                    out aRight, out SaRight, out distanceRight);
+                if(distanceRight < 0.0) // Unable to compute estimated values. Skip this profile.
+                {
+                    continue;
+                }
 
                 var rightSide = aFile.Substring(aFile.Length - 24);
                 var goodFitterInstance = new NonLinearGoodFitter(HyperbolaFunction, xValues, yValues, aRight, SaRight,
@@ -633,7 +644,13 @@ namespace TinConsole
                 xValues = dfLeftSide.Select(row => -1 * row.getX()).ToArray();
                 yValues = dfLeftSide.Select(row => row.getY()).ToArray();
                 hyperbolaParameterEstimator = new HyperbolaEstimator(xValues, yValues);
-                hyperbolaParameterEstimator.EstimateHyperbolaParameters(out aLeft, out SaLeft, out distanceLeft);
+                hyperbolaParameterEstimator.EstimateHyperbolaParameters(
+                        out aLeft, out SaLeft, out distanceLeft);
+                if (distanceLeft < 0.0) // Unable to compute estimated values. Skip this profile.
+                {
+                    continue;
+                }
+
 
                 goodFitterInstance = new NonLinearGoodFitter(HyperbolaFunction, xValues, yValues, aLeft, SaLeft,
                     distanceLeft);
@@ -690,6 +707,7 @@ namespace TinConsole
         /// <param name="commandItems"></param>
         private static void good_fit_cosines(List<string> commandItems)
         {
+            mirrorLogPrint("good_fit_cosines is an unimplemented function. Skipping this command.");
             DirectoryManager workDir = null;
             // Get the path to find csv files. Refuse to process anything if not provided.
             if (commandItems.Count == 2)
@@ -1158,7 +1176,14 @@ namespace TinConsole
         private static void Load_raster(List<string> commandItems)
         {
             var openFileStr = pwd.GetPathAndAppendFilename(commandItems[1]);
-            mainSurface = TINsurface.CreateFromRaster(openFileStr);
+            try
+            {
+                mainSurface = TINsurface.CreateFromRaster(openFileStr);
+            }
+            catch(FileNotFoundException fnf)
+            {
+                mirrorLogPrint($"Unable to locate file: {openFileStr}");
+            }
 
         }
 
