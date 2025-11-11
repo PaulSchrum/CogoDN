@@ -1614,50 +1614,51 @@ namespace Surfaces.TIN
         /// <param name="compress">Defaul true. If true, the file is compressed while saving.</param>
         public void saveAsBinary(string filenameToSaveTo, bool compress=true, bool overwrite=true)
         {
-            if (!Path.GetExtension(filenameToSaveTo).
-               Equals(StandardExtension, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new ArgumentException(
-                 String.Format("Filename does not have extension: {0}.", StandardExtension));
-            }
+            throw new NotImplementedException();
+            //if (!Path.GetExtension(filenameToSaveTo).
+            //   Equals(StandardExtension, StringComparison.OrdinalIgnoreCase))
+            //{
+            //    throw new ArgumentException(
+            //     String.Format("Filename does not have extension: {0}.", StandardExtension));
+            //}
 
-            var tempFname = filenameToSaveTo + "data";
-            if (!compress)
-                tempFname = filenameToSaveTo;
+            //var tempFname = filenameToSaveTo + "data";
+            //if (!compress)
+            //    tempFname = filenameToSaveTo;
 
-            BinaryFormatter binFrmtr = new BinaryFormatter();
-            using (Stream fstream =
-               new FileStream(tempFname, FileMode.Create, FileAccess.ReadWrite, FileShare.Read))
-            {
-                binFrmtr.Serialize(fstream, this);
-                fstream.Flush();
-            }
-            if (!compress)
-                return;
+            //BinaryFormatter binFrmtr = new BinaryFormatter();
+            //using (Stream fstream =
+            //   new FileStream(tempFname, FileMode.Create, FileAccess.ReadWrite, FileShare.Read))
+            //{
+            //    binFrmtr.Serialize(fstream, this);
+            //    fstream.Flush();
+            //}
+            //if (!compress)
+            //    return;
 
-            var zipFile = filenameToSaveTo + ".zip";
-            using (FileStream zipToOpen = new FileStream(zipFile, FileMode.Create))
-            {
-                using (ZipArchive archive = new ZipArchive(zipToOpen, ZipArchiveMode.Create))
-                {
-                    ZipArchiveEntry tinFile = archive.CreateEntryFromFile(tempFname,
-                        System.IO.Path.GetFileName(tempFname));
-                }
-            }
+            //var zipFile = filenameToSaveTo + ".zip";
+            //using (FileStream zipToOpen = new FileStream(zipFile, FileMode.Create))
+            //{
+            //    using (ZipArchive archive = new ZipArchive(zipToOpen, ZipArchiveMode.Create))
+            //    {
+            //        ZipArchiveEntry tinFile = archive.CreateEntryFromFile(tempFname,
+            //            System.IO.Path.GetFileName(tempFname));
+            //    }
+            //}
 
-            System.IO.File.Delete(tempFname);
-            if (System.IO.File.Exists(filenameToSaveTo))
-            {
-                if(overwrite)
-                {
-                    System.IO.File.Delete(filenameToSaveTo);
-                }
-                else
-                {
-                    throw new IOException($"Can not overwrite {filenameToSaveTo}. Save operation failed.");
-                }
-            }
-            System.IO.File.Move(zipFile, filenameToSaveTo);
+            //System.IO.File.Delete(tempFname);
+            //if (System.IO.File.Exists(filenameToSaveTo))
+            //{
+            //    if(overwrite)
+            //    {
+            //        System.IO.File.Delete(filenameToSaveTo);
+            //    }
+            //    else
+            //    {
+            //        throw new IOException($"Can not overwrite {filenameToSaveTo}. Save operation failed.");
+            //    }
+            //}
+            //System.IO.File.Move(zipFile, filenameToSaveTo);
         }
 
         private void zipAndDelete(string outfileName)
@@ -1677,62 +1678,62 @@ namespace Surfaces.TIN
 
         static public TINsurface loadFromBinary(string filenameToLoad)
         {
+            throw new NotImplementedException();
+//            var fnameToLoad = filenameToLoad;
+//            try
+//            {
+//                using(ZipArchive arch = ZipFile.OpenRead(filenameToLoad))
+//                {
+//                    var entry = arch.Entries.FirstOrDefault();
+//                    var fname = entry.FullName;
+//                    var path = System.IO.Path.GetDirectoryName(filenameToLoad);
+//                    if (!path.EndsWith(Path.DirectorySeparatorChar.ToString(), 
+//                        StringComparison.Ordinal))
+//                        path += Path.DirectorySeparatorChar;
+//                    fnameToLoad = path + fname;
+//                    entry.ExtractToFile(fnameToLoad);
+//                }
+//            }
+//            catch(Exception e)
+//            {
+//                if(!(e.Message == "End of Central Directory record could not be found."))
+//                    throw e;
+//                fnameToLoad = filenameToLoad;
+//            }
 
-            var fnameToLoad = filenameToLoad;
-            try
-            {
-                using(ZipArchive arch = ZipFile.OpenRead(filenameToLoad))
-                {
-                    var entry = arch.Entries.FirstOrDefault();
-                    var fname = entry.FullName;
-                    var path = System.IO.Path.GetDirectoryName(filenameToLoad);
-                    if (!path.EndsWith(Path.DirectorySeparatorChar.ToString(), 
-                        StringComparison.Ordinal))
-                        path += Path.DirectorySeparatorChar;
-                    fnameToLoad = path + fname;
-                    entry.ExtractToFile(fnameToLoad);
-                }
-            }
-            catch(Exception e)
-            {
-                if(!(e.Message == "End of Central Directory record could not be found."))
-                    throw e;
-                fnameToLoad = filenameToLoad;
-            }
+//            BinaryFormatter binFrmtr = new BinaryFormatter();
+//            TINsurface aDTM = null;
+//            using
+//            (Stream fstream = File.OpenRead(fnameToLoad))
+//            {
+//                aDTM = new TINsurface();
+//                LoadTimeStopwatch = new Stopwatch();
+//                LoadTimeStopwatch.Start();
+//                try
+//                {
+//                    aDTM = (TINsurface)binFrmtr.Deserialize(fstream);
+//                    aDTM.correctUpsidedownTriangles();
+//                    LoadTimeStopwatch.Stop();
+//                }
+//#pragma warning disable 0168
+//                catch (InvalidCastException e)
+//#pragma warning restore 0168
+//                {
+//                    LoadTimeStopwatch.Stop();
+//                    return null;
+//                }
+//                LoadTimeStopwatch.Stop();
 
-            BinaryFormatter binFrmtr = new BinaryFormatter();
-            TINsurface aDTM = null;
-            using
-            (Stream fstream = File.OpenRead(fnameToLoad))
-            {
-                aDTM = new TINsurface();
-                LoadTimeStopwatch = new Stopwatch();
-                LoadTimeStopwatch.Start();
-                try
-                {
-                    aDTM = (TINsurface)binFrmtr.Deserialize(fstream);
-                    aDTM.correctUpsidedownTriangles();
-                    LoadTimeStopwatch.Stop();
-                }
-#pragma warning disable 0168
-                catch (InvalidCastException e)
-#pragma warning restore 0168
-                {
-                    LoadTimeStopwatch.Stop();
-                    return null;
-                }
-                LoadTimeStopwatch.Stop();
+//                Parallel.ForEach(aDTM.allTriangles
+//                   , new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }
+//                   , tri => tri.computeBoundingBox());
 
-                Parallel.ForEach(aDTM.allTriangles
-                   , new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }
-                   , tri => tri.computeBoundingBox());
+//                aDTM.IndexTriangles();
+//            }
+//            if (!(fnameToLoad == filenameToLoad))
+//                System.IO.File.Delete(fnameToLoad);
 
-                aDTM.IndexTriangles();
-            }
-            if (!(fnameToLoad == filenameToLoad))
-                System.IO.File.Delete(fnameToLoad);
-
-            return aDTM;
+//            return aDTM;
         }
 
         private void setupStopWatches()
