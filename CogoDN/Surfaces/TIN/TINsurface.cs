@@ -248,7 +248,7 @@ namespace Surfaces.TIN
             messagePump.BroadcastMessage($"Creating Tin in memory from {lidarFileName}.");
             LasFile lasFile = new LasFile(lidarFileName,
                 classificationFilter: classificationFilter);
-            IEnumerable<TINpoint> lasPoints = lasFile.AllPoints;
+            IEnumerable<ILidarPoint> lasPoints = lasFile.AllPoints;
 
             var returnData = CreateFromPoints(lasPoints, lidarFileName, skipPoints);
 
@@ -257,7 +257,7 @@ namespace Surfaces.TIN
                     $"( {stopwatch.ElapsedMilliseconds / 60000.0:0.000} minutes).");
             return returnData;
         }
-        protected static TINsurface CreateFromPoints(IEnumerable<TINpoint> pointDataset,
+        protected static TINsurface CreateFromPoints(IEnumerable<ILidarPoint> pointDataset,
             string sourceFileName, int skipPoints = 0)
         { 
             TINsurface returnObject = new TINsurface();
@@ -271,8 +271,11 @@ namespace Surfaces.TIN
             //if (null != trimBB)
             //     pointDataset = lasFile.AllPoints.Where(p => trimBB.isPointInsideBB2d(p));
 
-            foreach (var point in pointDataset)
+            foreach (var aPoint in pointDataset)
             {
+                var point = aPoint as TINpoint;
+                if(null == point) continue;
+
                 pointCounter++;
                 runningPointCount++;
 

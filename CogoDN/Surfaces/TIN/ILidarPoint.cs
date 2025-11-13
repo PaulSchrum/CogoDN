@@ -1,12 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using MIConvexHull;
+using System;
 
 namespace Surfaces.TIN
 {
-    public interface ILidarPoint
+    public interface ILidarPoint : IVertex
     {
+        public Double x { get; set; }
+        public Double y { get; set; }
+        public Double z { get; set; }
+
+        public int lidarClassification { get; set; }
+        public int myIndex { get; internal set; }
+        public int originalSequenceNumber {  get; set; }
     }
 }

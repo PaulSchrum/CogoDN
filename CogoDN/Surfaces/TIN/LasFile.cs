@@ -8,7 +8,7 @@ namespace Surfaces.TIN
 {
     public class LasFile
     {
-        public List<TINpoint> AllPoints { get; private set; } = null;
+        public List<ILidarPoint> AllPoints { get; private set; } = null;
 
         public int VersionMajor { get; private set; } = 0;
         public int VersionMinor { get; private set; } = 0;
@@ -99,7 +99,7 @@ namespace Surfaces.TIN
         {
             int pointCounter = 0;
             int sequenceCounter = 0; // Counts all points in the file.
-            this.AllPoints = new List<TINpoint>();
+            this.AllPoints = new List<ILidarPoint>();
             foreach (int recNo in Enumerable.Range(1, this.NumberOfPointRecords))
             {
                 int offset = recNo * this.PointDataRecordLength;

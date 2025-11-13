@@ -12,7 +12,7 @@ using System.Collections.Concurrent;
 namespace Surfaces.TIN;
 
 [Serializable]
-public class TINpoint : IVertex
+public class TINpoint : ILidarPoint
 {
     public Double x { get; set; }
     public Double y { get; set; }
@@ -20,10 +20,10 @@ public class TINpoint : IVertex
 
     public bool hasBeenSkipped = false;
     public int lidarClassification { get; set; }
-    public int myIndex { get; internal set; }
+    public int myIndex { get; set; }
     public bool isOnHull { get; internal set; } = false;
     public double retainProbability = 1.0;
-    public int originalSequenceNumber = -1;
+    public int originalSequenceNumber { get; set; } = -1;
 
     public ConcurrentBag<TINtriangle> myTriangles { get; internal set; } = null;
 
