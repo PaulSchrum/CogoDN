@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Surfaces.TIN
@@ -37,7 +38,8 @@ namespace Surfaces.TIN
         public int NumberOfPointRecords { get; private set; } = 0;
 
         public LasFile(string LasFilename,
-            List<int> classificationFilter = null)
+            List<int> classificationFilter = null,
+            Func<ILidarPoint> ptCreateFunc = null)
         {
             this.classificationFilter = new List<int> { 2, 13 };
             if (null != classificationFilter)
@@ -85,7 +87,7 @@ namespace Surfaces.TIN
 
                 this.NumberOfPointRecords = (int)memoryData.getLongLong(247);
 
-                this.populateAllPoints(reader);
+                this.populateAllPoints(reader, ptCreateFunc);
 
             }
         }
@@ -95,7 +97,8 @@ namespace Surfaces.TIN
             this.AllPoints = null;
         }
         private int skipPoints { get; set; }
-        private void populateAllPoints(BinaryReader reader)
+        private void populateAllPoints(BinaryReader reader, 
+            Func<ILidarPoint> createLidarPointLambda)
         {
             int pointCounter = 0;
             int sequenceCounter = 0; // Counts all points in the file.
@@ -104,7 +107,8 @@ namespace Surfaces.TIN
             {
                 int offset = recNo * this.PointDataRecordLength;
                 int address = offset + this.OffsetToPointData;
-                TINpoint aPoint = this.readPoint(reader, address);
+                ILidarPoint aPoint = this.readPoint(reader, address,
+                    createLidarPointLambda);
                 sequenceCounter++;
                 if (!this.classificationFilter.Contains(aPoint.lidarClassification))
                     continue;
@@ -117,14 +121,17 @@ namespace Surfaces.TIN
         }
 
         private List<int> classificationFilter { get; set; }
-        private TINpoint readPoint(BinaryReader reader, int address)
+        private ILidarPoint readPoint(BinaryReader reader, int address,
+            Func<ILidarPoint> createLidarPointLambda)
         {
             byte[] pointData = new byte[this.PointDataRecordLength];
             reader.Read(pointData, 0, this.PointDataRecordLength);
 
-
-
-            var retPoint = new TINpoint();
+            ILidarPoint retPoint = null;
+            if (null == createLidarPointLambda)
+                retPoint = new TINpoint();
+            else
+                retPoint = createLidarPointLambda();
             retPoint.lidarClassification = pointData.getChar(16);
 
             if (!(this.classificationFilter.Contains(retPoint.lidarClassification)))
