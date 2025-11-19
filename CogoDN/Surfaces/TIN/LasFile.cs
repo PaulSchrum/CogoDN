@@ -39,7 +39,8 @@ namespace Surfaces.TIN
 
         public LasFile(string LasFilename,
             List<int> classificationFilter = null,
-            Func<ILidarPoint> ptCreateFunc = null)
+            int pointMaximum = -1,
+            Func<double, double, double, ILidarPoint> ptCreateFunc = null)
         {
             this.classificationFilter = new List<int> { 2, 13 };
             if (null != classificationFilter)
@@ -87,7 +88,7 @@ namespace Surfaces.TIN
 
                 this.NumberOfPointRecords = (int)memoryData.getLongLong(247);
 
-                this.populateAllPoints(reader, ptCreateFunc);
+                this.populateAllPoints(reader, pointMaximum, ptCreateFunc);
 
             }
         }
@@ -98,12 +99,15 @@ namespace Surfaces.TIN
         }
         private int skipPoints { get; set; }
         private void populateAllPoints(BinaryReader reader, 
-            Func<ILidarPoint> createLidarPointLambda)
+            int pointMaximum,
+            Func<double, double, double, ILidarPoint> createLidarPointLambda)
         {
             int pointCounter = 0;
             int sequenceCounter = 0; // Counts all points in the file.
+            int stopAt = this.NumberOfPointRecords;
+            if(pointMaximum > 0) stopAt = pointMaximum;
             this.AllPoints = new List<ILidarPoint>();
-            foreach (int recNo in Enumerable.Range(1, this.NumberOfPointRecords))
+            foreach (int recNo in Enumerable.Range(1, stopAt))
             {
                 int offset = recNo * this.PointDataRecordLength;
                 int address = offset + this.OffsetToPointData;
@@ -117,34 +121,61 @@ namespace Surfaces.TIN
 
                 if (pointCounter % (skipPoints + 1) == 0)
                     this.AllPoints.Add(aPoint);
+
+                if (sampleOnly == true && sampleRow >= sampleRow)
+                    return;
             }
+        }
+
+        private static bool sampleOnly = false;
+        private static int sampleRow = int.MaxValue;
+        public static void SamplePointAtRow(string fileName, int rowOfInterest, 
+            out double dEast, out double dNorth, out double dElev)
+        {
+            sampleOnly = true;
+            sampleRow = rowOfInterest;
+            var _ = new LasFile(fileName);
+            var samplePoint = _.AllPoints.Last();
+            dEast = samplePoint.x;
+            dNorth = samplePoint.y;
+            dElev = samplePoint.z;
+            sampleOnly = false;
+            sampleRow = int.MaxValue;
+            _ = null;
         }
 
         private List<int> classificationFilter { get; set; }
         private ILidarPoint readPoint(BinaryReader reader, int address,
-            Func<ILidarPoint> createLidarPointLambda)
+            Func<double, double, double, ILidarPoint> createLidarPointLambda)
         {
             byte[] pointData = new byte[this.PointDataRecordLength];
             reader.Read(pointData, 0, this.PointDataRecordLength);
 
             ILidarPoint retPoint = null;
-            if (null == createLidarPointLambda)
-                retPoint = new TINpoint();
-            else
-                retPoint = createLidarPointLambda();
-            retPoint.lidarClassification = pointData.getChar(16);
+            int pointClassification = pointData.getChar(16);
 
-            if (!(this.classificationFilter.Contains(retPoint.lidarClassification)))
-                return retPoint;
+            //if (!(this.classificationFilter.Contains(pointClassification)))
+            //    return null;
 
             int xCoord = (int)pointData.getLong(0);
             int yCoord = (int)pointData.getLong(4);
             int zCoord = (int)pointData.getLong(8);
+            double localX, localY, localZ;
+            localX = xCoord * this.XscaleFactor + this.Xoffset;
+            localY = yCoord * this.YscaleFactor + this.Yoffset;
+            localZ = zCoord * this.ZscaleFactor + this.Zoffset;
 
-            retPoint.x = xCoord * this.XscaleFactor + this.Xoffset;
-            retPoint.y = yCoord * this.YscaleFactor + this.Yoffset;
-            retPoint.z = zCoord * this.YscaleFactor + this.Zoffset;
+            if (null == createLidarPointLambda)
+            {
+                retPoint = new TINpoint();
+                retPoint.x = localX;
+                retPoint.y = localY;
+                retPoint.z = localZ;
+            }
+            else
+                retPoint = createLidarPointLambda(localX, localY, localZ);
 
+            retPoint.lidarClassification = pointClassification;
             return retPoint;
         }
 

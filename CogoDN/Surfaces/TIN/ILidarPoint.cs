@@ -10,7 +10,7 @@ namespace Surfaces.TIN
         public Double z { get; set; }
 
         public int lidarClassification { get; set; }
-        public int myIndex { get; internal set; }
+        public int myIndex { get; set; }
         public int originalSequenceNumber {  get; set; }
     }
 }
