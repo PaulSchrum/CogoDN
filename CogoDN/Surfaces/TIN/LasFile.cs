@@ -40,7 +40,7 @@ namespace Surfaces.TIN
         public LasFile(string LasFilename,
             List<int> classificationFilter = null,
             int pointMaximum = -1,
-            Func<double, double, double, ILidarPoint> ptCreateFunc = null)
+            Func<double, double, double, int, ILidarPoint> ptCreateFunc = null)
         {
             this.classificationFilter = new List<int> { 2, 13 };
             if (null != classificationFilter)
@@ -100,7 +100,7 @@ namespace Surfaces.TIN
         private int skipPoints { get; set; }
         private void populateAllPoints(BinaryReader reader, 
             int pointMaximum,
-            Func<double, double, double, ILidarPoint> createLidarPointLambda)
+            Func<double, double, double, int, ILidarPoint> createLidarPointLambda)
         {
             int pointCounter = 0;
             int sequenceCounter = 0; // Counts all points in the file.
@@ -146,7 +146,7 @@ namespace Surfaces.TIN
 
         private List<int> classificationFilter { get; set; }
         private ILidarPoint readPoint(BinaryReader reader, int address,
-            Func<double, double, double, ILidarPoint> createLidarPointLambda)
+            Func<double, double, double, int, ILidarPoint> createLidarPointLambda)
         {
             byte[] pointData = new byte[this.PointDataRecordLength];
             reader.Read(pointData, 0, this.PointDataRecordLength);
@@ -173,7 +173,7 @@ namespace Surfaces.TIN
                 retPoint.z = localZ;
             }
             else
-                retPoint = createLidarPointLambda(localX, localY, localZ);
+                retPoint = createLidarPointLambda(localX, localY, localZ, pointClassification);
 
             retPoint.lidarClassification = pointClassification;
             return retPoint;
