@@ -68,7 +68,8 @@ namespace Unit_Tests
         {
             setupDatasetFileNames();
             if (this.tinFromLidar == null)
-                tinFromLidar = TINsurface.CreateFromLAS(lidarFileName);
+                tinFromLidar = TINsurface.CreateFromLAS(lidarFileName, 
+                    classificationFilter: new List<int> { 2, 13});
         }
 
         [TestMethod]
