@@ -42,7 +42,8 @@ namespace Surfaces.TIN
             int pointMaximum = -1,
             Func<double, double, double, int, ILidarPoint> ptCreateFunc = null)
         {
-            this.classificationFilter = new List<int> { 2, 13 };
+            this.classificationFilter = 
+                new List<int> { 2, 3, 4, 5, 6, 13, 17 };
             if (null != classificationFilter)
                 this.classificationFilter = classificationFilter;
 
