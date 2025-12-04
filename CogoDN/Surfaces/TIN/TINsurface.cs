@@ -816,7 +816,6 @@ namespace Surfaces.TIN
                 tri.SwapPoint1And2();
             
             upsideDownTriangles = null;
-            GC.Collect();
         }
 
         protected void finalProcessing()
@@ -2097,14 +2096,15 @@ namespace Surfaces.TIN
 
             var bins = new ConcurrentDictionary<(int, int, short), ConcurrentBag<TINtriangle>>();
 
-            //foreach (var aTriangle in allTriangles)
-            Parallel.ForEach(ValidTriangles, aTriangle => 
+            foreach (var aTriangle in allTriangles)
+            //Parallel.ForEach(ValidTriangles, aTriangle => 
             {
                 int xIndex = (int) ((aTriangle.Centroid.x - LLpt.x) / xBinWidth);
                 int yIndex = (int) ((aTriangle.Centroid.y - LLpt.y) / yBinWidth);
                 ValueTuple<int, int, short> key = (xIndex, yIndex, (short)0);
                 bins.GetOrAdd(key, _ => new ConcurrentBag<TINtriangle>()).Add(aTriangle);
-            });
+            } //)
+            ;
 
             return bins;
         }
