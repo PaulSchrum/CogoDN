@@ -2078,7 +2078,37 @@ namespace Surfaces.TIN
             return returnString.ToString();
         }
 
-        
+        /// <summary>
+        /// Bins all valid triangles by grid (x, y) and theme.
+        /// </summary>
+        /// <returns>
+        /// A ConcurrentDictionary keyed by (xBin, yBin, themeBin), 
+        /// where:
+        ///   xBin and yBin are spatial grid indices,
+        ///   themeBin is a short identifying the theme bucket.
+        /// </returns>
+        public ConcurrentDictionary<ValueTuple<int, int, short>, ConcurrentBag<TINtriangle>>
+            BinAllTriangles(short gridColumns, short gridRows)
+        {
+            var LLpt = this.BoundingBox.lowerLeftPt;
+            var size = this.BoundingBox.upperRightPt - LLpt;
+            double xBinWidth = size.x / gridColumns;
+            double yBinWidth = size.y / gridRows;
+
+            var bins = new ConcurrentDictionary<(int, int, short), ConcurrentBag<TINtriangle>>();
+
+            //foreach (var aTriangle in allTriangles)
+            Parallel.ForEach(allTriangles, aTriangle => 
+            {
+                int xIndex = (int) ((aTriangle.Centroid.x - LLpt.x) / xBinWidth);
+                int yIndex = (int) ((aTriangle.Centroid.y - LLpt.y) / yBinWidth);
+                ValueTuple<int, int, short> key = (xIndex, yIndex, (short)0);
+                bins.GetOrAdd(key, _ => new ConcurrentBag<TINtriangle>()).Add(aTriangle);
+            });
+
+            return bins;
+        }
+
     }
 
     internal class tinPointParameters
@@ -2495,7 +2525,6 @@ namespace Surfaces.TIN
             messagePump.Register(observer);
             return messagePump;
         }
-
 
     }
 
