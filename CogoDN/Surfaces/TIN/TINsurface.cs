@@ -2098,7 +2098,7 @@ namespace Surfaces.TIN
             var bins = new ConcurrentDictionary<(int, int, short), ConcurrentBag<TINtriangle>>();
 
             //foreach (var aTriangle in allTriangles)
-            Parallel.ForEach(allTriangles, aTriangle => 
+            Parallel.ForEach(ValidTriangles, aTriangle => 
             {
                 int xIndex = (int) ((aTriangle.Centroid.x - LLpt.x) / xBinWidth);
                 int yIndex = (int) ((aTriangle.Centroid.y - LLpt.y) / yBinWidth);
