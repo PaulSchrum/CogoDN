@@ -358,5 +358,38 @@ namespace Unit_Tests
         //    ElSlopeAspect.AssertDerivedValuesAreEqual(1607.02, 4.8, 8.4457);
         //}
 
+        [TestMethod]
+        public void TinFromLidar_geometricBinning_Succeeds()
+        {
+            var sw = Stopwatch.StartNew();
+            this.InitializeLidarTests();
+            var testTin = tinFromLidar;
+
+            string alternateTestLasFile =
+                @"E:\Research\Datasets\Lidar\Wake\NCSU\20079302.las";
+            if (File.Exists(alternateTestLasFile))
+            {
+                List<int> classifFilter = new List<int> { 2, 13 }; sw.Restart();
+                testTin = TINsurface
+                    .CreateFromLAS(alternateTestLasFile,
+                    classificationFilter: classifFilter); sw.Stop();
+            }
+
+            int totalTriangleCount = testTin.ValidTriangles.Count();
+            int totalPointCount = testTin.allUsedPoints.Count();
+            var loadTime = sw.Elapsed.TotalSeconds;
+
+            short columns = 10; short rows = 10;
+            sw.Restart();
+            var binnedTriangles = testTin.BinAllTriangles(columns, rows);
+            sw.Stop();
+            var timeInMs = sw.Elapsed.TotalSeconds;
+            Assert.IsNotNull(binnedTriangles);
+            var binCount = binnedTriangles.Count();
+            Assert.IsTrue(binCount > 0);
+            var maxBinCount = columns * rows;
+            Assert.IsTrue(binCount <= maxBinCount);
+        }
+
     }
 }
