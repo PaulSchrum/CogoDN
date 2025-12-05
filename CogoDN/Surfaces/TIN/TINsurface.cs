@@ -1,33 +1,32 @@
-﻿using CadFoundation.Angles;
+﻿using CadFoundation;
+using CadFoundation.Angles;
 using CadFoundation.Coordinates;
+using CadFoundation.Coordinates.Curvilinear;
+using CadFoundation.Coordinates.Indexing;
+using Cogo;
+using Cogo.Horizontal;
+using Cogo.Utils;
 using MathNet.Numerics.LinearAlgebra;
+using MathNet.Numerics.Statistics;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using netDxf;
 using netDxf.Entities;
+using Surfaces.Raster;
+using Surfaces.TIN.Support;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using CadFound = CadFoundation.Coordinates;
-
-using MathNet.Numerics.Statistics;
-
-using System.Runtime.CompilerServices;
-using Cogo.Utils;
-using CadFoundation;
-using System.IO.Compression;
-using CadFoundation.Coordinates.Indexing;
-using Surfaces.TIN.Support;
-using Surfaces.Raster;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Cogo;
-using Cogo.Horizontal;
-using CadFoundation.Coordinates.Curvilinear;
 
 [assembly: InternalsVisibleTo("Unit Tests")]
 
@@ -2094,19 +2093,44 @@ namespace Surfaces.TIN
             double xBinWidth = size.x / gridColumns;
             double yBinWidth = size.y / gridRows;
 
-            var bins = new ConcurrentDictionary<(int, int, short), ConcurrentBag<TINtriangle>>();
+            // Final merged result
+            var globalBins = new ConcurrentDictionary<ValueTuple<int, int, short>, ConcurrentBag<TINtriangle>>();
 
-            foreach (var aTriangle in allTriangles)
-            //Parallel.ForEach(ValidTriangles, aTriangle => 
+            // One local dictionary per thread
+            var threadLocalBins = 
+                new ThreadLocal<Dictionary<ValueTuple<int, int, short>, List<TINtriangle>>>
+                ( () => new Dictionary<ValueTuple<int, int, short>, List<TINtriangle>>(25000),
+                trackAllValues: true );
+
+            Parallel.ForEach(ValidTriangles, triangle =>
             {
-                int xIndex = (int) ((aTriangle.Centroid.x - LLpt.x) / xBinWidth);
-                int yIndex = (int) ((aTriangle.Centroid.y - LLpt.y) / yBinWidth);
-                ValueTuple<int, int, short> key = (xIndex, yIndex, (short)0);
-                bins.GetOrAdd(key, _ => new ConcurrentBag<TINtriangle>()).Add(aTriangle);
-            } //)
-            ;
+                int xIndex = (int)((triangle.Centroid.x - LLpt.x) / xBinWidth);
+                int yIndex = (int)((triangle.Centroid.y - LLpt.y) / yBinWidth);
+                var key = (xIndex, yIndex, (short)0);
 
-            return bins;
+                var localBins = threadLocalBins.Value!;
+                if (!localBins.TryGetValue(key, out var list))
+                {
+                    list = new List<TINtriangle>();
+                    localBins[key] = list;
+                }
+                list.Add(triangle);
+            });
+
+            // Merge all thread-local bins into the global ConcurrentDictionary
+            foreach (var local in threadLocalBins.Values)
+            {
+                foreach (var kvp in local)
+                {
+                    var globalBag = globalBins.GetOrAdd(kvp.Key, _ => new ConcurrentBag<TINtriangle>());
+                    foreach (var triangle in kvp.Value)
+                    {
+                        globalBag.Add(triangle);
+                    }
+                }
+            }
+
+            return globalBins;
         }
 
     }
