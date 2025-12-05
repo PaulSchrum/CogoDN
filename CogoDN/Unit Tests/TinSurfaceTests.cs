@@ -383,13 +383,12 @@ namespace Unit_Tests
             sw.Restart();
             var binnedTriangles = testTin.BinAllTriangles(columns, rows);
             sw.Stop();
-            var timeInMs = sw.Elapsed.TotalSeconds;
+            var timeInSec = sw.Elapsed.TotalSeconds;
             Assert.IsNotNull(binnedTriangles);
             var binCount = binnedTriangles.Count();
             Assert.IsTrue(binCount > 0);
             var maxBinCount = columns * rows;
             Assert.IsTrue(binCount <= maxBinCount);
         }
-
     }
 }
