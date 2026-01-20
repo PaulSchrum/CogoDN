@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Surfaces.TIN
 {
     public class LasFile
     {
-        public List<TINpoint> AllPoints { get; private set; } = null;
+        public List<ILidarPoint> AllPoints { get; private set; } = null;
 
         public int VersionMajor { get; private set; } = 0;
         public int VersionMinor { get; private set; } = 0;
@@ -37,9 +38,12 @@ namespace Surfaces.TIN
         public int NumberOfPointRecords { get; private set; } = 0;
 
         public LasFile(string LasFilename,
-            List<int> classificationFilter = null)
+            List<int> classificationFilter = null,
+            int pointMaximum = -1,
+            Func<double, double, double, int, ILidarPoint> ptCreateFunc = null)
         {
-            this.classificationFilter = new List<int> { 2, 13 };
+            this.classificationFilter = 
+                new List<int> { 2, 3, 4, 5, 6, 13, 17 };
             if (null != classificationFilter)
                 this.classificationFilter = classificationFilter;
 
@@ -85,7 +89,7 @@ namespace Surfaces.TIN
 
                 this.NumberOfPointRecords = (int)memoryData.getLongLong(247);
 
-                this.populateAllPoints(reader);
+                this.populateAllPoints(reader, pointMaximum, ptCreateFunc);
 
             }
         }
@@ -95,16 +99,21 @@ namespace Surfaces.TIN
             this.AllPoints = null;
         }
         private int skipPoints { get; set; }
-        private void populateAllPoints(BinaryReader reader)
+        private void populateAllPoints(BinaryReader reader, 
+            int pointMaximum,
+            Func<double, double, double, int, ILidarPoint> createLidarPointLambda)
         {
             int pointCounter = 0;
             int sequenceCounter = 0; // Counts all points in the file.
-            this.AllPoints = new List<TINpoint>();
-            foreach (int recNo in Enumerable.Range(1, this.NumberOfPointRecords))
+            int stopAt = this.NumberOfPointRecords;
+            if(pointMaximum > 0) stopAt = pointMaximum;
+            this.AllPoints = new List<ILidarPoint>();
+            foreach (int recNo in Enumerable.Range(1, stopAt))
             {
                 int offset = recNo * this.PointDataRecordLength;
                 int address = offset + this.OffsetToPointData;
-                TINpoint aPoint = this.readPoint(reader, address);
+                ILidarPoint aPoint = this.readPoint(reader, address,
+                    createLidarPointLambda);
                 sequenceCounter++;
                 if (!this.classificationFilter.Contains(aPoint.lidarClassification))
                     continue;
@@ -113,31 +122,61 @@ namespace Surfaces.TIN
 
                 if (pointCounter % (skipPoints + 1) == 0)
                     this.AllPoints.Add(aPoint);
+
+                if (sampleOnly == true && sampleRow >= sampleRow)
+                    return;
             }
         }
 
+        private static bool sampleOnly = false;
+        private static int sampleRow = int.MaxValue;
+        public static void SamplePointAtRow(string fileName, int rowOfInterest, 
+            out double dEast, out double dNorth, out double dElev)
+        {
+            sampleOnly = true;
+            sampleRow = rowOfInterest;
+            var _ = new LasFile(fileName);
+            var samplePoint = _.AllPoints.Last();
+            dEast = samplePoint.x;
+            dNorth = samplePoint.y;
+            dElev = samplePoint.z;
+            sampleOnly = false;
+            sampleRow = int.MaxValue;
+            _ = null;
+        }
+
         private List<int> classificationFilter { get; set; }
-        private TINpoint readPoint(BinaryReader reader, int address)
+        private ILidarPoint readPoint(BinaryReader reader, int address,
+            Func<double, double, double, int, ILidarPoint> createLidarPointLambda)
         {
             byte[] pointData = new byte[this.PointDataRecordLength];
             reader.Read(pointData, 0, this.PointDataRecordLength);
 
+            ILidarPoint retPoint = null;
+            int pointClassification = pointData.getChar(16);
 
-
-            var retPoint = new TINpoint();
-            retPoint.lidarClassification = pointData.getChar(16);
-
-            if (!(this.classificationFilter.Contains(retPoint.lidarClassification)))
-                return retPoint;
+            //if (!(this.classificationFilter.Contains(pointClassification)))
+            //    return null;
 
             int xCoord = (int)pointData.getLong(0);
             int yCoord = (int)pointData.getLong(4);
             int zCoord = (int)pointData.getLong(8);
+            double localX, localY, localZ;
+            localX = xCoord * this.XscaleFactor + this.Xoffset;
+            localY = yCoord * this.YscaleFactor + this.Yoffset;
+            localZ = zCoord * this.ZscaleFactor + this.Zoffset;
 
-            retPoint.x = xCoord * this.XscaleFactor + this.Xoffset;
-            retPoint.y = yCoord * this.YscaleFactor + this.Yoffset;
-            retPoint.z = zCoord * this.YscaleFactor + this.Zoffset;
+            if (null == createLidarPointLambda)
+            {
+                retPoint = new TINpoint();
+                retPoint.x = localX;
+                retPoint.y = localY;
+                retPoint.z = localZ;
+            }
+            else
+                retPoint = createLidarPointLambda(localX, localY, localZ, pointClassification);
 
+            retPoint.lidarClassification = pointClassification;
             return retPoint;
         }
 
