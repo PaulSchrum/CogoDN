@@ -123,7 +123,7 @@ namespace Surfaces.TIN
                 if (pointCounter % (skipPoints + 1) == 0)
                     this.AllPoints.Add(aPoint);
 
-                if (sampleOnly == true && sampleRow >= sampleRow)
+                if (sampleOnly == true && sequenceCounter >= sampleRow)
                     return;
             }
         }
