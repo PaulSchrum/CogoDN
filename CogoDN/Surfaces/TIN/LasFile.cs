@@ -113,6 +113,12 @@ namespace Surfaces.TIN
 
                 if (pointCounter % (skipPoints + 1) == 0)
                     this.AllPoints.Add(aPoint);
+<<<<<<< Updated upstream
+=======
+
+                if (sampleOnly == true && sequenceCounter >= sampleRow)  // Line 126
+                    return;
+>>>>>>> Stashed changes
             }
         }
 
